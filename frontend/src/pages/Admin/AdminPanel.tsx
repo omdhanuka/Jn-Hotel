@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import BookingManagement from './BookingManagement';
 import RoomManagement from './RoomManagement';
+import BookingChart from './BookingChart';
 
 const AdminPanel: React.FC = () => {
   const location = useLocation();
@@ -23,6 +24,7 @@ const AdminPanel: React.FC = () => {
     { id: 'banquets', label: 'Banquets', icon: Building, path: '/admin/banquets' },
     { id: 'restaurant', label: 'Restaurant', icon: Utensils, path: '/admin/restaurant' },
     { id: 'bookings', label: 'Bookings', icon: Calendar, path: '/admin/bookings' },
+    { id: 'chart', label: 'Booking Chart', icon: Calendar, path: '/admin/booking-chart' },
     { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' }
   ];
@@ -177,6 +179,8 @@ const AdminPanel: React.FC = () => {
             } />
             
             <Route path="/bookings" element={<BookingManagement />} />
+            
+            <Route path="/booking-chart" element={<BookingChart />} />
             
             <Route path="/users" element={
               <div>

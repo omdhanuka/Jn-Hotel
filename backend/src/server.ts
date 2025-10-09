@@ -40,10 +40,10 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
+app.use('/api/bookings', bookingRoutes);
 app.use('/api/banquets', banquetRoutes);
 app.use('/api/restaurant', restaurantRoutes);
 app.use('/api/food', foodRoutes);
-app.use('/api/bookings', bookingRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Health check route

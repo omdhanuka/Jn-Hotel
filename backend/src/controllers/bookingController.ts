@@ -68,11 +68,11 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
         return res.status(400).json({ message: 'Invalid booking type' });
     }
 
-    // Check for conflicting bookings
+    // Enhanced conflict checking - include confirmed bookings
     const conflictingBooking = await Booking.findOne({
       type,
       resourceId,
-      status: { $in: ['confirmed', 'pending'] },
+      status: { $in: ['confirmed', 'pending'] }, // Both confirmed and pending block new bookings
       $or: [
         {
           checkIn: { $lte: new Date(checkIn) },
@@ -90,7 +90,16 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
     });
 
     if (conflictingBooking) {
-      return res.status(400).json({ message: 'Resource is already booked for the selected dates' });
+      const conflictStatus = conflictingBooking.status === 'confirmed' ? 'confirmed' : 'pending';
+      return res.status(400).json({ 
+        message: `Room is already booked for the selected dates (${conflictStatus} booking)`,
+        conflictingBooking: {
+          id: conflictingBooking._id,
+          checkIn: conflictingBooking.checkIn,
+          checkOut: conflictingBooking.checkOut,
+          status: conflictingBooking.status
+        }
+      });
     }
 
     // Create booking
@@ -452,3 +461,140 @@ export const getAllBookingsForAdmin = async (req: AuthRequest, res: Response) =>
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const getBookingsForChart = async (req: AuthRequest, res: Response) => {
+  try {
+    // Only admin can view booking chart
+    if (req.user!.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
+
+    const { startDate, endDate } = req.query;
+    
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'Start date and end date are required' });
+    }
+
+    const bookings = await Booking.find({
+      type: 'room', // Only get room bookings for the chart
+      $or: [
+        {
+          checkIn: { $gte: new Date(startDate as string), $lte: new Date(endDate as string) }
+        },
+        {
+          checkOut: { $gte: new Date(startDate as string), $lte: new Date(endDate as string) }
+        },
+        {
+          checkIn: { $lte: new Date(startDate as string) },
+          checkOut: { $gte: new Date(endDate as string) }
+        }
+      ]
+    })
+    .populate('user', 'firstName lastName')
+    .populate({
+      path: 'resourceId',
+      model: 'Room',
+      select: 'roomNumber type price'
+    })
+    .sort({ checkIn: 1 });
+
+    const chartData = bookings.map(booking => {
+      const room = booking.resourceId as any;
+      const user = booking.user as any;
+      
+      console.log('Booking resource:', room); // Debug log
+      
+      return {
+        _id: booking._id,
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+        roomNumber: room?.roomNumber || `Room-${booking.resourceId}`,
+        roomType: room?.type || 'Unknown',
+        guestName: user ? `${user.firstName} ${user.lastName}` : 'Unknown Guest',
+        status: booking.status,
+        paymentStatus: booking.paymentStatus
+      };
+    });
+
+    console.log('Chart data:', chartData); // Debug log
+    res.json({ bookings: chartData });
+  } catch (error) {
+    console.error('Error in getBookingsForChart:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateBookingStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    const { status } = req.body;
+    
+    // Only admin can update booking status
+    if (req.user!.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
+
+    const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid booking status' });
+    }
+
+    const booking = await Booking.findById(req.params.id);
+    
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // If confirming a booking, check for conflicts with other confirmed bookings
+    if (status === 'confirmed' && booking.status !== 'confirmed') {
+      const conflictingBooking = await Booking.findOne({
+        _id: { $ne: booking._id }, // Exclude current booking
+        type: booking.type,
+        resourceId: booking.resourceId,
+        status: 'confirmed',
+        $or: [
+          {
+            checkIn: { $lte: booking.checkIn },
+            checkOut: { $gt: booking.checkIn }
+          },
+          {
+            checkIn: { $lt: booking.checkOut },
+            checkOut: { $gte: booking.checkOut }
+          },
+          {
+            checkIn: { $gte: booking.checkIn },
+            checkOut: { $lte: booking.checkOut }
+          }
+        ]
+      });
+
+      if (conflictingBooking) {
+        return res.status(400).json({ 
+          message: 'Cannot confirm booking - conflicts with another confirmed booking',
+          conflictingBooking: {
+            id: conflictingBooking._id,
+            checkIn: conflictingBooking.checkIn,
+            checkOut: conflictingBooking.checkOut
+          }
+        });
+      }
+    }
+
+    booking.status = status;
+    
+    // Auto-update payment status when confirming
+    if (status === 'confirmed' && booking.paymentStatus === 'pending') {
+      booking.paymentStatus = 'paid';
+    }
+    
+    await booking.save();
+
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate('user', 'firstName lastName email');
+
+    res.json({ message: 'Booking status updated successfully', booking: populatedBooking });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+

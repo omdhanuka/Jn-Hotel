@@ -25,8 +25,10 @@ const BookingManagement: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPayment, setEditingPayment] = useState<string | null>(null);
+  const [editingStatus, setEditingStatus] = useState<string | null>(null);
   const [editingBooking, setEditingBooking] = useState<string | null>(null);
   const [newPaymentStatus, setNewPaymentStatus] = useState('');
+  const [newBookingStatus, setNewBookingStatus] = useState('');
   const [editForm, setEditForm] = useState({
     checkIn: '',
     checkOut: '',
@@ -41,7 +43,7 @@ const BookingManagement: React.FC = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/admin/bookings');
+      const response = await axios.get('/api/bookings/admin');
       setBookings(response.data.bookings || []);
     } catch (error) {
       toast.error('Failed to fetch bookings');
@@ -66,6 +68,34 @@ const BookingManagement: React.FC = () => {
       toast.success('Payment status updated successfully');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update payment status');
+    }
+  };
+
+  const updateBookingStatus = async (bookingId: string, status: string) => {
+    try {
+      console.log('Updating booking status:', bookingId, status); // Debug log
+      
+      const response = await axios.put(`/api/bookings/${bookingId}/status`, {
+        status
+      });
+      
+      console.log('Status update response:', response.data); // Debug log
+      
+      setBookings(prev => prev.map(booking => 
+        booking._id === bookingId 
+          ? { 
+              ...booking, 
+              status,
+              paymentStatus: status === 'confirmed' && booking.paymentStatus === 'pending' ? 'paid' : booking.paymentStatus
+            }
+          : booking
+      ));
+      
+      setEditingStatus(null);
+      toast.success('Booking status updated successfully');
+    } catch (error: any) {
+      console.error('Error updating status:', error); // Debug log
+      toast.error(error.response?.data?.message || 'Failed to update booking status');
     }
   };
 
@@ -306,6 +336,43 @@ const BookingManagement: React.FC = () => {
                       </span>
                     )}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {editingStatus === booking._id ? (
+                      <div className="flex items-center space-x-2">
+                        <select
+                          value={newBookingStatus}
+                          onChange={(e) => setNewBookingStatus(e.target.value)}
+                          className="text-xs border border-gray-300 rounded px-2 py-1"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="confirmed">Confirmed</option>
+                          <option value="cancelled">Cancelled</option>
+                          <option value="completed">Completed</option>
+                        </select>
+                        <button
+                          onClick={() => {
+                            console.log('Button clicked, updating to:', newBookingStatus); // Debug log
+                            updateBookingStatus(booking._id, newBookingStatus);
+                          }}
+                          className="text-green-600 hover:text-green-800"
+                          title="Save Status"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setEditingStatus(null)}
+                          className="text-red-600 hover:text-red-800"
+                          title="Cancel"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(booking.status)}`}>
+                        {booking.status}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex space-x-2">
                       {editingBooking === booking._id ? (
@@ -335,6 +402,20 @@ const BookingManagement: React.FC = () => {
                           >
                             <Edit className="h-4 w-4" />
                           </button>
+                          
+                          {editingStatus !== booking._id && editingPayment !== booking._id && (
+                            <button
+                              onClick={() => {
+                                console.log('Edit status clicked for booking:', booking._id); // Debug log
+                                setEditingStatus(booking._id);
+                                setNewBookingStatus(booking.status);
+                              }}
+                              className="text-green-600 hover:text-green-800"
+                              title="Edit Status"
+                            >
+                              <Check className="h-4 w-4" />
+                            </button>
+                          )}
                           
                           {editingPayment !== booking._id && (
                             <button
