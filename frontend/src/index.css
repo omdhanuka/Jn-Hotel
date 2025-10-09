@@ -64,3 +64,272 @@ code {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Print styles for receipts */
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Show only the receipt content */
+  #receipt-content,
+  #receipt-content * {
+    visibility: visible;
+  }
+  
+  /* Position receipt content for printing */
+  #receipt-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    transform: scale(0.85);
+    transform-origin: top left;
+    height: auto;
+  }
+  
+  /* Remove shadows and borders for print */
+  .shadow-lg,
+  .shadow-md {
+    box-shadow: none !important;
+  }
+  
+  .rounded-lg {
+    border-radius: 0 !important;
+  }
+  
+  /* Ensure proper background colors for print */
+  .bg-gray-50 {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+  }
+  
+  .bg-blue-600 {
+    background: #2563eb !important;
+    -webkit-print-color-adjust: exact;
+    color: white !important;
+  }
+  
+  /* Set proper margins for print */
+  @page {
+    margin: 0.3in;
+    size: A4;
+  }
+  
+  /* Compact font sizes for print */
+  body {
+    font-size: 10pt;
+    line-height: 1.2;
+  }
+  
+  h1 { 
+    font-size: 18pt !important; 
+    margin-bottom: 4pt !important;
+  }
+  h2 { 
+    font-size: 16pt !important; 
+    margin-bottom: 3pt !important;
+  }
+  h3 { 
+    font-size: 14pt !important; 
+    margin-bottom: 6pt !important;
+  }
+  h4 { 
+    font-size: 12pt !important; 
+    margin-bottom: 4pt !important;
+  }
+  
+  /* Compact padding and margins */
+  .p-8 {
+    padding: 15pt !important;
+  }
+  
+  .p-6 {
+    padding: 10pt !important;
+  }
+  
+  .mb-8 {
+    margin-bottom: 10pt !important;
+  }
+  
+  .mb-6 {
+    margin-bottom: 8pt !important;
+  }
+  
+  .mb-4 {
+    margin-bottom: 6pt !important;
+  }
+  
+  .mb-2 {
+    margin-bottom: 3pt !important;
+  }
+  
+  .mt-6 {
+    margin-top: 8pt !important;
+  }
+  
+  .mt-4 {
+    margin-top: 6pt !important;
+  }
+  
+  .space-y-3 > * + * {
+    margin-top: 3pt !important;
+  }
+  
+  .space-y-1 > * + * {
+    margin-top: 1pt !important;
+  }
+  
+  /* Grid layouts for print */
+  .grid-cols-1.md\\:grid-cols-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15pt;
+  }
+  
+  /* Avoid page breaks */
+  #receipt-content > * {
+    page-break-inside: avoid;
+  }
+  
+  .no-break {
+    page-break-inside: avoid;
+  }
+  
+  /* Force single page */
+  #receipt-content {
+    page-break-after: avoid;
+  }
+  
+  /* Compact text sizes */
+  .text-3xl {
+    font-size: 18pt !important;
+  }
+  
+  .text-2xl {
+    font-size: 16pt !important;
+  }
+  
+  .text-xl {
+    font-size: 14pt !important;
+  }
+  
+  .text-lg {
+    font-size: 12pt !important;
+  }
+  
+  .text-sm {
+    font-size: 9pt !important;
+  }
+  
+  .text-xs {
+    font-size: 8pt !important;
+  }
+  
+  /* Ensure colors print correctly */
+  * {
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+  
+  /* Compact service tags */
+  .bg-blue-100 {
+    background: #dbeafe !important;
+    color: #1e40af !important;
+    padding: 2pt 4pt !important;
+    font-size: 8pt !important;
+  }
+  
+  /* Compact border spacing */
+  .border-b {
+    border-bottom: 1pt solid #e5e7eb !important;
+  }
+}
+
+/* Print-specific classes */
+.print-only {
+  display: none;
+}
+
+@media print {
+  .print-only {
+    display: block;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Clean select styles */
+select {
+  -webkit-appearance: menulist !important;
+  -moz-appearance: menulist !important;
+  appearance: menulist !important;
+  background-color: white !important;
+  cursor: pointer !important;
+  min-height: 42px !important;
+  font-size: 14px !important;
+}
+
+select:focus {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+  border-color: #3b82f6 !important;
+}
+
+select option {
+  background-color: white !important;
+  color: black !important;
+  padding: 8px !important;
+}
+
+/* Mobile specific fixes */
+@media screen and (max-width: 768px) {
+  select {
+    font-size: 16px !important;
+    min-height: 44px !important;
+  }
+}
+
+
+/* Mobile fixes */
+@media screen and (max-width: 768px) {
+  select {
+    font-size: 16px !important;
+    min-height: 44px !important;
+  }
+}
+
+/* Additional styling for better click target */
+.relative select {
+  min-height: 42px;
+  line-height: 1.5;
+  min-height: 42px;
+  line-height: 1.5;
+}
+/* Safari specific fixes */
+@supports (-webkit-appearance: none) {
+  select {
+    padding-right: 2rem !important;
+  }
+}
+
+/* Mobile specific fixes to prevent zoom */
+@media (max-width: 768px) {
+  select {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    transform: scale(1) !important;
+  }
+}
+
+/* Additional styling for better click target */
+.relative select {
+  min-height: 42px;
+  line-height: 1.5;
+}
+

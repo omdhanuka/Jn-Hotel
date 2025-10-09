@@ -1,6 +1,6 @@
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login, getProfile, updateProfile } from '../controllers/authController';
+import { register, login, getProfile, updateProfile, createAdmin } from '../controllers/authController';
 import { auth } from '../middleware/auth';
 
 const router = express.Router();
@@ -33,5 +33,16 @@ router.get('/profile', auth, getProfile);
 // @desc    Update user profile
 // @access  Private
 router.put('/profile', auth, updateProfile);
+
+// @route   POST /api/auth/create-admin
+// @desc    Create admin user
+// @access  Public (with admin key)
+router.post('/create-admin', [
+  body('firstName').notEmpty().withMessage('First name is required'),
+  body('lastName').notEmpty().withMessage('Last name is required'),
+  body('email').isEmail().withMessage('Please provide a valid email'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('adminKey').notEmpty().withMessage('Admin key is required')
+], createAdmin);
 
 export default router;

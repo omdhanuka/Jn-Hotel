@@ -10,6 +10,8 @@ import {
   BedDouble,
   Building
 } from 'lucide-react';
+import BookingManagement from './BookingManagement';
+import RoomManagement from './RoomManagement';
 
 const AdminPanel: React.FC = () => {
   const location = useLocation();
@@ -127,32 +129,34 @@ const AdminPanel: React.FC = () => {
                   <div className="bg-white p-6 rounded-lg shadow-md">
                     <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
                     <div className="space-y-3">
-                      <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition">
+                      <Link 
+                        to="/admin/rooms"
+                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition block text-center"
+                      >
                         Add New Room
-                      </button>
-                      <button className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition">
-                        Create Booking
-                      </button>
+                      </Link>
+                      <Link 
+                        to="/admin/bookings"
+                        className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition block text-center"
+                      >
+                        Manage Bookings
+                      </Link>
                       <button className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition">
                         Generate Report
                       </button>
-                      <button className="w-full bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 transition">
+                      <Link 
+                        to="/admin/restaurant"
+                        className="w-full bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 transition block text-center"
+                      >
                         Update Menu
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 </div>
               </div>
             } />
             
-            <Route path="/rooms" element={
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">Room Management</h1>
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                  <p className="text-gray-600">Room management interface coming soon...</p>
-                </div>
-              </div>
-            } />
+            <Route path="/rooms" element={<RoomManagement />} />
             
             <Route path="/banquets" element={
               <div>
@@ -172,14 +176,7 @@ const AdminPanel: React.FC = () => {
               </div>
             } />
             
-            <Route path="/bookings" element={
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">Booking Management</h1>
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                  <p className="text-gray-600">Booking management interface coming soon...</p>
-                </div>
-              </div>
-            } />
+            <Route path="/bookings" element={<BookingManagement />} />
             
             <Route path="/users" element={
               <div>

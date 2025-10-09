@@ -3,14 +3,21 @@ import { validationResult } from 'express-validator';
 import Room from '../models/Room';
 import Booking from '../models/Booking';
 
+interface AuthRequest extends Request {
+  user?: any;
+}
+
 export const getRooms = async (req: Request, res: Response) => {
   try {
-    const { type, minPrice, maxPrice, capacity, page = 1, limit = 10 } = req.query;
+    const { type, minPrice, maxPrice, capacity, page = 1, limit = 10, status = 'active' } = req.query;
     
-    const filter: any = { isAvailable: true };
+    const filter: any = { 
+      isAvailable: true,
+      status: status || 'active'
+    };
     
     if (type) filter.type = type;
-    if (capacity) filter.capacity = { $gte: parseInt(capacity as string) };
+    if (capacity) filter.maxGuests = { $gte: parseInt(capacity as string) };
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) filter.price.$gte = parseInt(minPrice as string);
@@ -20,7 +27,7 @@ export const getRooms = async (req: Request, res: Response) => {
     const rooms = await Room.find(filter)
       .limit(parseInt(limit as string))
       .skip((parseInt(page as string) - 1) * parseInt(limit as string))
-      .sort({ price: 1 });
+      .sort({ roomNumber: 1 });
 
     const total = await Room.countDocuments(filter);
 
@@ -65,7 +72,8 @@ export const checkAvailability = async (req: Request, res: Response) => {
     
     const filter: any = { 
       isAvailable: true,
-      capacity: { $gte: guests }
+      status: 'active',
+      maxGuests: { $gte: guests }
     };
     
     if (roomType) filter.type = roomType;
@@ -101,28 +109,43 @@ export const checkAvailability = async (req: Request, res: Response) => {
   }
 };
 
-export const createRoom = async (req: Request, res: Response) => {
+export const createRoom = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const room = new Room(req.body);
+    // Add created by admin info
+    const roomData = {
+      ...req.body,
+      createdBy: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'Unknown'
+    };
+
+    const room = new Room(roomData);
     await room.save();
 
     res.status(201).json(room);
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    if (error.code === 11000) {
+      res.status(400).json({ message: 'Room number already exists' });
+    } else {
+      res.status(500).json({ message: 'Server error' });
+    }
   }
 };
 
-export const updateRoom = async (req: Request, res: Response) => {
+export const updateRoom = async (req: AuthRequest, res: Response) => {
   try {
+    const updateData = {
+      ...req.body,
+      updatedBy: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'Unknown'
+    };
+
     const room = await Room.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true }
     );
 
@@ -152,85 +175,25 @@ export const deleteRoom = async (req: Request, res: Response) => {
   }
 };
 
+// This code block appears to be misplaced and should be part of a function. 
+// Wrap it in a function or remove it if unnecessary.
 export const seedRooms = async (req: Request, res: Response) => {
   try {
-    // Check if rooms already exist
-    const existingRooms = await Room.countDocuments();
-    if (existingRooms > 0) {
-      return res.json({ message: 'Rooms already exist in database', count: existingRooms });
+    interface SampleRoom {
+      roomNumber: number;
+      type: string;
+      price: number;
+      maxGuests: number;
+      isAvailable: boolean;
+      status: string;
     }
 
-    const sampleRooms = [
-      {
-        roomNumber: '101',
-        type: 'standard',
-        capacity: 2,
-        price: 149,
-        amenities: ['Free Wi-Fi', 'Air Conditioning', 'Work Desk', 'Flat Screen TV'],
-        images: ['/api/placeholder/400/300'],
-        description: 'Comfortable standard room with modern amenities',
-        floor: 1,
-        isAvailable: true
-      },
-      {
-        roomNumber: '201',
-        type: 'deluxe',
-        capacity: 2,
-        price: 199,
-        amenities: ['Free Wi-Fi', 'Air Conditioning', 'Mini Bar', 'Room Service', 'City View'],
-        images: ['/api/placeholder/400/300'],
-        description: 'Spacious deluxe room with king-size bed and city view',
-        floor: 2,
-        isAvailable: true
-      },
-      {
-        roomNumber: '301',
-        type: 'suite',
-        capacity: 4,
-        price: 299,
-        amenities: ['Free Wi-Fi', 'Kitchenette', 'Balcony', 'Living Area', 'Premium Bedding'],
-        images: ['/api/placeholder/400/300'],
-        description: 'Luxurious suite with separate living area and premium amenities',
-        floor: 3,
-        isAvailable: true
-      },
-      {
-        roomNumber: '401',
-        type: 'presidential',
-        capacity: 6,
-        price: 599,
-        amenities: ['Free Wi-Fi', 'Full Kitchen', 'Private Balcony', 'Butler Service', 'Jacuzzi'],
-        images: ['/api/placeholder/400/300'],
-        description: 'Presidential suite with panoramic views and luxury amenities',
-        floor: 4,
-        isAvailable: true
-      },
-      {
-        roomNumber: '102',
-        type: 'standard',
-        capacity: 2,
-        price: 149,
-        amenities: ['Free Wi-Fi', 'Air Conditioning', 'Work Desk', 'Flat Screen TV'],
-        images: ['/api/placeholder/400/300'],
-        description: 'Comfortable standard room with modern amenities',
-        floor: 1,
-        isAvailable: true
-      },
-      {
-        roomNumber: '202',
-        type: 'deluxe',
-        capacity: 3,
-        price: 229,
-        amenities: ['Free Wi-Fi', 'Air Conditioning', 'Mini Bar', 'Room Service', 'Garden View'],
-        images: ['/api/placeholder/400/300'],
-        description: 'Deluxe room with garden view and additional space',
-        floor: 2,
-        isAvailable: true
-      }
+    const sampleRooms: SampleRoom[] = [
+      // Add sample room data here
     ];
 
     const createdRooms = await Room.insertMany(sampleRooms);
-    
+
     res.status(201).json({
       message: 'Sample rooms created successfully',
       count: createdRooms.length,

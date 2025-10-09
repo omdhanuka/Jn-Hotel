@@ -14,6 +14,11 @@ import Register from './pages/Auth/Register';
 import Dashboard from './pages/Dashboard';
 import AdminPanel from './pages/Admin/AdminPanel';
 import BookRoom from './pages/BookRoom';
+import BookingDetails from './pages/BookingDetails';
+import Receipt from './pages/Receipt';
+import AdminLogin from './pages/Auth/AdminLogin';
+import CreateAdmin from './pages/Auth/CreateAdmin';
+import ProtectedRoute from './components/ProtectedRoute';
 import axios from 'axios';
 import './index.css';
 
@@ -41,7 +46,17 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/admin/*" element={<AdminPanel />} />
+                <Route path="/booking/:bookingId" element={<BookingDetails />} />
+                <Route path="/receipt/:bookingId" element={<Receipt />} />
+                
+                {/* Admin Routes */}
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin/create" element={<CreateAdmin />} />
+                <Route path="/admin/*" element={
+                  <ProtectedRoute adminOnly={true}>
+                    <AdminPanel />
+                  </ProtectedRoute>
+                } />
               </Routes>
             </main>
             <Footer />

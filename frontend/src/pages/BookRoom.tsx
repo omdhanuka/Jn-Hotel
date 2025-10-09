@@ -8,13 +8,24 @@ import axios from 'axios';
 interface Room {
   _id: string;
   roomNumber: string;
+  roomName?: string;
   type: string;
-  capacity: number;
-  price: number;
-  amenities: string[];
-  images: string[];
+  title: string;
   description: string;
+  price: number;
+  discount?: number;
+  maxGuests: number; // Changed from capacity to maxGuests
+  bedCount: number;
+  bedType: string;
+  roomSize: string;
+  viewType: string;
   floor: number;
+  isAvailable: boolean;
+  status: string;
+  images: string[];
+  facilities?: any;
+  amenities: string[];
+  rating?: number;
 }
 
 interface BookingForm {
@@ -127,8 +138,9 @@ const BookRoom: React.FC = () => {
         toast.error('Check-out date must be after check-in date');
         return;
       }
-      if (bookingForm.guests > (room?.capacity || 0)) {
-        toast.error(`This room can accommodate maximum ${room?.capacity} guests`);
+      const roomCapacity = room?.maxGuests || 2; // Fallback value
+      if (bookingForm.guests > roomCapacity) {
+        toast.error(`This room can accommodate maximum ${roomCapacity} guests`);
         return;
       }
     }
@@ -249,7 +261,7 @@ const BookRoom: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="flex items-center">
                     <Users className="h-5 w-5 text-gray-400 mr-2" />
-                    <span>Up to {room.capacity} guests</span>
+                    <span>Up to {room.maxGuests || 'N/A'} guests</span>
                   </div>
                   <div className="flex items-center">
                     <Star className="h-5 w-5 text-yellow-400 mr-2" />
@@ -312,13 +324,37 @@ const BookRoom: React.FC = () => {
                       </label>
                       <select
                         value={bookingForm.guests}
-                        onChange={(e) => setBookingForm(prev => ({ ...prev, guests: parseInt(e.target.value) }))}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onChange={(e) => {
+                          console.log('Guest selection changed:', e.target.value);
+                          const newValue = parseInt(e.target.value);
+                          console.log('Parsed value:', newValue);
+                          setBookingForm(prev => ({ ...prev, guests: newValue }));
+                        }}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
+                        onClick={() => console.log('Dropdown clicked, room data:', room)}
+                        onFocus={() => console.log('Dropdown focused')}
                       >
-                        {Array.from({ length: room.capacity }, (_, i) => i + 1).map(num => (
-                          <option key={num} value={num}>{num} Guest{num > 1 ? 's' : ''}</option>
-                        ))}
+                        <option value={1}>1 Guest</option>
+                        <option value={2}>2 Guests</option>
+                        <option value={3}>3 Guests</option>
+                        <option value={4}>4 Guests</option>
+                        <option value={5}>5 Guests</option>
+                        <option value={6}>6 Guests</option>
+                        {room && room.maxGuests && room.maxGuests > 6 && 
+                          Array.from({ length: room.maxGuests - 6 }, (_, i) => i + 7).map(num => (
+                            <option key={num} value={num}>
+                              {num} Guests
+                            </option>
+                          ))
+                        }
                       </select>
+                      <div className="mt-1 text-xs text-gray-500">
+                        Room capacity: {room?.maxGuests || 'Loading...'} guests
+                        {/* Debug info */}
+                        <div className="text-xs text-red-500 mt-1">
+                          Debug: maxGuests={room?.maxGuests}, room loaded={!!room}
+                        </div>
+                      </div>
                     </div>
                     
                     <div>

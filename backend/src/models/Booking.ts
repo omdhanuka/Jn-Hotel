@@ -9,7 +9,7 @@ export interface IBooking extends Document {
   guests: number;
   totalAmount: number;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  paymentStatus: 'pending' | 'paid' | 'refunded';
+  paymentStatus: 'pending' | 'paid' | 'refunded' | 'cancelled' | 'failed';
   paymentId?: string;
   specialRequests?: string;
   services: string[];
@@ -34,7 +34,7 @@ const bookingSchema = new Schema<IBooking>({
   },
   paymentStatus: { 
     type: String, 
-    enum: ['pending', 'paid', 'refunded'], 
+    enum: ['pending', 'paid', 'refunded', 'cancelled', 'failed'], 
     default: 'pending' 
   },
   paymentId: { type: String },

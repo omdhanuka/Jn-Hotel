@@ -7,15 +7,24 @@ import toast from 'react-hot-toast';
 interface Room {
   _id: string;
   roomNumber: string;
+  roomName?: string;
   type: string;
-  capacity: number;
-  price: number;
-  amenities: string[];
-  images: string[];
-  rating?: number;
+  title: string;
   description: string;
+  price: number;
+  discount?: number;
+  maxGuests: number;
+  bedCount: number;
+  bedType: string;
+  roomSize: string;
+  viewType: string;
   floor: number;
   isAvailable: boolean;
+  status: string;
+  images: string[];
+  facilities?: any;
+  amenities?: string[];
+  rating?: number;
 }
 
 const Rooms: React.FC = () => {
@@ -52,48 +61,22 @@ const Rooms: React.FC = () => {
       if (filters.type) queryParams.append('type', filters.type);
       if (filters.capacity) queryParams.append('capacity', filters.capacity);
       
-      // Ensure we're calling the right URL
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      console.log('Fetching rooms from:', `${apiUrl}/api/rooms`); // Debug log
-      
       const response = await axios.get(`/api/rooms?${queryParams.toString()}`);
-      
-      // If no rooms found, try to seed some sample data
-      if (!response.data.rooms || response.data.rooms.length === 0) {
-        console.log('No rooms found, seeding sample data...');
-        await seedSampleRooms();
-        // Retry fetching after seeding
-        const retryResponse = await axios.get(`/api/rooms?${queryParams.toString()}`);
-        setRooms(retryResponse.data.rooms || []);
-      } else {
-        setRooms(response.data.rooms || []);
-      }
+      setRooms(response.data.rooms || []);
     } catch (error: any) {
       console.error('Error fetching rooms:', error);
-      if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
-        toast.error('Unable to connect to server. Please make sure the backend is running on port 5000.');
+      
+      if (error.response?.status === 403) {
+        toast.error('Access denied. Please check your permissions.');
       } else if (error.response?.status === 404) {
-        toast.error('Rooms endpoint not found. Please check if the backend server is running.');
+        toast.error('Rooms service not available');
       } else {
         toast.error('Failed to fetch rooms');
       }
-      setRooms([]); // Set empty array on error
+      
+      setRooms([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const seedSampleRooms = async () => {
-    try {
-      console.log('Attempting to seed rooms...');
-      const response = await axios.post('/api/rooms/seed');
-      console.log('Seed response:', response.data);
-      toast.success('Sample rooms have been created');
-    } catch (error: any) {
-      console.error('Error seeding rooms:', error);
-      if (error.response?.status === 404) {
-        toast.error('Seed endpoint not available. Please add sample rooms manually.');
-      }
     }
   };
 
@@ -197,13 +180,15 @@ const Rooms: React.FC = () => {
               <select
                 value={filters.capacity}
                 onChange={(e) => setFilters({ ...filters, capacity: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white cursor-pointer"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
               >
                 <option value="">Any Capacity</option>
                 <option value="1">1 Guest</option>
                 <option value="2">2 Guests</option>
                 <option value="3">3 Guests</option>
                 <option value="4">4 Guests</option>
+                <option value="5">5 Guests</option>
                 <option value="6">6+ Guests</option>
               </select>
             </div>
@@ -272,7 +257,7 @@ const Rooms: React.FC = () => {
                   
                   <div className="flex items-center mb-4">
                     <Users className="h-4 w-4 text-gray-400 mr-1" />
-                    <span className="text-sm text-gray-600">Up to {room.capacity} guests</span>
+                    <span className="text-sm text-gray-600">Up to {room.maxGuests} guests</span>
                   </div>
                   
                   <div className="flex flex-wrap gap-2 mb-4">
@@ -284,8 +269,8 @@ const Rooms: React.FC = () => {
                         {amenity}
                       </span>
                     ))}
-                    {room.amenities?.length > 3 && (
-                      <span className="text-blue-600 text-xs">+{room.amenities.length - 3} more</span>
+                    {(room.amenities?.length || 0) > 3 && (
+                      <span className="text-blue-600 text-xs">+{(room.amenities?.length || 0) - 3} more</span>
                     )}
                   </div>
                   

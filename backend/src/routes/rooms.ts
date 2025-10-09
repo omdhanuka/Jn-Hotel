@@ -6,8 +6,7 @@ import {
   createRoom, 
   updateRoom, 
   deleteRoom,
-  checkAvailability,
-  seedRooms
+  checkAvailability
 } from '../controllers/roomController';
 import { auth } from '../middleware/auth';
 import { adminAuth } from '../middleware/adminAuth';
@@ -38,9 +37,14 @@ router.post('/availability', [
 // @access  Private (Admin only)
 router.post('/', [auth, adminAuth], [
   body('roomNumber').notEmpty().withMessage('Room number is required'),
-  body('type').isIn(['standard', 'deluxe', 'suite', 'presidential']).withMessage('Invalid room type'),
-  body('capacity').isNumeric().withMessage('Capacity must be a number'),
-  body('price').isNumeric().withMessage('Price must be a number')
+  body('type').isIn(['single', 'double', 'deluxe', 'suite', 'family', 'presidential']).withMessage('Invalid room type'),
+  body('maxGuests').isNumeric().withMessage('Max guests must be a number'),
+  body('price').isNumeric().withMessage('Price must be a number'),
+  body('title').notEmpty().withMessage('Title is required'),
+  body('description').notEmpty().withMessage('Description is required'),
+  body('roomSize').notEmpty().withMessage('Room size is required'),
+  body('floor').isNumeric().withMessage('Floor must be a number'),
+  body('bedCount').isNumeric().withMessage('Bed count must be a number')
 ], createRoom);
 
 // @route   PUT /api/rooms/:id
@@ -53,9 +57,5 @@ router.put('/:id', [auth, adminAuth], updateRoom);
 // @access  Private (Admin only)
 router.delete('/:id', [auth, adminAuth], deleteRoom);
 
-// @route   POST /api/rooms/seed
-// @desc    Seed sample room data
-// @access  Public (for development)
-router.post('/seed', seedRooms);
-
 export default router;
+
