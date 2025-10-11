@@ -6,9 +6,18 @@ interface AuthRequest extends Request {
 }
 
 export const adminAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (req.user && req.user.role === 'admin') {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
     next();
-  } else {
-    res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+  } catch (error) {
+    console.error('Admin auth error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };

@@ -1,25 +1,28 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import Banquet from '../models/Banquet';
-import Booking from '../models/Booking';
+import { IUser } from '../models/User';
+
+interface AuthRequest extends Request {
+  user?: IUser;
+}
 
 export const getBanquets = async (req: Request, res: Response) => {
   try {
-    const { capacity, minPrice, maxPrice, page = 1, limit = 10 } = req.query;
+    const { type, capacity, page = 1, limit = 10, status = 'active' } = req.query;
     
-    const filter: any = { isAvailable: true };
+    const filter: any = { 
+      isAvailable: true,
+      status: status || 'active'
+    };
     
+    if (type) filter.type = type;
     if (capacity) filter.capacity = { $gte: parseInt(capacity as string) };
-    if (minPrice || maxPrice) {
-      filter.price = {};
-      if (minPrice) filter.price.$gte = parseInt(minPrice as string);
-      if (maxPrice) filter.price.$lte = parseInt(maxPrice as string);
-    }
 
     const banquets = await Banquet.find(filter)
       .limit(parseInt(limit as string))
       .skip((parseInt(page as string) - 1) * parseInt(limit as string))
-      .sort({ capacity: 1 });
+      .sort({ name: 1 });
 
     const total = await Banquet.countDocuments(filter);
 
@@ -43,7 +46,7 @@ export const getBanquetById = async (req: Request, res: Response) => {
     const banquet = await Banquet.findById(req.params.id);
     
     if (!banquet) {
-      return res.status(404).json({ message: 'Banquet hall not found' });
+      return res.status(404).json({ message: 'Banquet not found' });
     }
 
     res.json(banquet);
@@ -53,70 +56,52 @@ export const getBanquetById = async (req: Request, res: Response) => {
   }
 };
 
-export const checkBanquetAvailability = async (req: Request, res: Response) => {
+export const createBanquet = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { date, guests } = req.body;
-    
-    const filter: any = { 
-      isAvailable: true,
-      capacity: { $gte: guests }
+    // Generate unique banquet ID
+    const banquetCount = await Banquet.countDocuments();
+    const banquetId = `BH${String(banquetCount + 1).padStart(3, '0')}`;
+
+    const banquetData = {
+      ...req.body,
+      banquetId,
+      createdBy: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'Unknown'
     };
 
-    // Find banquets not booked for the requested date
-    const bookedBanquetIds = await Booking.find({
-      type: 'banquet',
-      status: { $in: ['confirmed', 'pending'] },
-      checkIn: {
-        $lte: new Date(date + 'T23:59:59.999Z')
-      },
-      checkOut: {
-        $gte: new Date(date + 'T00:00:00.000Z')
-      }
-    }).distinct('resourceId');
-
-    filter._id = { $nin: bookedBanquetIds };
-
-    const availableBanquets = await Banquet.find(filter);
-
-    res.json({ availableBanquets, count: availableBanquets.length });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-export const createBanquet = async (req: Request, res: Response) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const banquet = new Banquet(req.body);
+    const banquet = new Banquet(banquetData);
     await banquet.save();
 
     res.status(201).json(banquet);
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    if (error.code === 11000) {
+      res.status(400).json({ message: 'Banquet ID already exists' });
+    } else {
+      res.status(500).json({ message: 'Server error' });
+    }
   }
 };
 
-export const updateBanquet = async (req: Request, res: Response) => {
+export const updateBanquet = async (req: AuthRequest, res: Response) => {
   try {
+    const updateData = {
+      ...req.body,
+      updatedBy: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'Unknown'
+    };
+
     const banquet = await Banquet.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true }
     );
 
     if (!banquet) {
-      return res.status(404).json({ message: 'Banquet hall not found' });
+      return res.status(404).json({ message: 'Banquet not found' });
     }
 
     res.json(banquet);
@@ -131,10 +116,10 @@ export const deleteBanquet = async (req: Request, res: Response) => {
     const banquet = await Banquet.findByIdAndDelete(req.params.id);
 
     if (!banquet) {
-      return res.status(404).json({ message: 'Banquet hall not found' });
+      return res.status(404).json({ message: 'Banquet not found' });
     }
 
-    res.json({ message: 'Banquet hall deleted successfully' });
+    res.json({ message: 'Banquet deleted successfully' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

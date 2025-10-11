@@ -19,7 +19,7 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { type, resourceId, checkIn, checkOut, guests, specialRequests, services } = req.body;
+    const { type, resourceId, checkIn, checkOut, guests, specialRequests, services, eventDetails } = req.body;
     
     let resource: any;
     let totalAmount = 0;
@@ -50,7 +50,24 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
         if (!resource.isAvailable) {
           return res.status(400).json({ message: 'Banquet hall is not available' });
         }
-        totalAmount = resource.price;
+        
+        // Calculate duration and total amount for banquet
+        const eventStart = new Date(checkIn);
+        const eventEnd = new Date(checkOut);
+        const duration = (eventEnd.getTime() - eventStart.getTime()) / (1000 * 60 * 60);
+        
+        // Use total amount from frontend if provided, otherwise calculate
+        if (req.body.totalAmount && req.body.totalAmount > 0) {
+          totalAmount = req.body.totalAmount;
+        } else {
+          // Fallback calculation
+          if (eventDetails?.bookingType === 'daily') {
+            totalAmount = resource.pricePerDay;
+          } else {
+            const hours = Math.max(duration, resource.minimumHours || 4);
+            totalAmount = resource.pricePerHour * hours;
+          }
+        }
         break;
 
       case 'table':
@@ -61,18 +78,18 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
         if (!resource.isAvailable) {
           return res.status(400).json({ message: 'Table is not available' });
         }
-        totalAmount = 0; // Tables might be free or have minimum charge
+        totalAmount = req.body.totalAmount || 0;
         break;
 
       default:
         return res.status(400).json({ message: 'Invalid booking type' });
     }
 
-    // Enhanced conflict checking - include confirmed bookings
+    // Check for conflicting bookings
     const conflictingBooking = await Booking.findOne({
       type,
       resourceId,
-      status: { $in: ['confirmed', 'pending'] }, // Both confirmed and pending block new bookings
+      status: { $in: ['confirmed', 'pending'] },
       $or: [
         {
           checkIn: { $lte: new Date(checkIn) },
@@ -92,7 +109,7 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
     if (conflictingBooking) {
       const conflictStatus = conflictingBooking.status === 'confirmed' ? 'confirmed' : 'pending';
       return res.status(400).json({ 
-        message: `Room is already booked for the selected dates (${conflictStatus} booking)`,
+        message: `${type} is already booked for the selected dates (${conflictStatus} booking)`,
         conflictingBooking: {
           id: conflictingBooking._id,
           checkIn: conflictingBooking.checkIn,
@@ -102,40 +119,57 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Create booking
-    const booking = new Booking({
+    // Create booking data
+    const bookingData: any = {
       user: req.user!._id,
       type,
       resourceId,
       checkIn: new Date(checkIn),
       checkOut: new Date(checkOut),
-      guests,
+      guests: guests || 1,
       totalAmount,
-      specialRequests,
+      specialRequests: specialRequests || '',
       services: services || []
-    });
+    };
 
+    // Add event details for banquet bookings
+    if (type === 'banquet' && eventDetails) {
+      bookingData.eventDetails = eventDetails;
+    }
+
+    // Create booking
+    const booking = new Booking(bookingData);
     await booking.save();
 
     // Add loyalty points (1 point per dollar spent)
-    await User.findByIdAndUpdate(req.user!._id, {
-      $inc: { loyaltyPoints: Math.floor(totalAmount) }
-    });
+    if (totalAmount > 0) {
+      await User.findByIdAndUpdate(req.user!._id, {
+        $inc: { loyaltyPoints: Math.floor(totalAmount) }
+      });
+    }
 
     // Send booking confirmation email
-    await sendBookingConfirmation(req.user!.email, {
-      id: booking._id,
-      type: booking.type,
-      checkIn: booking.checkIn,
-      checkOut: booking.checkOut,
-      guests: booking.guests,
-      totalAmount: booking.totalAmount
-    });
+    try {
+      await sendBookingConfirmation(req.user!.email, {
+        id: booking._id,
+        type: booking.type,
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+        guests: booking.guests,
+        totalAmount: booking.totalAmount
+      });
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      // Don't fail the booking if email fails
+    }
 
     res.status(201).json(booking);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+  } catch (error: any) {
+    console.error('Booking creation error:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: process.env.NODE_ENV === 'development' ? (error?.message || 'Unknown error') : 'Internal server error'
+    });
   }
 };
 
@@ -469,54 +503,140 @@ export const getBookingsForChart = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
 
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, type } = req.query;
     
     if (!startDate || !endDate) {
       return res.status(400).json({ message: 'Start date and end date are required' });
     }
 
-    const bookings = await Booking.find({
-      type: 'room', // Only get room bookings for the chart
+    // Build filter query - more inclusive date filtering
+    const filter: any = {
       $or: [
+        // Booking starts within the month
         {
           checkIn: { $gte: new Date(startDate as string), $lte: new Date(endDate as string) }
         },
+        // Booking ends within the month
         {
           checkOut: { $gte: new Date(startDate as string), $lte: new Date(endDate as string) }
         },
+        // Booking spans the entire month
         {
           checkIn: { $lte: new Date(startDate as string) },
           checkOut: { $gte: new Date(endDate as string) }
+        },
+        // Booking overlaps with month in any way
+        {
+          checkIn: { $lte: new Date(endDate as string) },
+          checkOut: { $gte: new Date(startDate as string) }
         }
       ]
-    })
-    .populate('user', 'firstName lastName')
-    .populate({
-      path: 'resourceId',
-      model: 'Room',
-      select: 'roomNumber type price'
-    })
-    .sort({ checkIn: 1 });
+    };
 
-    const chartData = bookings.map(booking => {
-      const room = booking.resourceId as any;
+    // Add type filter if specified
+    if (type && type !== 'all') {
+      filter.type = type;
+    }
+
+    console.log('Chart filter:', JSON.stringify(filter, null, 2)); // Debug log
+    console.log('Date range:', startDate, 'to', endDate); // Debug log
+
+    const bookings = await Booking.find(filter)
+      .populate('user', 'firstName lastName')
+      .sort({ checkIn: 1 });
+
+    console.log('Found bookings:', bookings.length, 'bookings'); // Debug log
+    
+    // Log first few bookings for debugging
+    if (bookings.length > 0) {
+      console.log('Sample bookings:', bookings.slice(0, 3).map(b => ({
+        id: b._id,
+        type: b.type,
+        checkIn: b.checkIn,
+        checkOut: b.checkOut,
+        resourceId: b.resourceId
+      })));
+    }
+
+    const chartData = [];
+
+    for (const booking of bookings) {
       const user = booking.user as any;
-      
-      console.log('Booking resource:', room); // Debug log
-      
-      return {
-        _id: booking._id,
-        checkIn: booking.checkIn,
-        checkOut: booking.checkOut,
-        roomNumber: room?.roomNumber || `Room-${booking.resourceId}`,
-        roomType: room?.type || 'Unknown',
-        guestName: user ? `${user.firstName} ${user.lastName}` : 'Unknown Guest',
-        status: booking.status,
-        paymentStatus: booking.paymentStatus
-      };
-    });
+      let resourceData = null;
 
-    console.log('Chart data:', chartData); // Debug log
+      try {
+        if (booking.type === 'room') {
+          resourceData = await Room.findById(booking.resourceId);
+          console.log('Room resource:', resourceData?.roomNumber, resourceData?.type); // Debug log
+          
+          chartData.push({
+            _id: booking._id,
+            checkIn: booking.checkIn,
+            checkOut: booking.checkOut,
+            roomNumber: resourceData?.roomNumber || 'N/A',
+            roomType: resourceData?.type || 'Unknown',
+            guestName: user ? `${user.firstName} ${user.lastName}` : 'Unknown Guest',
+            status: booking.status,
+            paymentStatus: booking.paymentStatus,
+            bookingType: 'room' as const
+          });
+        } else if (booking.type === 'banquet') {
+          resourceData = await Banquet.findById(booking.resourceId);
+          console.log('Banquet resource:', resourceData?.name, resourceData?.type); // Debug log
+          
+          chartData.push({
+            _id: booking._id,
+            checkIn: booking.checkIn,
+            checkOut: booking.checkOut,
+            banquetName: resourceData?.name || 'N/A',
+            banquetType: resourceData?.type || 'Unknown',
+            guestName: user ? `${user.firstName} ${user.lastName}` : 'Unknown Guest',
+            status: booking.status,
+            paymentStatus: booking.paymentStatus,
+            bookingType: 'banquet' as const,
+            eventType: (booking as any).eventDetails?.eventType || undefined
+          });
+        } else {
+          // Handle other booking types
+          chartData.push({
+            _id: booking._id,
+            checkIn: booking.checkIn,
+            checkOut: booking.checkOut,
+            roomNumber: 'Other',
+            roomType: booking.type,
+            guestName: user ? `${user.firstName} ${user.lastName}` : 'Unknown Guest',
+            status: booking.status,
+            paymentStatus: booking.paymentStatus,
+            bookingType: booking.type as any
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching resource for booking:', booking._id, error);
+        // Add booking with N/A resource info if resource fetch fails
+        const bookingData: any = {
+          _id: booking._id,
+          checkIn: booking.checkIn,
+          checkOut: booking.checkOut,
+          guestName: user ? `${user.firstName} ${user.lastName}` : 'Unknown Guest',
+          status: booking.status,
+          paymentStatus: booking.paymentStatus,
+          bookingType: booking.type as any
+        };
+
+        if (booking.type === 'room') {
+          bookingData.roomNumber = 'N/A';
+          bookingData.roomType = 'Unknown';
+        } else if (booking.type === 'banquet') {
+          bookingData.banquetName = 'N/A';
+          bookingData.banquetType = 'Unknown';
+          bookingData.eventType = (booking as any).eventDetails?.eventType || undefined;
+        }
+
+        chartData.push(bookingData);
+      }
+    }
+
+    console.log('Final chart data:', chartData.length, 'items'); // Debug log
     res.json({ bookings: chartData });
   } catch (error) {
     console.error('Error in getBookingsForChart:', error);

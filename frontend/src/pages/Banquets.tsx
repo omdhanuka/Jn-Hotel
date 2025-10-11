@@ -1,190 +1,268 @@
-import React, { useState } from 'react';
-import { Users, Calendar, Clock, MapPin, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Calendar, Users, MapPin, Clock, Star, Wifi, Car, Music, Camera } from 'lucide-react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+
+interface Banquet {
+  _id: string;
+  banquetId: string;
+  name: string;
+  type: string;
+  description: string;
+  capacity: number;
+  pricePerDay: number;
+  pricePerHour: number;
+  minimumHours: number;
+  amenities: string[];
+  facilities: any;
+  seatingArrangements: string[];
+  area: string;
+  floor: number;
+  location: string;
+  images: string[];
+  rating?: number;
+}
 
 const Banquets: React.FC = () => {
-  const [selectedDate, setSelectedDate] = useState('');
-  const [guestCount, setGuestCount] = useState('');
+  const [banquets, setBanquets] = useState<Banquet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    type: '',
+    capacity: '',
+    priceRange: ''
+  });
 
-  const venues = [
-    {
-      id: 1,
-      name: 'Grand Ballroom',
-      capacity: 300,
-      area: '3,500 sq ft',
-      price: 2500,
-      image: '/api/placeholder/600/400',
-      features: ['Dance Floor', 'Stage', 'Premium Lighting', 'Sound System'],
-      description: 'Our flagship ballroom perfect for weddings and large corporate events'
-    },
-    {
-      id: 2,
-      name: 'Executive Conference Hall',
-      capacity: 100,
-      area: '1,800 sq ft',
-      price: 1200,
-      image: '/api/placeholder/600/400',
-      features: ['AV Equipment', 'Projection Screen', 'WiFi', 'Climate Control'],
-      description: 'Professional conference space ideal for business meetings and seminars'
-    },
-    {
-      id: 3,
-      name: 'Garden Pavilion',
-      capacity: 150,
-      area: '2,200 sq ft',
-      price: 1800,
-      image: '/api/placeholder/600/400',
-      features: ['Outdoor Setting', 'Garden Views', 'Natural Lighting', 'Weather Protection'],
-      description: 'Beautiful outdoor venue perfect for intimate weddings and celebrations'
+  useEffect(() => {
+    fetchBanquets();
+  }, []);
+
+  const fetchBanquets = async () => {
+    try {
+      setLoading(true);
+      const queryParams = new URLSearchParams();
+      
+      if (filters.type) queryParams.append('type', filters.type);
+      if (filters.capacity) queryParams.append('capacity', filters.capacity);
+      
+      console.log('Fetching banquets with params:', queryParams.toString()); // Debug log
+      
+      const response = await axios.get(`/api/banquets?${queryParams.toString()}`);
+      console.log('Banquets response:', response.data); // Debug log
+      
+      setBanquets(response.data.banquets || []);
+    } catch (error) {
+      console.error('Error fetching banquets:', error); // Debug log
+      toast.error('Failed to fetch banquets');
+      setBanquets([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const createBookingUrl = (banquetId: string) => {
+    return `/banquets/book/${banquetId}`;
+  };
+
+  const getFacilityIcon = (facility: string) => {
+    switch (facility) {
+      case 'wifi': return <Wifi className="h-4 w-4" />;
+      case 'parking': return <Car className="h-4 w-4" />;
+      case 'dj': return <Music className="h-4 w-4" />;
+      case 'photography': return <Camera className="h-4 w-4" />;
+      default: return <span className="h-4 w-4 bg-gray-400 rounded-full" />;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Event Spaces & Banquet Halls</h1>
-          <p className="text-xl text-gray-600">Create unforgettable memories in our stunning venues</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Banquet Halls</h1>
+          <p className="text-xl text-gray-600">Perfect venues for your special events and celebrations</p>
         </div>
 
-        {/* Search Form */}
+        {/* Filters */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Event Date</label>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Guest Count</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hall Type</label>
               <select
-                value={guestCount}
-                onChange={(e) => setGuestCount(e.target.value)}
+                value={filters.type}
+                onChange={(e) => setFilters({ ...filters, type: e.target.value })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Select Capacity</option>
-                <option value="50">Up to 50 guests</option>
-                <option value="100">Up to 100 guests</option>
-                <option value="200">Up to 200 guests</option>
-                <option value="300">300+ guests</option>
+                <option value="">All Types</option>
+                <option value="wedding">Wedding Hall</option>
+                <option value="conference">Conference Hall</option>
+                <option value="party">Party Hall</option>
+                <option value="reception">Reception Hall</option>
+                <option value="corporate">Corporate Hall</option>
               </select>
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Event Type</label>
-              <select className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Select Type</option>
-                <option value="wedding">Wedding</option>
-                <option value="corporate">Corporate Event</option>
-                <option value="conference">Conference</option>
-                <option value="party">Private Party</option>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
+              <select
+                value={filters.capacity}
+                onChange={(e) => setFilters({ ...filters, capacity: e.target.value })}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Any Capacity</option>
+                <option value="50">50+ Guests</option>
+                <option value="100">100+ Guests</option>
+                <option value="200">200+ Guests</option>
+                <option value="500">500+ Guests</option>
               </select>
             </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price Range</label>
+              <select
+                value={filters.priceRange}
+                onChange={(e) => setFilters({ ...filters, priceRange: e.target.value })}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Any Price</option>
+                <option value="0-10000">Under $10,000</option>
+                <option value="10000-25000">$10,000 - $25,000</option>
+                <option value="25000-50000">$25,000 - $50,000</option>
+                <option value="50000+">$50,000+</option>
+              </select>
+            </div>
+            
             <div className="flex items-end">
-              <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition">
-                Check Availability
+              <button 
+                onClick={fetchBanquets}
+                disabled={loading}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
+              >
+                {loading ? 'Searching...' : 'Search Halls'}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Venues Grid */}
-        <div className="space-y-8">
-          {venues.map((venue) => (
-            <div key={venue.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="md:flex">
-                <div className="md:w-1/3">
-                  <img
-                    src={venue.image}
-                    alt={venue.name}
-                    className="h-64 md:h-full w-full object-cover"
-                  />
-                </div>
-                <div className="md:w-2/3 p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">{venue.name}</h3>
-                      <p className="text-gray-600 mb-4">{venue.description}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-3xl font-bold text-blue-600">${venue.price}</div>
-                      <div className="text-sm text-gray-500">per event</div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div className="flex items-center">
-                      <Users className="h-5 w-5 text-gray-400 mr-2" />
-                      <span className="text-gray-700">Up to {venue.capacity} guests</span>
-                    </div>
-                    <div className="flex items-center">
-                      <MapPin className="h-5 w-5 text-gray-400 mr-2" />
-                      <span className="text-gray-700">{venue.area}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Star className="h-5 w-5 text-yellow-400 mr-2" />
-                      <span className="text-gray-700">Premium Venue</span>
-                    </div>
-                  </div>
-
-                  <div className="mb-6">
-                    <h4 className="font-semibold text-gray-900 mb-2">Included Features:</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {venue.features.map((feature, index) => (
-                        <span
-                          key={index}
-                          className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
-                        >
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button className="flex-1 bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition">
-                      Book This Venue
-                    </button>
-                    <button className="flex-1 border border-blue-600 text-blue-600 py-2 px-6 rounded-md hover:bg-blue-50 transition">
-                      Request Quote
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Additional Services */}
-        <div className="mt-16 bg-white p-8 rounded-lg shadow-md">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Additional Services</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="bg-blue-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Users className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="font-semibold mb-2">Catering Services</h3>
-              <p className="text-gray-600 text-sm">Premium catering with customizable menus</p>
-            </div>
-            <div className="text-center">
-              <div className="bg-blue-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Calendar className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="font-semibold mb-2">Event Planning</h3>
-              <p className="text-gray-600 text-sm">Professional event coordination and planning</p>
-            </div>
-            <div className="text-center">
-              <div className="bg-blue-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Clock className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="font-semibold mb-2">24/7 Support</h3>
-              <p className="text-gray-600 text-sm">Round-the-clock event support and assistance</p>
-            </div>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
-        </div>
+        )}
+
+        {/* No Banquets Found */}
+        {!loading && banquets.length === 0 && (
+          <div className="text-center py-12">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No banquet halls available</h3>
+            <p className="text-gray-600">Try adjusting your search criteria.</p>
+          </div>
+        )}
+
+        {/* Banquets Grid */}
+        {!loading && banquets.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+            {banquets.map((banquet) => (
+              <div key={banquet._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
+                <div className="h-48 bg-gray-300 relative">
+                  <img
+                    src={banquet.images?.[0] || '/api/placeholder/400/300'}
+                    alt={banquet.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/api/placeholder/400/300';
+                    }}
+                  />
+                  <div className="absolute top-4 right-4 bg-white px-2 py-1 rounded-md">
+                    <div className="flex items-center">
+                      <Star className="h-4 w-4 text-yellow-400 fill-current mr-1" />
+                      <span className="text-sm font-medium">{banquet.rating || 4.8}</span>
+                    </div>
+                  </div>
+                  <div className="absolute top-4 left-4 bg-blue-600 text-white px-2 py-1 rounded-md">
+                    <span className="text-xs font-medium capitalize">{banquet.type} Hall</span>
+                  </div>
+                </div>
+                
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      {banquet.name}
+                    </h3>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-blue-600">${banquet.pricePerDay}</div>
+                      <div className="text-xs text-gray-500">per day</div>
+                      <div className="text-sm text-gray-600">${banquet.pricePerHour}/hr</div>
+                    </div>
+                  </div>
+                  
+                  <p className="text-gray-600 mb-4 text-sm">{banquet.description}</p>
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="flex items-center">
+                      <Users className="h-4 w-4 text-gray-400 mr-1" />
+                      <span className="text-sm text-gray-600">Up to {banquet.capacity} guests</span>
+                    </div>
+                    <div className="flex items-center">
+                      <MapPin className="h-4 w-4 text-gray-400 mr-1" />
+                      <span className="text-sm text-gray-600">{banquet.area}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Clock className="h-4 w-4 text-gray-400 mr-1" />
+                      <span className="text-sm text-gray-600">Min {banquet.minimumHours}hrs</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-sm text-gray-600">Floor {banquet.floor}</span>
+                    </div>
+                  </div>
+
+                  {/* Seating Arrangements */}
+                  {banquet.seatingArrangements && banquet.seatingArrangements.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Seating Options</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {banquet.seatingArrangements.slice(0, 3).map((arrangement, index) => (
+                          <span
+                            key={index}
+                            className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs"
+                          >
+                            {arrangement}
+                          </span>
+                        ))}
+                        {banquet.seatingArrangements.length > 3 && (
+                          <span className="text-blue-600 text-xs">+{banquet.seatingArrangements.length - 3} more</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Key Facilities */}
+                  <div className="mb-4">
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(banquet.facilities || {})
+                        .filter(([key, value]) => value && ['wifi', 'parking', 'dj', 'photography'].includes(key))
+                        .slice(0, 4)
+                        .map(([key]) => (
+                          <div key={key} className="flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+                            {getFacilityIcon(key)}
+                            <span className="ml-1 capitalize">{key}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                  
+                  <Link 
+                    to={createBookingUrl(banquet._id)}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition block text-center font-medium"
+                  >
+                    Book Now
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

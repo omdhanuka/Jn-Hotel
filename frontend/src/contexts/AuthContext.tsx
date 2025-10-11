@@ -58,10 +58,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (state.token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
+      // Verify token on app load
+      verifyToken();
     } else {
       delete axios.defaults.headers.common['Authorization'];
     }
   }, [state.token]);
+
+  const verifyToken = async () => {
+    try {
+      const response = await axios.get('/api/auth/profile');
+      dispatch({ 
+        type: 'LOGIN_SUCCESS', 
+        payload: { 
+          user: response.data, 
+          token: state.token 
+        } 
+      });
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      logout();
+    }
+  };
 
   const login = async (email: string, password: string) => {
     dispatch({ type: 'SET_LOADING', payload: true });

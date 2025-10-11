@@ -13,6 +13,7 @@ import {
 import BookingManagement from './BookingManagement';
 import RoomManagement from './RoomManagement';
 import BookingChart from './BookingChart';
+import BanquetManagement from './BanquetManagement';
 
 const AdminPanel: React.FC = () => {
   const location = useLocation();
@@ -160,14 +161,7 @@ const AdminPanel: React.FC = () => {
             
             <Route path="/rooms" element={<RoomManagement />} />
             
-            <Route path="/banquets" element={
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">Banquet Management</h1>
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                  <p className="text-gray-600">Banquet management interface coming soon...</p>
-                </div>
-              </div>
-            } />
+            <Route path="/banquets" element={<BanquetManagement />} />
             
             <Route path="/restaurant" element={
               <div>
@@ -207,3 +201,4 @@ const AdminPanel: React.FC = () => {
 };
 
 export default AdminPanel;
+    

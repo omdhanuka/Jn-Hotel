@@ -21,6 +21,7 @@ import CreateAdmin from './pages/Auth/CreateAdmin';
 import ProtectedRoute from './components/ProtectedRoute';
 import axios from 'axios';
 import './index.css';
+import BookBanquet from './pages/BookBanquet';
 
 // Configure axios defaults immediately
 const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -42,6 +43,7 @@ function App() {
                 <Route path="/rooms" element={<Rooms />} />
                 <Route path="/rooms/book/:roomId" element={<BookRoom />} />
                 <Route path="/banquets" element={<Banquets />} />
+                <Route path="/banquets/book/:banquetId" element={<BookBanquet />} />
                 <Route path="/restaurant" element={<Restaurant />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
