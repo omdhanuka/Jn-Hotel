@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, CreditCard, Edit, Check, X, Trash2, Eye } from 'lucide-react';
+import { Calendar, Users, CreditCard, Edit, Check, X, Trash2, Eye, Filter } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -29,6 +29,11 @@ const BookingManagement: React.FC = () => {
   const [editingBooking, setEditingBooking] = useState<string | null>(null);
   const [newPaymentStatus, setNewPaymentStatus] = useState('');
   const [newBookingStatus, setNewBookingStatus] = useState('');
+  const [filters, setFilters] = useState({
+    type: 'all', // 'all', 'room', 'banquet'
+    status: 'all', // 'all', 'pending', 'confirmed', 'cancelled', 'completed'
+    paymentStatus: 'all' // 'all', 'pending', 'paid', 'refunded', 'cancelled', 'failed'
+  });
   const [editForm, setEditForm] = useState({
     checkIn: '',
     checkOut: '',
@@ -38,12 +43,18 @@ const BookingManagement: React.FC = () => {
 
   useEffect(() => {
     fetchBookings();
-  }, []);
+  }, [filters]);
 
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/bookings/admin');
+      const queryParams = new URLSearchParams();
+      
+      if (filters.type !== 'all') queryParams.append('type', filters.type);
+      if (filters.status !== 'all') queryParams.append('status', filters.status);
+      if (filters.paymentStatus !== 'all') queryParams.append('paymentStatus', filters.paymentStatus);
+      
+      const response = await axios.get(`/api/bookings/admin?${queryParams.toString()}`);
       setBookings(response.data.bookings || []);
     } catch (error) {
       toast.error('Failed to fetch bookings');
@@ -188,6 +199,19 @@ const BookingManagement: React.FC = () => {
     }
   };
 
+  const getBookingTypeColor = (type: string) => {
+    switch (type) {
+      case 'room':
+        return 'bg-blue-100 text-blue-800';
+      case 'banquet':
+        return 'bg-purple-100 text-purple-800';
+      case 'table':
+        return 'bg-orange-100 text-orange-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -198,7 +222,79 @@ const BookingManagement: React.FC = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Booking Management</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Booking Management</h1>
+        
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Filter className="h-5 w-5 text-gray-500" />
+            <select
+              value={filters.type}
+              onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Types</option>
+              <option value="room">Room Bookings</option>
+              <option value="banquet">Banquet Bookings</option>
+              <option value="table">Table Bookings</option>
+            </select>
+          </div>
+          
+          <select
+            value={filters.status}
+            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="completed">Completed</option>
+          </select>
+          
+          <select
+            value={filters.paymentStatus}
+            onChange={(e) => setFilters({ ...filters, paymentStatus: e.target.value })}
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Payments</option>
+            <option value="pending">Payment Pending</option>
+            <option value="paid">Paid</option>
+            <option value="refunded">Refunded</option>
+            <option value="cancelled">Payment Cancelled</option>
+            <option value="failed">Payment Failed</option>
+          </select>
+          
+          <button 
+            onClick={fetchBookings}
+            disabled={loading}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Summary */}
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+        <div className="flex flex-wrap gap-4 text-sm">
+          <div className="flex items-center">
+            <span className="font-medium mr-2">Active Filters:</span>
+            <span className={`px-2 py-1 rounded-full text-xs ${filters.type !== 'all' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
+              Type: {filters.type === 'all' ? 'All' : filters.type}
+            </span>
+          </div>
+          <span className={`px-2 py-1 rounded-full text-xs ${filters.status !== 'all' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+            Status: {filters.status === 'all' ? 'All' : filters.status}
+          </span>
+          <span className={`px-2 py-1 rounded-full text-xs ${filters.paymentStatus !== 'all' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'}`}>
+            Payment: {filters.paymentStatus === 'all' ? 'All' : filters.paymentStatus}
+          </span>
+          <div className="ml-auto">
+            <span className="font-medium">Total: {bookings.length} bookings</span>
+          </div>
+        </div>
+      </div>
       
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
@@ -210,6 +306,9 @@ const BookingManagement: React.FC = () => {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Booking Details
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Type
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Dates
@@ -266,6 +365,11 @@ const BookingManagement: React.FC = () => {
                         </div>
                       </div>
                     )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs rounded-full ${getBookingTypeColor(booking.type)}`}>
+                      {booking.type}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {editingBooking === booking._id ? (

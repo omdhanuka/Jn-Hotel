@@ -1,31 +1,32 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import Table from '../models/Table';
-import Booking from '../models/Booking';
+import MenuItem from '../models/MenuItem';
+import RestaurantTable from '../models/RestaurantTable';
 import { IUser } from '../models/User';
 
 interface AuthRequest extends Request {
   user?: IUser;
 }
 
-export const getTables = async (req: Request, res: Response) => {
+// Menu Item Controllers
+export const getMenuItems = async (req: Request, res: Response) => {
   try {
-    const { location, capacity, page = 1, limit = 10 } = req.query;
+    const { category, dishType, page = 1, limit = 20, available = true } = req.query;
     
-    const filter: any = { isAvailable: true };
-    
-    if (location) filter.location = location;
-    if (capacity) filter.capacity = { $gte: parseInt(capacity as string) };
+    const filter: any = {};
+    if (available === 'true') filter.isAvailable = true;
+    if (category) filter.category = category;
+    if (dishType) filter.dishType = dishType;
 
-    const tables = await Table.find(filter)
+    const menuItems = await MenuItem.find(filter)
       .limit(parseInt(limit as string))
       .skip((parseInt(page as string) - 1) * parseInt(limit as string))
-      .sort({ tableNumber: 1 });
+      .sort({ isFeatured: -1, name: 1 });
 
-    const total = await Table.countDocuments(filter);
+    const total = await MenuItem.countDocuments(filter);
 
     res.json({
-      tables,
+      menuItems,
       pagination: {
         page: parseInt(page as string),
         limit: parseInt(limit as string),
@@ -39,9 +40,114 @@ export const getTables = async (req: Request, res: Response) => {
   }
 };
 
-export const getTableById = async (req: Request, res: Response) => {
+export const getMenuItemById = async (req: Request, res: Response) => {
   try {
-    const table = await Table.findById(req.params.id);
+    const menuItem = await MenuItem.findById(req.params.id);
+    
+    if (!menuItem) {
+      return res.status(404).json({ message: 'Menu item not found' });
+    }
+
+    res.json(menuItem);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const createMenuItem = async (req: AuthRequest, res: Response) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    // Generate unique item ID
+    const itemCount = await MenuItem.countDocuments();
+    const itemId = `MENU${String(itemCount + 1).padStart(4, '0')}`;
+
+    const menuItemData = {
+      ...req.body,
+      itemId,
+      createdBy: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'Unknown'
+    };
+
+    const menuItem = new MenuItem(menuItemData);
+    await menuItem.save();
+
+    res.status(201).json(menuItem);
+  } catch (error: any) {
+    console.error(error);
+    if (error.code === 11000) {
+      res.status(400).json({ message: 'Menu item already exists' });
+    } else {
+      res.status(500).json({ message: 'Server error' });
+    }
+  }
+};
+
+export const updateMenuItem = async (req: AuthRequest, res: Response) => {
+  try {
+    const updateData = {
+      ...req.body,
+      updatedBy: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'Unknown'
+    };
+
+    const menuItem = await MenuItem.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+
+    if (!menuItem) {
+      return res.status(404).json({ message: 'Menu item not found' });
+    }
+
+    res.json(menuItem);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const deleteMenuItem = async (req: Request, res: Response) => {
+  try {
+    const menuItem = await MenuItem.findByIdAndDelete(req.params.id);
+
+    if (!menuItem) {
+      return res.status(404).json({ message: 'Menu item not found' });
+    }
+
+    res.json({ message: 'Menu item deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Restaurant Table Controllers
+export const getRestaurantTables = async (req: Request, res: Response) => {
+  try {
+    const { tableType, capacity, status, available = true } = req.query;
+    
+    const filter: any = {};
+    if (available === 'true') filter.isAvailable = true;
+    if (tableType) filter.tableType = tableType;
+    if (status) filter.status = status;
+    if (capacity) filter.seatingCapacity = { $gte: parseInt(capacity as string) };
+
+    const tables = await RestaurantTable.find(filter).sort({ tableName: 1 });
+
+    res.json({ tables });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getRestaurantTableById = async (req: Request, res: Response) => {
+  try {
+    const table = await RestaurantTable.findById(req.params.id);
     
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
@@ -54,142 +160,47 @@ export const getTableById = async (req: Request, res: Response) => {
   }
 };
 
-export const checkTableAvailability = async (req: Request, res: Response) => {
+export const createRestaurantTable = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { date, time, guests } = req.body;
-    
-    const filter: any = { 
-      isAvailable: true,
-      capacity: { $gte: guests }
+    // Generate unique table ID
+    const tableCount = await RestaurantTable.countDocuments();
+    const tableId = `TBL${String(tableCount + 1).padStart(3, '0')}`;
+
+    const tableData = {
+      ...req.body,
+      tableId,
+      createdBy: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'Unknown'
     };
 
-    // Create date range for the reservation (assuming 2-hour slots)
-    const reservationStart = new Date(`${date}T${time}:00.000Z`);
-    const reservationEnd = new Date(reservationStart.getTime() + 2 * 60 * 60 * 1000); // 2 hours later
-
-    // Find tables not booked during the requested time
-    const bookedTableIds = await Booking.find({
-      type: 'table',
-      status: { $in: ['confirmed', 'pending'] },
-      $or: [
-        {
-          checkIn: { $lte: reservationStart },
-          checkOut: { $gt: reservationStart }
-        },
-        {
-          checkIn: { $lt: reservationEnd },
-          checkOut: { $gte: reservationEnd }
-        },
-        {
-          checkIn: { $gte: reservationStart },
-          checkOut: { $lte: reservationEnd }
-        }
-      ]
-    }).distinct('resourceId');
-
-    filter._id = { $nin: bookedTableIds };
-
-    const availableTables = await Table.find(filter);
-
-    res.json({ availableTables, count: availableTables.length });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-export const makeReservation = async (req: AuthRequest, res: Response) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { tableId, date, time, guests, specialRequests } = req.body;
-    
-    // Check if table exists and is available
-    const table = await Table.findById(tableId);
-    if (!table) {
-      return res.status(404).json({ message: 'Table not found' });
-    }
-
-    if (!table.isAvailable) {
-      return res.status(400).json({ message: 'Table is not available' });
-    }
-
-    // Create reservation dates
-    const checkIn = new Date(`${date}T${time}:00.000Z`);
-    const checkOut = new Date(checkIn.getTime() + 2 * 60 * 60 * 1000); // 2 hours
-
-    // Check for conflicting reservations
-    const conflictingBooking = await Booking.findOne({
-      type: 'table',
-      resourceId: tableId,
-      status: { $in: ['confirmed', 'pending'] },
-      $or: [
-        {
-          checkIn: { $lte: checkIn },
-          checkOut: { $gt: checkIn }
-        },
-        {
-          checkIn: { $lt: checkOut },
-          checkOut: { $gte: checkOut }
-        }
-      ]
-    });
-
-    if (conflictingBooking) {
-      return res.status(400).json({ message: 'Table is already booked for this time slot' });
-    }
-
-    // Create booking
-    const booking = new Booking({
-      user: req.user!._id,
-      type: 'table',
-      resourceId: tableId,
-      checkIn,
-      checkOut,
-      guests,
-      totalAmount: 0, // Table reservations might be free or have a minimum charge
-      specialRequests
-    });
-
-    await booking.save();
-
-    res.status(201).json(booking);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-export const createTable = async (req: Request, res: Response) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const table = new Table(req.body);
+    const table = new RestaurantTable(tableData);
     await table.save();
 
     res.status(201).json(table);
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    if (error.code === 11000) {
+      res.status(400).json({ message: 'Table ID already exists' });
+    } else {
+      res.status(500).json({ message: 'Server error' });
+    }
   }
 };
 
-export const updateTable = async (req: Request, res: Response) => {
+export const updateRestaurantTable = async (req: AuthRequest, res: Response) => {
   try {
-    const table = await Table.findByIdAndUpdate(
+    const updateData = {
+      ...req.body,
+      updatedBy: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'Unknown'
+    };
+
+    const table = await RestaurantTable.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true }
     );
 
@@ -204,15 +215,25 @@ export const updateTable = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteTable = async (req: Request, res: Response) => {
+export const deleteRestaurantTable = async (req: Request, res: Response) => {
   try {
-    const table = await Table.findByIdAndDelete(req.params.id);
+    const table = await RestaurantTable.findByIdAndDelete(req.params.id);
 
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
 
     res.json({ message: 'Table deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getMenuCategories = async (req: Request, res: Response) => {
+  try {
+    const categories = await MenuItem.distinct('category');
+    res.json({ categories });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

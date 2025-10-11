@@ -467,11 +467,14 @@ export const getAllBookingsForAdmin = async (req: AuthRequest, res: Response) =>
       return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
 
-    const { page = 1, limit = 20, status, type } = req.query;
+    const { page = 1, limit = 20, status, type, paymentStatus } = req.query;
     
     const filter: any = {};
-    if (status) filter.status = status;
-    if (type) filter.type = type;
+    if (status && status !== 'all') filter.status = status;
+    if (type && type !== 'all') filter.type = type;
+    if (paymentStatus && paymentStatus !== 'all') filter.paymentStatus = paymentStatus;
+
+    console.log('Admin booking filter:', filter); // Debug log
 
     const bookings = await Booking.find(filter)
       .populate('user', 'firstName lastName email')

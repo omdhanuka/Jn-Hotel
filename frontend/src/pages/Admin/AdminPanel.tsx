@@ -8,12 +8,16 @@ import {
   Settings, 
   Utensils, 
   BedDouble,
-  Building
+  Building,
+  Calculator
 } from 'lucide-react';
 import BookingManagement from './BookingManagement';
 import RoomManagement from './RoomManagement';
 import BookingChart from './BookingChart';
 import BanquetManagement from './BanquetManagement';
+import RestaurantManagement from './RestaurantManagement';
+import RestaurantOrderManagement from './RestaurantOrderManagement';
+import BillManagement from './BillManagement';
 
 const AdminPanel: React.FC = () => {
   const location = useLocation();
@@ -24,6 +28,8 @@ const AdminPanel: React.FC = () => {
     { id: 'rooms', label: 'Rooms', icon: BedDouble, path: '/admin/rooms' },
     { id: 'banquets', label: 'Banquets', icon: Building, path: '/admin/banquets' },
     { id: 'restaurant', label: 'Restaurant', icon: Utensils, path: '/admin/restaurant' },
+    { id: 'restaurant-orders', label: 'Restaurant Orders', icon: Utensils, path: '/admin/restaurant-orders' },
+    { id: 'bills', label: 'Bills', icon: Calculator, path: '/admin/bills' },
     { id: 'bookings', label: 'Bookings', icon: Calendar, path: '/admin/bookings' },
     { id: 'chart', label: 'Booking Chart', icon: Calendar, path: '/admin/booking-chart' },
     { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
@@ -163,15 +169,12 @@ const AdminPanel: React.FC = () => {
             
             <Route path="/banquets" element={<BanquetManagement />} />
             
-            <Route path="/restaurant" element={
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">Restaurant Management</h1>
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                  <p className="text-gray-600">Restaurant management interface coming soon...</p>
-                </div>
-              </div>
-            } />
+            <Route path="/restaurant" element={<RestaurantManagement />} />
             
+            <Route path="/restaurant-orders" element={<RestaurantOrderManagement />} />
+
+            <Route path="/bills" element={<BillManagement />} />
+
             <Route path="/bookings" element={<BookingManagement />} />
             
             <Route path="/booking-chart" element={<BookingChart />} />
@@ -201,4 +204,3 @@ const AdminPanel: React.FC = () => {
 };
 
 export default AdminPanel;
-    

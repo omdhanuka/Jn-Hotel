@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Calendar, Clock, Users, MapPin, Star, CreditCard } from 'lucide-react';
+import { Calendar, Clock, Users, MapPin, Star, CreditCard, Utensils } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -24,11 +24,13 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('bookings');
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [restaurantBookings, setRestaurantBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       fetchBookings();
+      fetchRestaurantBookings();
     }
   }, [user]);
 
@@ -43,6 +45,15 @@ const Dashboard: React.FC = () => {
       setBookings([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRestaurantBookings = async () => {
+    try {
+      const response = await axios.get('/api/restaurant/bookings');
+      setRestaurantBookings(response.data.bookings || []);
+    } catch (error) {
+      console.error('Error fetching restaurant bookings:', error);
     }
   };
 
@@ -77,6 +88,19 @@ const Dashboard: React.FC = () => {
     { id: 'profile', label: 'Profile' },
     { id: 'loyalty', label: 'Loyalty Points' }
   ];
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'bg-green-100 text-green-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-blue-100 text-blue-800';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -336,6 +360,76 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Restaurant Orders & Table Bookings */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Restaurant Orders & Reservations</h2>
+              
+              {restaurantBookings.length === 0 ? (
+                <div className="text-center py-8">
+                  <Utensils className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No restaurant orders or reservations yet</p>
+                  <Link 
+                    to="/restaurant" 
+                    className="inline-block mt-2 text-blue-600 hover:text-blue-800"
+                  >
+                    Browse Menu & Reserve Tables
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {restaurantBookings.slice(0, 5).map((booking: any) => (
+                    <div key={booking._id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-medium text-gray-900">
+                            {booking.bookingType === 'table' ? 'Table Reservation' : 'Food Order'}
+                          </h3>
+                          <p className="text-sm text-gray-600">Booking ID: {booking.bookingId}</p>
+                        </div>
+                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(booking.status)}`}>
+                          {booking.status}
+                        </span>
+                      </div>
+                      
+                      {booking.bookingType === 'table' ? (
+                        <div className="text-sm text-gray-600">
+                          <p>Date: {new Date(booking.date).toLocaleDateString()}</p>
+                          <p>Time: {booking.timeSlot}</p>
+                          <p>Guests: {booking.numberOfGuests}</p>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-600">
+                          <p>Items: {booking.items?.length || 0} items</p>
+                          <p>Delivery: {booking.deliveryType}</p>
+                          <p>Total: ${booking.totalAmount}</p>
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-between items-center mt-3">
+                        <span className="text-sm text-gray-500">
+                          {new Date(booking.createdAt).toLocaleDateString()}
+                        </span>
+                        <span className="font-medium text-green-600">
+                          ${booking.totalAmount}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {restaurantBookings.length > 5 && (
+                    <div className="text-center">
+                      <Link 
+                        to="/restaurant-orders" 
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        View all restaurant orders
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
