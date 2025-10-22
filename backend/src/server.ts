@@ -7,6 +7,7 @@ import roomRoutes from './routes/rooms';
 import bookingRoutes from './routes/bookings';
 import banquetRoutes from './routes/banquets';
 import restaurantRoutes from './routes/restaurant';
+import billRoutes from './routes/bills';
 import Banquet from './models/Banquet';
 import Booking from './models/Booking';
 import Room from './models/Room';
@@ -29,6 +30,7 @@ app.use('/api/rooms', roomRoutes);
 app.use('/api/banquets', banquetRoutes);
 app.use('/api/restaurant', restaurantRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/bills', billRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

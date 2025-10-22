@@ -7,71 +7,93 @@ interface AuthRequest extends Request {
   user?: IUser;
 }
 
+// Generate Restaurant Bill (Dine-in, Takeaway, Delivery)
 export const createBill = async (req: AuthRequest, res: Response) => {
   try {
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
-    }
-
+    console.log('Creating bill with data:', req.body);
+    
     const {
       orderId,
-      tableNumber,
       customerName,
+      customerPhone,
+      tableNumber,
+      deliveryType,
+      deliveryAddress,
       items,
       subtotal,
       discount,
-      tax,
-      totalAmount,
+      taxPercentage,
+      deliveryCharges,
       paymentMethod,
       notes
     } = req.body;
 
-    // Verify the order exists
-    const order = await RestaurantBooking.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
+    // Calculate tax amount
+    const taxAmount = (subtotal * (taxPercentage || 10)) / 100;
+    const totalAmount = subtotal - discount + taxAmount + (deliveryCharges || 0);
+
+    // Generate bill number manually if needed
+    const count = await Bill.countDocuments();
+    const billNumber = `RB${String(count + 1).padStart(6, '0')}`;
 
     const bill = new Bill({
+      billNumber, // Set it explicitly
+      billType: 'restaurant',
       orderId,
-      tableNumber,
       customerName,
+      customerPhone,
+      tableNumber,
+      deliveryType,
+      deliveryAddress,
       items,
       subtotal,
       discount,
-      tax,
+      tax: taxAmount,
+      deliveryCharges: deliveryCharges || 0,
       totalAmount,
       paymentMethod,
+      paymentStatus: 'paid',
       notes,
       generatedBy: req.user!._id
     });
 
+    console.log('Bill before save:', bill);
+    
     await bill.save();
+    
+    console.log('Bill saved successfully:', bill.billNumber);
 
-    res.status(201).json(bill);
+    res.status(201).json({ 
+      message: 'Bill generated successfully', 
+      bill 
+    });
   } catch (error) {
-    console.error('Bill creation error:', error);
+    console.error('Restaurant bill generation error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
+// Get all bills with filters
 export const getBills = async (req: AuthRequest, res: Response) => {
   try {
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
-    }
+    const { 
+      page = 1, 
+      limit = 20, 
+      billType, 
+      deliveryType, 
+      paymentStatus
+    } = req.query;
 
-    const { page = 1, limit = 20, tableNumber } = req.query;
-    
     const filter: any = {};
-    if (tableNumber) filter.tableNumber = tableNumber;
+    if (billType) filter.billType = billType;
+    if (deliveryType) filter.deliveryType = deliveryType;
+    if (paymentStatus) filter.paymentStatus = paymentStatus;
 
     const bills = await Bill.find(filter)
-      .populate('orderId')
       .populate('generatedBy', 'firstName lastName')
+      .sort({ generatedAt: -1 })
       .limit(parseInt(limit as string))
-      .skip((parseInt(page as string) - 1) * parseInt(limit as string))
-      .sort({ generatedAt: -1 });
+      .skip((parseInt(page as string) - 1) * parseInt(limit as string));
 
     const total = await Bill.countDocuments(filter);
 
@@ -90,14 +112,10 @@ export const getBills = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Get bill by ID
 export const getBillById = async (req: AuthRequest, res: Response) => {
   try {
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
-    }
-
     const bill = await Bill.findById(req.params.id)
-      .populate('orderId')
       .populate('generatedBy', 'firstName lastName');
 
     if (!bill) {
