@@ -24,7 +24,7 @@ import './index.css';
 import BookBanquet from './pages/BookBanquet';
 
 // Configure axios defaults immediately
-const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 axios.defaults.baseURL = baseURL;
 console.log('Global axios baseURL set to:', baseURL);
 

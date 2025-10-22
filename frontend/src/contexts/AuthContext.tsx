@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Configure axios defaults globally
-    const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
     axios.defaults.baseURL = baseURL;
     
     console.log('Setting axios baseURL to:', baseURL); // Debug log

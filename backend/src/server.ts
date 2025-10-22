@@ -261,7 +261,7 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 const startServer = async () => {
   await initializeDatabase();
