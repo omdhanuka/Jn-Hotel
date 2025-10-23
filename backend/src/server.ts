@@ -13,7 +13,14 @@ import Booking from './models/Booking';
 import Room from './models/Room';
 import User from './models/User';
 
+// Load environment variables first
 dotenv.config();
+
+// Log environment variables for debugging
+console.log('🔍 Environment variables loaded:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('EMAIL_USER:', process.env.EMAIL_USER ? 'Set' : 'Not set');
+console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set' : 'Not set');
 
 const app = express();
 
@@ -263,7 +270,7 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
 });
 
 // Start server
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   await initializeDatabase();

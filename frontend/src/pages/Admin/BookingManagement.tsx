@@ -40,6 +40,8 @@ const BookingManagement: React.FC = () => {
     guests: 1,
     specialRequests: ''
   });
+  const [viewingDetails, setViewingDetails] = useState<string | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
     fetchBookings();
@@ -165,6 +167,16 @@ const BookingManagement: React.FC = () => {
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update booking');
     }
+  };
+
+  const viewBookingDetails = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setViewingDetails(booking._id);
+  };
+
+  const closeDetailsModal = () => {
+    setViewingDetails(null);
+    setSelectedBooking(null);
   };
 
   const getStatusColor = (status: string) => {
@@ -499,6 +511,14 @@ const BookingManagement: React.FC = () => {
                       ) : (
                         <>
                           <button
+                            onClick={() => viewBookingDetails(booking)}
+                            className="text-indigo-600 hover:text-indigo-800"
+                            title="View Details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          
+                          <button
                             onClick={() => startEditBooking(booking)}
                             className="text-blue-600 hover:text-blue-800"
                             title="Edit Booking"
@@ -563,6 +583,190 @@ const BookingManagement: React.FC = () => {
             rows={3}
             placeholder="Any special requests..."
           />
+        </div>
+      )}
+
+      {/* Booking Details Modal */
+      viewingDetails && selectedBooking && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold text-gray-900">Booking Details</h2>
+                <button
+                  onClick={closeDetailsModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Customer Information */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Customer Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedBooking.user.firstName} {selectedBooking.user.lastName}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedBooking.user.email}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Booking Information */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Booking Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Booking Type</label>
+                    <span className={`inline-flex mt-1 px-2 py-1 text-xs rounded-full ${getBookingTypeColor(selectedBooking.type)}`}>
+                      {selectedBooking.type.charAt(0).toUpperCase() + selectedBooking.type.slice(1)}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Number of Guests</label>
+                    <p className="mt-1 text-sm text-gray-900 flex items-center">
+                      <Users className="h-4 w-4 mr-1" />
+                      {selectedBooking.guests} guests
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Check-in Date</label>
+                    <p className="mt-1 text-sm text-gray-900 flex items-center">
+                      <Calendar className="h-4 w-4 mr-1" />
+                      {new Date(selectedBooking.checkIn).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Check-out Date</label>
+                    <p className="mt-1 text-sm text-gray-900 flex items-center">
+                      <Calendar className="h-4 w-4 mr-1" />
+                      {new Date(selectedBooking.checkOut).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status and Payment */}
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Status & Payment</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Booking Status</label>
+                    <span className={`inline-flex mt-1 px-2 py-1 text-xs rounded-full ${getStatusColor(selectedBooking.status)}`}>
+                      {selectedBooking.status.charAt(0).toUpperCase() + selectedBooking.status.slice(1)}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Payment Status</label>
+                    <span className={`inline-flex mt-1 px-2 py-1 text-xs rounded-full ${getPaymentStatusColor(selectedBooking.paymentStatus)}`}>
+                      {selectedBooking.paymentStatus.charAt(0).toUpperCase() + selectedBooking.paymentStatus.slice(1)}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Total Amount</label>
+                    <p className="mt-1 text-lg font-bold text-green-600">${selectedBooking.totalAmount}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Special Requests */}
+              {selectedBooking.specialRequests && (
+                <div className="bg-yellow-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Special Requests</h3>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {selectedBooking.specialRequests}
+                  </p>
+                </div>
+              )}
+
+              {/* Booking Timeline */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Booking Timeline</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                    <span className="text-gray-600">Booking Created:</span>
+                    <span className="ml-2 font-medium">
+                      {new Date(selectedBooking.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  {selectedBooking.type === 'banquet' && (
+                    <div className="flex items-center text-sm">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
+                      <span className="text-gray-600">Event Duration:</span>
+                      <span className="ml-2 font-medium">
+                        {(() => {
+                          const checkIn = new Date(selectedBooking.checkIn);
+                          const checkOut = new Date(selectedBooking.checkOut);
+                          const durationHours = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60));
+                          return `${durationHours} hours`;
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                  {selectedBooking.type === 'room' && (
+                    <div className="flex items-center text-sm">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                      <span className="text-gray-600">Stay Duration:</span>
+                      <span className="ml-2 font-medium">
+                        {(() => {
+                          const checkIn = new Date(selectedBooking.checkIn);
+                          const checkOut = new Date(selectedBooking.checkOut);
+                          const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+                          return `${nights} night${nights > 1 ? 's' : ''}`;
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 bg-gray-50">
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={closeDetailsModal}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    closeDetailsModal();
+                    startEditBooking(selectedBooking);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+                  disabled={selectedBooking.status === 'cancelled' || selectedBooking.status === 'completed'}
+                >
+                  Edit Booking
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

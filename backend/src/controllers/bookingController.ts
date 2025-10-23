@@ -6,7 +6,7 @@ import Room from '../models/Room';
 import Banquet from '../models/Banquet';
 import Table from '../models/Table';
 import User, { IUser } from '../models/User';
-import { sendBookingConfirmation } from '../utils/emailService';
+import { sendBookingConfirmation, sendBookingStatusUpdate, sendPaymentStatusUpdate, sendBanquetBookingConfirmation } from '../utils/emailService';
 
 interface AuthRequest extends Request {
   user?: IUser;
@@ -148,16 +148,19 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Send booking confirmation email
+    // Send appropriate confirmation email based on booking type
     try {
-      await sendBookingConfirmation(req.user!.email, {
-        id: booking._id,
-        type: booking.type,
-        checkIn: booking.checkIn,
-        checkOut: booking.checkOut,
-        guests: booking.guests,
-        totalAmount: booking.totalAmount
-      });
+      if (type === 'banquet') {
+        await sendBanquetBookingConfirmation(req.user!.email, booking, {
+          firstName: req.user!.firstName,
+          lastName: req.user!.lastName
+        });
+      } else {
+        await sendBookingConfirmation(req.user!.email, booking, {
+          firstName: req.user!.firstName,
+          lastName: req.user!.lastName
+        });
+      }
     } catch (emailError) {
       console.error('Email sending failed:', emailError);
       // Don't fail the booking if email fails
@@ -370,6 +373,19 @@ export const updatePaymentStatus = async (req: AuthRequest, res: Response) => {
     if (paymentStatus === 'paid' && booking.status === 'pending') {
       booking.status = 'confirmed';
       await booking.save();
+    }
+
+    // Send payment status update email
+    try {
+      const user = booking.user as any;
+      await sendPaymentStatusUpdate(
+        user.email,
+        `${user.firstName} ${user.lastName}`,
+        booking,
+        paymentStatus
+      );
+    } catch (emailError) {
+      console.error('Failed to send payment status email:', emailError);
     }
 
     res.json({ message: 'Payment status updated successfully', booking });
@@ -647,6 +663,105 @@ export const getBookingsForChart = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getBookingStats = async (req: AuthRequest, res: Response) => {
+  try {
+    console.log('Getting booking stats...');
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+
+    // Get booking stats for the last 30 days
+    const bookingStats = await Booking.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: thirtyDaysAgo },
+          status: { $ne: 'cancelled' }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            date: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            type: "$type"
+          },
+          count: { $sum: 1 },
+          revenue: { $sum: "$totalAmount" }
+        }
+      },
+      {
+        $sort: { "_id.date": 1 }
+      }
+    ]);
+
+    console.log('Raw booking stats:', bookingStats);
+
+    // Format data for chart
+    const chartData = [];
+    const dateMap = new Map();
+
+    // Initialize all dates with zero values
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      dateMap.set(dateStr, {
+        date: dateStr,
+        room: 0,
+        banquet: 0,
+        total: 0
+      });
+    }
+
+    // Fill in actual booking data
+    bookingStats.forEach(stat => {
+      const dateStr = stat._id.date;
+      if (dateMap.has(dateStr)) {
+        const entry = dateMap.get(dateStr);
+        entry[stat._id.type] = stat.count;
+        entry.total += stat.count;
+      }
+    });
+
+    // Convert map to array
+    const finalChartData = Array.from(dateMap.values());
+
+    // Get total stats
+    const [totalBookings, roomBookings, banquetBookings, todayBookings] = await Promise.all([
+      Booking.countDocuments({ status: { $ne: 'cancelled' } }),
+      Booking.countDocuments({ type: 'room', status: { $ne: 'cancelled' } }),
+      Booking.countDocuments({ type: 'banquet', status: { $ne: 'cancelled' } }),
+      Booking.countDocuments({ 
+        createdAt: { $gte: today },
+        status: { $ne: 'cancelled' }
+      })
+    ]);
+
+    console.log('Final stats:', {
+      chartDataLength: finalChartData.length,
+      totalBookings,
+      roomBookings,
+      banquetBookings,
+      todayBookings
+    });
+
+    res.json({
+      chartData: finalChartData,
+      totalBookings,
+      roomBookings,
+      banquetBookings,
+      todayBookings
+    });
+  } catch (error) {
+    console.error('Booking stats error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ message: 'Server error', error: errorMessage });
+  }
+};
+
 export const updateBookingStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { status } = req.body;
@@ -666,6 +781,8 @@ export const updateBookingStatus = async (req: AuthRequest, res: Response) => {
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
+
+    const oldStatus = booking.status;
 
     // If confirming a booking, check for conflicts with other confirmed bookings
     if (status === 'confirmed' && booking.status !== 'confirmed') {
@@ -710,6 +827,20 @@ export const updateBookingStatus = async (req: AuthRequest, res: Response) => {
     }
     
     await booking.save();
+
+    // Send booking status update email
+    try {
+      const user = booking.user as any;
+      await sendBookingStatusUpdate(
+        user.email,
+        `${user.firstName} ${user.lastName}`,
+        booking,
+        oldStatus,
+        status
+      );
+    } catch (emailError) {
+      console.error('Failed to send booking status email:', emailError);
+    }
 
     const populatedBooking = await Booking.findById(booking._id)
       .populate('user', 'firstName lastName email');

@@ -113,34 +113,31 @@ const BookingChart: React.FC = () => {
           const checkIn = new Date(booking.checkIn);
           const checkOut = new Date(booking.checkOut);
           
-          // Fix for same-day events where checkOut might be before checkIn (time-wise)
-          let actualCheckOut = new Date(checkOut);
-          if (checkOut.getTime() < checkIn.getTime()) {
-            // If check-out time is before check-in time, it's the next day
-            actualCheckOut = new Date(checkOut);
-            actualCheckOut.setDate(actualCheckOut.getDate() + 1);
-          }
+          // For banquet bookings, also check if it's the same date
+          const isSameDay = checkIn.toDateString() === currentDateCell.toDateString();
           
           // Check if booking overlaps with this calendar day
           const bookingOverlaps = (
             // Booking starts on this day
             (checkIn >= cellDateStart && checkIn <= cellDateEnd) ||
             // Booking ends on this day
-            (actualCheckOut >= cellDateStart && actualCheckOut <= cellDateEnd) ||
-            // Booking spans across this day
-            (checkIn <= cellDateStart && actualCheckOut >= cellDateEnd) ||
-            // For same-day events, check if the day matches
-            (checkIn.toDateString() === currentDateCell.toDateString())
+            (checkOut >= cellDateStart && checkOut <= cellDateEnd) ||
+            // Booking spans across this day (multi-day bookings)
+            (checkIn <= cellDateStart && checkOut >= cellDateEnd) ||
+            // Same day events (especially for banquets)
+            isSameDay
           );
           
-          console.log(`Checking booking ${booking._id} for date ${currentDateCell.toDateString()}:`, {
-            checkIn: checkIn.toISOString(),
-            checkOut: checkOut.toISOString(),
-            actualCheckOut: actualCheckOut.toISOString(),
-            cellDateStart: cellDateStart.toISOString(),
-            cellDateEnd: cellDateEnd.toISOString(),
-            overlaps: bookingOverlaps
-          });
+          // Debug logging for banquet bookings
+          if (booking.bookingType === 'banquet') {
+            console.log(`Banquet booking ${booking._id} for date ${currentDateCell.toDateString()}:`, {
+              checkIn: checkIn.toISOString(),
+              checkOut: checkOut.toISOString(),
+              isSameDay,
+              bookingOverlaps,
+              banquetName: booking.banquetName
+            });
+          }
           
           return bookingOverlaps;
         }).filter(booking => {
@@ -324,18 +321,26 @@ const BookingChart: React.FC = () => {
                 {cell.bookings.map((booking, bookingIndex) => (
                   <div
                     key={bookingIndex}
-                    className={`text-xs p-2 rounded text-white ${getStatusColor(booking.status)} ${booking.bookingType === 'banquet' ? 'min-h-[60px]' : ''}`}
-                    title={`${booking.guestName} - ${booking.bookingType === 'room' ? `Room ${booking.roomNumber}` : booking.banquetName} (${booking.status})${booking.eventType ? ` - ${booking.eventType}` : ''}`}
+                    className={`text-xs p-2 rounded text-white ${getStatusColor(booking.status)} ${
+                      booking.bookingType === 'banquet' ? 'border-l-4 border-purple-300' : ''
+                    }`}
+                    title={`${booking.guestName} - ${
+                      booking.bookingType === 'room' 
+                        ? `Room ${booking.roomNumber}` 
+                        : `${booking.banquetName} (${booking.banquetType})`
+                    } (${booking.status})${booking.eventType ? ` - ${booking.eventType}` : ''}`}
                   >
                     <div className="font-medium truncate">
                       {booking.bookingType === 'room' 
                         ? (booking.roomNumber !== 'N/A' ? `Room ${booking.roomNumber}` : 'Room N/A')
-                        : (booking.banquetName || 'Banquet N/A')
+                        : (booking.banquetName || 'Banquet Event')
                       }
                     </div>
                     <div className="opacity-90 truncate">{booking.guestName}</div>
                     {booking.eventType && (
-                      <div className="opacity-75 text-xs truncate">{booking.eventType}</div>
+                      <div className="opacity-75 text-xs truncate bg-white bg-opacity-20 rounded px-1 mt-1">
+                        {booking.eventType}
+                      </div>
                     )}
                     {booking.bookingType === 'banquet' && (
                       <TimeDisplay startTime={booking.checkIn} endTime={booking.checkOut} />

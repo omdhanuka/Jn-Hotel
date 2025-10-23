@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { 
   Hotel, 
@@ -18,10 +18,22 @@ import BanquetManagement from './BanquetManagement';
 import RestaurantManagement from './RestaurantManagement';
 import RestaurantOrderManagement from './RestaurantOrderManagement';
 import BillManagement from './BillManagement';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const AdminPanel: React.FC = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [bookingChartData, setBookingChartData] = useState<Array<{ date: string; room: number; banquet: number; total: number }>>([]);
+  const [stats, setStats] = useState({
+    totalBookings: 0,
+    roomBookings: 0,
+    banquetBookings: 0,
+    todayBookings: 0,
+    totalRevenue: 0,
+    totalUsers: 0
+  });
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/admin' },
@@ -36,11 +48,37 @@ const AdminPanel: React.FC = () => {
     { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' }
   ];
 
-  const stats = [
-    { label: 'Total Rooms', value: '120', change: '+5%', color: 'blue' },
-    { label: 'Occupancy Rate', value: '85%', change: '+12%', color: 'green' },
-    { label: 'Revenue Today', value: '$12,450', change: '+8%', color: 'purple' },
-    { label: 'Active Bookings', value: '68', change: '+3%', color: 'orange' }
+  const fetchBookingStats = async () => {
+    try {
+      console.log('Fetching booking stats...');
+      const response = await axios.get('/api/bookings/stats');
+      console.log('Booking stats response:', response.data);
+      
+      const { chartData, totalBookings, roomBookings, banquetBookings, todayBookings } = response.data;
+      
+      setBookingChartData(chartData || []);
+      setStats(prev => ({
+        ...prev,
+        totalBookings: totalBookings || 0,
+        roomBookings: roomBookings || 0,
+        banquetBookings: banquetBookings || 0,
+        todayBookings: todayBookings || 0
+      }));
+    } catch (error) {
+      console.error('Failed to fetch booking stats:', error);
+      toast.error('Failed to load booking statistics');
+    }
+  };
+
+  useEffect(() => {
+    fetchBookingStats();
+  }, []);
+
+  const statsData = [
+    { label: 'Total Bookings', value: stats.totalBookings.toString(), change: '+5%', color: 'blue' },
+    { label: 'Room Bookings', value: stats.roomBookings.toString(), change: '+12%', color: 'green' },
+    { label: 'Banquet Bookings', value: stats.banquetBookings.toString(), change: '+8%', color: 'purple' },
+    { label: 'Today\'s Bookings', value: stats.todayBookings.toString(), change: '+3%', color: 'orange' }
   ];
 
   const recentBookings = [
@@ -97,7 +135,7 @@ const AdminPanel: React.FC = () => {
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  {stats.map((stat, index) => (
+                  {statsData.map((stat, index) => (
                     <div key={index} className="bg-white p-6 rounded-lg shadow-md">
                       <div className="flex items-center justify-between">
                         <div>
@@ -110,6 +148,68 @@ const AdminPanel: React.FC = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Booking Chart */}
+                <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">Booking Trends (Last 30 Days)</h3>
+                    <span className="text-sm text-gray-500">
+                      Total: {bookingChartData.reduce((sum, day) => sum + day.total, 0)} bookings
+                    </span>
+                  </div>
+                  
+                  {bookingChartData.length > 0 ? (
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={bookingChartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="date" 
+                            tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          />
+                          <YAxis />
+                          <Tooltip 
+                            labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                            formatter={(value, name) => [
+                              value, 
+                              name === 'room' ? 'Room Bookings' : 
+                              name === 'banquet' ? 'Banquet Bookings' : 'Total Bookings'
+                            ]}
+                          />
+                          <Legend />
+                          <Line 
+                            type="monotone" 
+                            dataKey="room" 
+                            stroke="#3B82F6" 
+                            strokeWidth={2}
+                            name="Room Bookings"
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="banquet" 
+                            stroke="#10B981" 
+                            strokeWidth={2}
+                            name="Banquet Bookings"
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="total" 
+                            stroke="#F59E0B" 
+                            strokeWidth={2}
+                            name="Total Bookings"
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="h-80 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <p className="text-gray-500">Loading booking data...</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Recent Activity */}
