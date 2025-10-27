@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, CreditCard, Edit, Check, X, Trash2, Eye, Filter } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Calendar, Users, CreditCard, Edit, Check, X, Trash2, Eye, Filter, Receipt } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -13,6 +14,11 @@ interface Booking {
   status: string;
   paymentStatus: string;
   specialRequests?: string;
+  bill?: {
+    _id?: string;
+    totalAmount?: number;
+    createdAt?: string;
+  };
   user: {
     firstName: string;
     lastName: string;
@@ -42,6 +48,7 @@ const BookingManagement: React.FC = () => {
   });
   const [viewingDetails, setViewingDetails] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchBookings();
@@ -224,6 +231,10 @@ const BookingManagement: React.FC = () => {
     }
   };
 
+  const handleCreateBill = (bookingId: string) => {
+    navigate(`/admin/bookings/${bookingId}/bill`);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -233,7 +244,7 @@ const BookingManagement: React.FC = () => {
   }
 
   return (
-    <div>
+    <>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Booking Management</h1>
         
@@ -244,39 +255,43 @@ const BookingManagement: React.FC = () => {
               value={filters.type}
               onChange={(e) => setFilters({ ...filters, type: e.target.value })}
               className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              title="Filter by booking type"
+              aria-label="Filter by booking type"
             >
               <option value="all">All Types</option>
               <option value="room">Room Bookings</option>
               <option value="banquet">Banquet Bookings</option>
               <option value="table">Table Bookings</option>
             </select>
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              title="Filter by booking status"
+              aria-label="Filter by booking status"
+            >
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="completed">Completed</option>
+            </select>
+            <select
+              value={filters.paymentStatus}
+              onChange={(e) => setFilters({ ...filters, paymentStatus: e.target.value })}
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              title="Filter by payment status"
+              aria-label="Filter by payment status"
+            >
+              <option value="all">All Payments</option>
+              <option value="pending">Payment Pending</option>
+              <option value="paid">Paid</option>
+              <option value="refunded">Refunded</option>
+              <option value="cancelled">Payment Cancelled</option>
+              <option value="failed">Payment Failed</option>
+            </select>
           </div>
-          
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="completed">Completed</option>
-          </select>
-          
-          <select
-            value={filters.paymentStatus}
-            onChange={(e) => setFilters({ ...filters, paymentStatus: e.target.value })}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Payments</option>
-            <option value="pending">Payment Pending</option>
-            <option value="paid">Paid</option>
-            <option value="refunded">Refunded</option>
-            <option value="cancelled">Payment Cancelled</option>
-            <option value="failed">Payment Failed</option>
-          </select>
-          
+
           <button 
             onClick={fetchBookings}
             disabled={loading}
@@ -308,6 +323,7 @@ const BookingManagement: React.FC = () => {
         </div>
       </div>
       
+      {/* Bookings Table */}
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -356,13 +372,18 @@ const BookingManagement: React.FC = () => {
                         <div className="text-sm font-medium text-gray-900 capitalize">
                           {booking.type} Booking
                         </div>
+                        <label htmlFor={`guests-${booking._id}`} className="sr-only">Number of guests</label>
                         <input
+                          id={`guests-${booking._id}`}
                           type="number"
                           value={editForm.guests}
                           onChange={(e) => setEditForm(prev => ({ ...prev, guests: parseInt(e.target.value) }))
                           }
                           className="w-20 text-xs border border-gray-300 rounded px-2 py-1"
                           min="1"
+                          title="Number of guests"
+                          placeholder="Guests"
+                          aria-label="Number of guests"
                         />
                         <span className="text-xs"> guests</span>
                       </div>
@@ -392,6 +413,9 @@ const BookingManagement: React.FC = () => {
                           onChange={(e) => setEditForm(prev => ({ ...prev, checkIn: e.target.value }))
                           }
                           className="w-full text-xs border border-gray-300 rounded px-2 py-1"
+                          title="Check-in date"
+                          aria-label="Check-in date"
+                          placeholder="Check-in date"
                         />
                         <input
                           type="date"
@@ -399,6 +423,9 @@ const BookingManagement: React.FC = () => {
                           onChange={(e) => setEditForm(prev => ({ ...prev, checkOut: e.target.value }))
                           }
                           className="w-full text-xs border border-gray-300 rounded px-2 py-1"
+                          title="Check-out date"
+                          aria-label="Check-out date"
+                          placeholder="Check-out date"
                         />
                       </div>
                     ) : (
@@ -425,6 +452,8 @@ const BookingManagement: React.FC = () => {
                         <select
                           value={newPaymentStatus}
                           onChange={(e) => setNewPaymentStatus(e.target.value)}
+                          aria-label="Payment status"
+                          title="Payment status"
                           className="text-xs border border-gray-300 rounded px-2 py-1"
                         >
                           <option value="pending">Pending</option>
@@ -436,12 +465,14 @@ const BookingManagement: React.FC = () => {
                         <button
                           onClick={() => updatePaymentStatus(booking._id, newPaymentStatus)}
                           className="text-green-600 hover:text-green-800"
+                          title="Save Payment"
                         >
                           <Check className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => setEditingPayment(null)}
                           className="text-red-600 hover:text-red-800"
+                          title="Cancel Payment"
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -458,6 +489,8 @@ const BookingManagement: React.FC = () => {
                         <select
                           value={newBookingStatus}
                           onChange={(e) => setNewBookingStatus(e.target.value)}
+                          aria-label="Booking status"
+                          title="Booking status"
                           className="text-xs border border-gray-300 rounded px-2 py-1"
                         >
                           <option value="pending">Pending</option>
@@ -562,6 +595,16 @@ const BookingManagement: React.FC = () => {
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
+                          
+                          {(booking.type === 'room' || booking.type === 'banquet') && (
+                            <button
+                              onClick={() => handleCreateBill(booking._id)}
+                              className="text-green-600 hover:text-green-800"
+                              title={booking.bill ? "Edit Bill" : "Create Bill"}
+                            >
+                              <Receipt className="h-4 w-4" />
+                            </button>
+                          )}
                         </>
                       )}
                     </div>
@@ -586,22 +629,23 @@ const BookingManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Booking Details Modal */
-      viewingDetails && selectedBooking && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      {/* Booking Details Modal */}
+      {viewingDetails && selectedBooking && (
+        <div className="fixed inset-0 z-40 overflow-auto bg-black/30 flex items-start justify-center p-4">
+          <div className="bg-white w-full max-w-4xl rounded-lg shadow-lg overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold text-gray-900">Booking Details</h2>
                 <button
                   onClick={closeDetailsModal}
                   className="text-gray-400 hover:text-gray-600"
+                  title="Close Details"
                 >
                   <X className="h-6 w-6" />
                 </button>
               </div>
             </div>
-            
+
             <div className="p-6 space-y-6">
               {/* Customer Information */}
               <div className="bg-gray-50 p-4 rounded-lg">
@@ -769,7 +813,7 @@ const BookingManagement: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

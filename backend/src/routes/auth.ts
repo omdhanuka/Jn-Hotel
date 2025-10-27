@@ -1,6 +1,6 @@
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login, getProfile, updateProfile, createAdmin } from '../controllers/authController';
+import { register, login, getProfile, updateProfile } from '../controllers/authController';
 import { auth } from '../middleware/auth';
 
 const router = express.Router();
@@ -11,7 +11,7 @@ const router = express.Router();
 router.post('/register', [
   body('firstName').notEmpty().withMessage('First name is required'),
   body('lastName').notEmpty().withMessage('Last name is required'),
-  body('email').isEmail().withMessage('Please provide a valid email'),
+  body('email').isEmail().withMessage('Please include a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('phone').notEmpty().withMessage('Phone number is required')
 ], register);
@@ -20,9 +20,14 @@ router.post('/register', [
 // @desc    Login user
 // @access  Public
 router.post('/login', [
-  body('email').isEmail().withMessage('Please provide a valid email'),
+  body('email').isEmail().withMessage('Please include a valid email'),
   body('password').exists().withMessage('Password is required')
 ], login);
+
+// @route   GET /api/auth/me
+// @desc    Get current user
+// @access  Private
+router.get('/me', auth, getProfile);
 
 // @route   GET /api/auth/profile
 // @desc    Get user profile
@@ -32,17 +37,10 @@ router.get('/profile', auth, getProfile);
 // @route   PUT /api/auth/profile
 // @desc    Update user profile
 // @access  Private
-router.put('/profile', auth, updateProfile);
-
-// @route   POST /api/auth/create-admin
-// @desc    Create admin user
-// @access  Public (with admin key)
-router.post('/create-admin', [
-  body('firstName').notEmpty().withMessage('First name is required'),
-  body('lastName').notEmpty().withMessage('Last name is required'),
-  body('email').isEmail().withMessage('Please provide a valid email'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('adminKey').notEmpty().withMessage('Admin key is required')
-], createAdmin);
+router.put('/profile', auth, [
+  body('firstName').optional().notEmpty().withMessage('First name cannot be empty'),
+  body('lastName').optional().notEmpty().withMessage('Last name cannot be empty'),
+  body('phone').optional().notEmpty().withMessage('Phone cannot be empty')
+], updateProfile);
 
 export default router;

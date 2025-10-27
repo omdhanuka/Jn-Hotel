@@ -28,6 +28,23 @@ export interface IBooking extends Document {
     advanceAmount?: number;
     paymentMethod?: string;
   };
+  bill?: {
+    items: Array<{
+      description: string;
+      quantity: number;
+      unitPrice: number;
+      amount: number;
+    }>;
+    subtotal: number;
+    discount: number; // percentage 0-100
+    taxRate: number; // percentage 0-100
+    taxAmount: number;
+    serviceChargeRate: number; // percentage 0-100
+    serviceChargeAmount: number;
+    grandTotal: number;
+    currency: string;
+    notes?: string;
+  };
 }
 
 const bookingSchema = new Schema<IBooking>({
@@ -69,6 +86,23 @@ const bookingSchema = new Schema<IBooking>({
     bookingType: { type: String },
     advanceAmount: { type: Number },
     paymentMethod: { type: String }
+  },
+  bill: {
+    items: [{
+      description: { type: String, required: true },
+      quantity: { type: Number, default: 1 },
+      unitPrice: { type: Number, default: 0 },
+      amount: { type: Number, default: 0 }
+    }],
+    subtotal: { type: Number, default: 0 },
+    discount: { type: Number, default: 0 },
+    taxRate: { type: Number, default: 0 },
+    taxAmount: { type: Number, default: 0 },
+    serviceChargeRate: { type: Number, default: 0 },
+    serviceChargeAmount: { type: Number, default: 0 },
+    grandTotal: { type: Number, default: 0 },
+    currency: { type: String, default: 'USD' },
+    notes: { type: String }
   }
 }, { 
   timestamps: true,
