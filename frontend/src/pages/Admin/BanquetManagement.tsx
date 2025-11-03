@@ -354,8 +354,11 @@ const BanquetManagement: React.FC = () => {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium mb-1">Banquet Type *</label>
+                      <label id="banquet-type-label" htmlFor="banquet-type" className="block text-sm font-medium mb-1">Banquet Type *</label>
                       <select
+                        id="banquet-type"
+                        aria-labelledby="banquet-type-label"
+                        title="Banquet Type"
                         value={banquetForm.type}
                         onChange={(e) => handleInputChange('type', e.target.value)}
                         className="w-full border rounded-md px-3 py-2"
@@ -502,6 +505,9 @@ const BanquetManagement: React.FC = () => {
                         checked={value}
                         onChange={() => handleFacilityToggle(key)}
                         className="rounded"
+                        title={key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                        placeholder={key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                        aria-label={key.replace(/([A-Z])/g, ' $1').toLowerCase()}
                       />
                       <span className="text-sm capitalize">
                         {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
@@ -581,8 +587,11 @@ const BanquetManagement: React.FC = () => {
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium mb-1">Status</label>
+                        <label id="banquet-status-label" htmlFor="banquet-status" className="block text-sm font-medium mb-1">Status</label>
                         <select
+                          id="banquet-status"
+                          aria-labelledby="banquet-status-label"
+                          title="Status"
                           value={banquetForm.status}
                           onChange={(e) => handleInputChange('status', e.target.value)}
                           className="w-full border rounded-md px-3 py-2"
@@ -728,8 +737,8 @@ const BanquetManagement: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">${banquet.pricePerDay}/day</div>
-                      <div className="text-sm text-gray-500">${banquet.pricePerHour}/hour</div>
+                      <div className="text-sm font-medium text-gray-900">₹{banquet.pricePerDay}/day</div>
+                      <div className="text-sm text-gray-500">₹{banquet.pricePerHour}/hour</div>
                       <div className="text-sm text-gray-500">Min {banquet.minimumHours}hrs</div>
                     </div>
                   </td>

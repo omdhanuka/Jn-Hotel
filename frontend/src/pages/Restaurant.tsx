@@ -322,9 +322,9 @@ const Restaurant: React.FC = () => {
                       <p className="text-gray-600 text-sm mb-2">{item.description}</p>
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-lg font-bold text-green-600">
-                          ${item.discount ? (item.price - (item.price * item.discount / 100)).toFixed(2) : item.price}
+                          ₹{item.discount ? (item.price - (item.price * item.discount / 100)).toFixed(2) : item.price}
                           {item.discount && (
-                            <span className="text-sm text-gray-500 line-through ml-2">${item.price}</span>
+                            <span className="text-sm text-gray-500 line-through ml-2">₹{item.price}</span>
                           )}
                         </span>
                         <span className="text-sm text-gray-500">{item.category}</span>
@@ -388,7 +388,7 @@ const Restaurant: React.FC = () => {
                                 <Plus className="h-3 w-3" />
                               </button>
                             </div>
-                            <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                            <span className="font-medium">₹{(item.price * item.quantity).toFixed(2)}</span>
                           </div>
                         </div>
                       ))}
@@ -396,7 +396,7 @@ const Restaurant: React.FC = () => {
                     
                     <div className="border-t pt-3 mb-4">
                       <div className="flex justify-between font-bold">
-                        <span>Total: ${calculateTotal().toFixed(2)}</span>
+                        <span>Total: ₹{calculateTotal().toFixed(2)}</span>
                       </div>
                     </div>
                     
@@ -452,7 +452,7 @@ const Restaurant: React.FC = () => {
                   
                   {table.price && table.price > 0 && (
                     <div className="mb-4">
-                      <span className="text-lg font-bold text-green-600">${table.price}</span>
+                      <span className="text-lg font-bold text-green-600">₹{table.price}</span>
                       <span className="text-sm text-gray-500 ml-1">reservation fee</span>
                     </div>
                   )}
@@ -637,13 +637,13 @@ const Restaurant: React.FC = () => {
                       {cart.map(item => (
                         <div key={item._id} className="flex justify-between text-sm">
                           <span>{item.name} x {item.quantity}</span>
-                          <span>${(item.price * item.quantity).toFixed(2)}</span>
+                          <span>₹{(item.price * item.quantity).toFixed(2)}</span>
                         </div>
                       ))}
                       <div className="border-t mt-2 pt-2 font-bold">
                         <div className="flex justify-between">
                           <span>Total</span>
-                          <span>${calculateTotal().toFixed(2)}</span>
+                          <span>₹{calculateTotal().toFixed(2)}</span>
                         </div>
                       </div>
                     </div>

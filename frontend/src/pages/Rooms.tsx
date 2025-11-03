@@ -248,7 +248,7 @@ const Rooms: React.FC = () => {
                       {room.type} Room {room.roomNumber}
                     </h3>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-blue-600">${room.price}</div>
+                      <div className="text-2xl font-bold text-blue-600">₹{room.price}</div>
                       <div className="text-sm text-gray-500">per night</div>
                     </div>
                   </div>

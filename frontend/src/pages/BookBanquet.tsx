@@ -309,9 +309,9 @@ const BookBanquet: React.FC = () => {
                     <p className="text-gray-600 mt-1">{banquet.description}</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-blue-600">${banquet.pricePerDay}</div>
+                    <div className="text-2xl font-bold text-blue-600">₹{banquet.pricePerDay}</div>
                     <div className="text-sm text-gray-500">per day</div>
-                    <div className="text-lg font-semibold text-gray-900">${banquet.pricePerHour}/hr</div>
+                    <div className="text-lg font-semibold text-gray-900">₹{banquet.pricePerHour}/hr</div>
                   </div>
                 </div>
 
@@ -342,7 +342,7 @@ const BookBanquet: React.FC = () => {
                       .map(([key]) => (
                         <div key={key} className="flex items-center">
                           <Check className="h-4 w-4 text-green-500 mr-2" />
-                          <span className="text-sm capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                          <span className="text-sm capitalize">{key.replace(/([A-Z])/g, ' ₹1')}</span>
                         </div>
                       ))}
                   </div>
@@ -524,7 +524,7 @@ const BookBanquet: React.FC = () => {
                         </div>
                         <div className="flex justify-between font-semibold">
                           <span>Total Amount:</span>
-                          <span>${calculateTotal()}</span>
+                          <span>₹{calculateTotal()}</span>
                         </div>
                       </div>
                     </div>
@@ -642,11 +642,11 @@ const BookBanquet: React.FC = () => {
                     <div className="text-sm">
                       <div className="flex justify-between mb-2">
                         <span>Total Amount:</span>
-                        <span className="font-semibold">${calculateTotal()}</span>
+                        <span className="font-semibold">₹{calculateTotal()}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Advance Amount (20%):</span>
-                        <span className="font-semibold text-green-600">${bookingForm.advanceAmount}</span>
+                        <span className="font-semibold text-green-600">₹{bookingForm.advanceAmount}</span>
                       </div>
                     </div>
                   </div>

@@ -213,7 +213,7 @@ const Dashboard: React.FC = () => {
                             )}
                           </div>
                           <div className="text-right">
-                            <div className="text-2xl font-bold text-blue-600">${booking.totalAmount}</div>
+                            <div className="text-2xl font-bold text-blue-600">₹{booking.totalAmount}</div>
                             <span className={`inline-block px-2 py-1 text-xs rounded-full ${
                               booking.status === 'confirmed' 
                                 ? 'bg-green-100 text-green-800' 
@@ -402,7 +402,7 @@ const Dashboard: React.FC = () => {
                         <div className="text-sm text-gray-600">
                           <p>Items: {booking.items?.length || 0} items</p>
                           <p>Delivery: {booking.deliveryType}</p>
-                          <p>Total: ${booking.totalAmount}</p>
+                          <p>Total: ₹{booking.totalAmount}</p>
                         </div>
                       )}
                       
@@ -411,7 +411,7 @@ const Dashboard: React.FC = () => {
                           {new Date(booking.createdAt).toLocaleDateString()}
                         </span>
                         <span className="font-medium text-green-600">
-                          ${booking.totalAmount}
+                          ₹{booking.totalAmount}
                         </span>
                       </div>
                     </div>

@@ -323,7 +323,7 @@ const RestaurantManagement: React.FC = () => {
                   </div>
                   <p className="text-gray-600 text-sm mb-2">{item.description}</p>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-lg font-bold text-green-600">${item.price}</span>
+                    <span className="text-lg font-bold text-green-600">₹{item.price}</span>
                     <span className="text-sm text-gray-500">{item.category}</span>
                   </div>
                   {item.preparationTime && (
@@ -406,7 +406,7 @@ const RestaurantManagement: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      {table.price ? `$${table.price}` : 'Free'}
+                      {table.price ? `₹${table.price}` : 'Free'}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex space-x-2">

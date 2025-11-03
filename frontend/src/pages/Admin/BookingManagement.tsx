@@ -439,7 +439,7 @@ const BookingManagement: React.FC = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${booking.totalAmount}
+                    ₹{booking.totalAmount}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(booking.status)}`}>
@@ -726,7 +726,7 @@ const BookingManagement: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Total Amount</label>
-                    <p className="mt-1 text-lg font-bold text-green-600">${selectedBooking.totalAmount}</p>
+                    <p className="mt-1 text-lg font-bold text-green-600">₹{selectedBooking.totalAmount}</p>
                   </div>
                 </div>
               </div>

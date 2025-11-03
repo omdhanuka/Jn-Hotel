@@ -125,10 +125,10 @@ const Banquets: React.FC = () => {
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Any Price</option>
-                <option value="0-10000">Under $10,000</option>
-                <option value="10000-25000">$10,000 - $25,000</option>
-                <option value="25000-50000">$25,000 - $50,000</option>
-                <option value="50000+">$50,000+</option>
+                <option value="0-10000">Under ₹10,000</option>
+                <option value="10000-25000">₹10,000 - ₹25,000</option>
+                <option value="25000-50000">₹25,000 - ₹50,000</option>
+                <option value="50000+">₹50,000+</option>
               </select>
             </div>
             
@@ -191,9 +191,9 @@ const Banquets: React.FC = () => {
                       {banquet.name}
                     </h3>
                     <div className="text-right">
-                      <div className="text-lg font-bold text-blue-600">${banquet.pricePerDay}</div>
+                      <div className="text-lg font-bold text-blue-600">₹{banquet.pricePerDay}</div>
                       <div className="text-xs text-gray-500">per day</div>
-                      <div className="text-sm text-gray-600">${banquet.pricePerHour}/hr</div>
+                      <div className="text-sm text-gray-600">₹{banquet.pricePerHour}/hr</div>
                     </div>
                   </div>
                   

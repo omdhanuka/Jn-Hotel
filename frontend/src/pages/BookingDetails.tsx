@@ -527,14 +527,14 @@ const BookingDetails: React.FC = () => {
                   <span className="text-gray-600">
                     {booking.type === 'table' ? 'Reservation' : `${calculateNights()} night${calculateNights() > 1 ? 's' : ''}`}
                   </span>
-                  <span className="font-medium">${booking.totalAmount}</span>
+                  <span className="font-medium">₹{booking.totalAmount}</span>
                 </div>
                 
                 <hr className="my-3" />
                 
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
-                  <span className="text-blue-600">${booking.totalAmount}</span>
+                  <span className="text-blue-600">₹{booking.totalAmount}</span>
                 </div>
                 
                 <div className="mt-4">

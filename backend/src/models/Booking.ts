@@ -101,7 +101,7 @@ const bookingSchema = new Schema<IBooking>({
     serviceChargeRate: { type: Number, default: 0 },
     serviceChargeAmount: { type: Number, default: 0 },
     grandTotal: { type: Number, default: 0 },
-    currency: { type: String, default: 'USD' },
+    currency: { type: String, default: 'INR' },
     notes: { type: String }
   }
 }, { 

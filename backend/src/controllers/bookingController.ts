@@ -141,7 +141,7 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
     const booking = new Booking(bookingData);
     await booking.save();
 
-    // Add loyalty points (1 point per dollar spent)
+    // Add loyalty points (1 point per rupee spent)
     if (totalAmount > 0) {
       await User.findByIdAndUpdate(req.user!._id, {
         $inc: { loyaltyPoints: Math.floor(totalAmount) }

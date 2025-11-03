@@ -393,7 +393,7 @@ const BillCreator: React.FC = () => {
   const [discount, setDiscount] = useState<number>(0);
   const [taxRate, setTaxRate] = useState<number>(12);
   const [serviceChargeRate, setServiceChargeRate] = useState<number>(10);
-  const [currency, setCurrency] = useState<string>('USD');
+  const [currency, setCurrency] = useState<string>('INR');
   const [notes, setNotes] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
@@ -452,7 +452,7 @@ const BillCreator: React.FC = () => {
           setDiscount(typeof b.bill.discount === 'number' ? b.bill.discount : 0);
           setTaxRate(typeof b.bill.taxRate === 'number' ? b.bill.taxRate : 12);
           setServiceChargeRate(typeof b.bill.serviceChargeRate === 'number' ? b.bill.serviceChargeRate : 10);
-          setCurrency(b.bill.currency || 'USD');
+          setCurrency(b.bill.currency || 'INR');
           setNotes(b.bill.notes || '');
         }
       } catch (err: any) {
@@ -678,8 +678,8 @@ const BillCreator: React.FC = () => {
               <tr>
                 <td>${item.description}</td>
                 <td class="text-right">${item.quantity}</td>
-                <td class="text-right">${bill.currency} ${item.unitPrice.toFixed(2)}</td>
-                <td class="text-right">${bill.currency} ${item.amount.toFixed(2)}</td>
+                <td class="text-right">₹${item.unitPrice.toFixed(2)}</td>
+                <td class="text-right">₹${item.amount.toFixed(2)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -687,11 +687,11 @@ const BillCreator: React.FC = () => {
 
         <div class="totals">
           <table>
-            <tr><td>Subtotal:</td><td class="text-right">${bill.currency} ${bill.subtotal.toFixed(2)}</td></tr>
-            ${bill.discount > 0 ? `<tr><td>Discount (${bill.discount}%):</td><td class="text-right">- ${bill.currency} ${(bill.subtotal * bill.discount / 100).toFixed(2)}</td></tr>` : ''}
-            ${bill.serviceChargeRate > 0 ? `<tr><td>Service Charge (${bill.serviceChargeRate}%):</td><td class="text-right">${bill.currency} ${bill.serviceChargeAmount.toFixed(2)}</td></tr>` : ''}
-            ${bill.taxRate > 0 ? `<tr><td>Tax (${bill.taxRate}%):</td><td class="text-right">${bill.currency} ${bill.taxAmount.toFixed(2)}</td></tr>` : ''}
-            <tr class="grand-total"><td>Grand Total:</td><td class="text-right">${bill.currency} ${bill.grandTotal.toFixed(2)}</td></tr>
+            <tr><td>Subtotal:</td><td class="text-right">₹${bill.subtotal.toFixed(2)}</td></tr>
+            ${bill.discount > 0 ? `<tr><td>Discount (${bill.discount}%):</td><td class="text-right">- ₹${(bill.subtotal * bill.discount / 100).toFixed(2)}</td></tr>` : ''}
+            ${bill.serviceChargeRate > 0 ? `<tr><td>Service Charge (${bill.serviceChargeRate}%):</td><td class="text-right">₹${bill.serviceChargeAmount.toFixed(2)}</td></tr>` : ''}
+            ${bill.taxRate > 0 ? `<tr><td>Tax (${bill.taxRate}%):</td><td class="text-right">₹${bill.taxAmount.toFixed(2)}</td></tr>` : ''}
+            <tr class="grand-total"><td>Grand Total:</td><td class="text-right">₹${bill.grandTotal.toFixed(2)}</td></tr>
           </table>
         </div>
 
@@ -813,8 +813,8 @@ const BillCreator: React.FC = () => {
             className="w-full border rounded-md px-3 py-2"
             value={currency}
             onChange={e => setCurrency(e.target.value)}
-            placeholder="e.g. USD"
-            title="Currency code, e.g. USD"
+            placeholder="e.g. INR"
+            title="Currency code, e.g. INR"
           />
         </div>
         <div>
@@ -874,7 +874,7 @@ const BillCreator: React.FC = () => {
               <input className="col-span-5 border rounded-md px-3 py-2" placeholder="Description" value={it.description} onChange={e => updateItem(idx, { description: e.target.value })} />
               <input type="number" className="col-span-2 border rounded-md px-3 py-2" placeholder="Qty" value={it.quantity} onChange={e => updateItem(idx, { quantity: Number(e.target.value) || 0 })} />
               <input type="number" className="col-span-2 border rounded-md px-3 py-2" placeholder="Unit Price" value={it.unitPrice} onChange={e => updateItem(idx, { unitPrice: Number(e.target.value) || 0 })} />
-              <div className="col-span-2 text-right font-medium">{currency} {it.amount.toFixed(2)}</div>
+              <div className="col-span-2 text-right font-medium">₹{it.amount.toFixed(2)}</div>
               <button onClick={() => removeItem(idx)} className="col-span-1 text-red-600">Remove</button>
             </div>
           ))}
@@ -887,11 +887,11 @@ const BillCreator: React.FC = () => {
           <textarea className="w-full border rounded-md px-3 py-2" rows={4} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Additional notes..." />
         </div>
         <div className="bg-gray-50 p-4 rounded-md space-y-1">
-          <div className="flex justify-between"><span>Subtotal</span><span>{currency} {totals.subtotal.toFixed(2)}</span></div>
-          <div className="flex justify-between"><span>Discount ({discount}%)</span><span>- {currency} {totals.discountAmount.toFixed(2)}</span></div>
-          <div className="flex justify-between"><span>Service Charge ({serviceChargeRate}%)</span><span>{currency} {totals.serviceChargeAmount.toFixed(2)}</span></div>
-          <div className="flex justify-between"><span>Tax ({taxRate}%)</span><span>{currency} {totals.taxAmount.toFixed(2)}</span></div>
-          <div className="flex justify-between font-bold text-lg pt-2 border-t"><span>Total</span><span>{currency} {totals.grandTotal.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>Subtotal</span><span>₹{totals.subtotal.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>Discount ({discount}%)</span><span>- ₹{totals.discountAmount.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>Service Charge ({serviceChargeRate}%)</span><span>₹{totals.serviceChargeAmount.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>Tax ({taxRate}%)</span><span>₹{totals.taxAmount.toFixed(2)}</span></div>
+          <div className="flex justify-between font-bold text-lg pt-2 border-t"><span>Total</span><span>₹{totals.grandTotal.toFixed(2)}</span></div>
         </div>
       </div>
  

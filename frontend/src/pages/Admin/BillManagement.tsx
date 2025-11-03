@@ -262,8 +262,8 @@ const BillManagement: React.FC = () => {
                   <tr>
                     <td>${item.name}${addOnsText}</td>
                     <td>${item.quantity}</td>
-                    <td>$${(item.price + addOnsTotal).toFixed(2)}</td>
-                    <td>$${itemTotal.toFixed(2)}</td>
+                    <td>₹${(item.price + addOnsTotal).toFixed(2)}</td>
+                    <td>₹${itemTotal.toFixed(2)}</td>
                   </tr>
                 `;
               }).join('')}
@@ -271,11 +271,11 @@ const BillManagement: React.FC = () => {
           </table>
           
           <div class="total-section">
-            <p>Subtotal: $${bill.subtotal.toFixed(2)}</p>
-            ${bill.discount > 0 ? `<p>Discount: -$${bill.discount.toFixed(2)}</p>` : ''}
-            <p>Tax: $${bill.tax.toFixed(2)}</p>
-            ${(bill.deliveryCharges ?? 0) > 0 ? `<p>Delivery Charges: $${(bill.deliveryCharges ?? 0).toFixed(2)}</p>` : ''}
-            <p class="total-row">Total Amount: $${bill.totalAmount.toFixed(2)}</p>
+            <p>Subtotal: ₹${bill.subtotal.toFixed(2)}</p>
+            ${bill.discount > 0 ? `<p>Discount: -₹${bill.discount.toFixed(2)}</p>` : ''}
+            <p>Tax: ₹${bill.tax.toFixed(2)}</p>
+            ${(bill.deliveryCharges ?? 0) > 0 ? `<p>Delivery Charges: ₹${(bill.deliveryCharges ?? 0).toFixed(2)}</p>` : ''}
+            <p class="total-row">Total Amount: ₹${bill.totalAmount.toFixed(2)}</p>
             <p><strong>Payment Method:</strong> ${bill.paymentMethod.toUpperCase()}</p>
           </div>
           
@@ -474,7 +474,7 @@ const BillManagement: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-lg font-bold text-green-600">
-                          ${order.totalAmount.toFixed(2)}
+                          ₹{order.totalAmount.toFixed(2)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -561,7 +561,7 @@ const BillManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-lg font-bold text-green-600">
-                        ${bill.totalAmount.toFixed(2)}
+                        ₹{bill.totalAmount.toFixed(2)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -629,7 +629,7 @@ const BillManagement: React.FC = () => {
                           </div>
                         )}
                       </span>
-                      <span>${(item.price * item.quantity).toFixed(2)}</span>
+                      <span>₹{(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -638,7 +638,7 @@ const BillManagement: React.FC = () => {
               {/* Bill Adjustments */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Discount</label>
+                  <label htmlFor="discountType" className="block text-sm font-medium mb-1">Discount</label>
                   <div className="flex space-x-2">
                     <input
                       type="number"
@@ -646,15 +646,20 @@ const BillManagement: React.FC = () => {
                       onChange={(e) => setBillForm(prev => ({ ...prev, discount: parseFloat(e.target.value) || 0 }))}
                       className="flex-1 border rounded-md px-3 py-2"
                       placeholder="0"
+                      title="Discount amount (enter percentage value if % selected, or fixed amount)"
+                      aria-label="Discount amount"
                     />
-                    <select
-                      value={billForm.discountType}
-                      onChange={(e) => setBillForm(prev => ({ ...prev, discountType: e.target.value }))}
-                      className="border rounded-md px-3 py-2"
-                    >
-                      <option value="percentage">%</option>
-                      <option value="fixed">$</option>
-                    </select>
+                      <select
+                        id="discountType"
+                        title="Discount Type"
+                        aria-label="Discount Type"
+                        value={billForm.discountType}
+                        onChange={(e) => setBillForm(prev => ({ ...prev, discountType: e.target.value }))}
+                        className="border rounded-md px-3 py-2"
+                      >
+                        <option value="percentage">%</option>
+                        <option value="fixed">$</option>
+                      </select>
                   </div>
                 </div>
                 
@@ -665,6 +670,9 @@ const BillManagement: React.FC = () => {
                     value={billForm.tax}
                     onChange={(e) => setBillForm(prev => ({ ...prev, tax: parseFloat(e.target.value) || 0 }))}
                     className="w-full border rounded-md px-3 py-2"
+                    placeholder="10"
+                    title="Tax percentage to apply to the bill"
+                    aria-label="Tax percentage"
                   />
                 </div>
               </div>
@@ -672,20 +680,27 @@ const BillManagement: React.FC = () => {
               {/* Delivery charges for delivery orders */}
               {selectedOrder.deliveryType === 'delivery' && (
                 <div>
-                  <label className="block text-sm font-medium mb-1">Delivery Charges ($)</label>
+                  <label htmlFor="deliveryCharges" className="block text-sm font-medium mb-1">Delivery Charges (₹)</label>
                   <input
+                    id="deliveryCharges"
                     type="number"
                     value={billForm.deliveryCharges}
                     onChange={(e) => setBillForm(prev => ({ ...prev, deliveryCharges: parseFloat(e.target.value) || 0 }))}
                     className="w-full border rounded-md px-3 py-2"
                     step="0.01"
+                    placeholder="0.00"
+                    title="Delivery charges in dollars"
+                    aria-label="Delivery charges"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium mb-1">Payment Method</label>
+                <label htmlFor="paymentMethod" className="block text-sm font-medium mb-1">Payment Method</label>
                 <select
+                  id="paymentMethod"
+                  title="Payment Method"
+                  aria-label="Payment Method"
                   value={billForm.paymentMethod}
                   onChange={(e) => setBillForm(prev => ({ ...prev, paymentMethod: e.target.value }))}
                   className="w-full border rounded-md px-3 py-2"
@@ -705,27 +720,27 @@ const BillManagement: React.FC = () => {
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span>Subtotal:</span>
-                        <span>${calculation.subtotal.toFixed(2)}</span>
+                        <span>₹{calculation.subtotal.toFixed(2)}</span>
                       </div>
                       {calculation.discount > 0 && (
                         <div className="flex justify-between">
                           <span>Discount:</span>
-                          <span>-${calculation.discount.toFixed(2)}</span>
+                          <span>-₹{calculation.discount.toFixed(2)}</span>
                         </div>
                       )}
                       <div className="flex justify-between">
                         <span>Tax:</span>
-                        <span>${calculation.tax.toFixed(2)}</span>
+                        <span>₹{calculation.tax.toFixed(2)}</span>
                       </div>
                       {calculation.deliveryCharges > 0 && (
                         <div className="flex justify-between">
                           <span>Delivery Charges:</span>
-                          <span>${calculation.deliveryCharges.toFixed(2)}</span>
+                          <span>₹{calculation.deliveryCharges.toFixed(2)}</span>
                         </div>
                       )}
                       <div className="flex justify-between font-bold text-lg border-t pt-1">
                         <span>Total:</span>
-                        <span>${calculation.total.toFixed(2)}</span>
+                        <span>₹{calculation.total.toFixed(2)}</span>
                       </div>
                     </div>
                   );

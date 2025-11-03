@@ -456,23 +456,23 @@ const Receipt: React.FC = () => {
               {booking.type !== 'table' && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">
-                    {booking.type.charAt(0).toUpperCase() + booking.type.slice(1)} ({calculateNights()} night{calculateNights() > 1 ? 's' : ''} × ${resource.price})
+                    {booking.type.charAt(0).toUpperCase() + booking.type.slice(1)} ({calculateNights()} night{calculateNights() > 1 ? 's' : ''} × ₹{resource.price})
                   </span>
-                  <span className="font-medium">${calculateSubtotal()}</span>
+                  <span className="font-medium">₹{calculateSubtotal()}</span>
                 </div>
               )}
               
               {booking.services.length > 0 && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Additional Services</span>
-                  <span className="font-medium">${booking.totalAmount - calculateSubtotal() - calculateTaxes()}</span>
+                  <span className="font-medium">₹{booking.totalAmount - calculateSubtotal() - calculateTaxes()}</span>
                 </div>
               )}
               
               {booking.type !== 'table' && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Taxes & Fees (12%)</span>
-                  <span className="font-medium">${calculateTaxes()}</span>
+                  <span className="font-medium">₹{calculateTaxes()}</span>
                 </div>
               )}
               
@@ -480,7 +480,7 @@ const Receipt: React.FC = () => {
               
               <div className="flex justify-between text-lg font-semibold">
                 <span>Total Amount</span>
-                <span className="text-blue-600">${booking.totalAmount}</span>
+                <span className="text-blue-600">₹{booking.totalAmount}</span>
               </div>
             </div>
           </div>

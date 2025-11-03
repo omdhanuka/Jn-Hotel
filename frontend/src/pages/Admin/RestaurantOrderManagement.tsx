@@ -278,7 +278,7 @@ const RestaurantOrderManagement: React.FC = () => {
                   </td>
                   
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${booking.totalAmount}
+                    ₹{booking.totalAmount}
                   </td>
                   
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -368,7 +368,7 @@ const RestaurantOrderManagement: React.FC = () => {
                   <h3 className="font-medium text-gray-900">Booking Information</h3>
                   <p className="text-sm text-gray-600">Type: {selectedBooking.bookingType}</p>
                   <p className="text-sm text-gray-600">Status: {selectedBooking.status}</p>
-                  <p className="text-sm text-gray-600">Amount: ${selectedBooking.totalAmount}</p>
+                  <p className="text-sm text-gray-600">Amount: ₹{selectedBooking.totalAmount}</p>
                 </div>
               </div>
 
@@ -406,7 +406,7 @@ const RestaurantOrderManagement: React.FC = () => {
                       {selectedBooking.items?.map((item, index) => (
                         <div key={index} className="flex justify-between text-sm">
                           <span>{item.name} x {item.quantity}</span>
-                          <span>${(item.price * item.quantity).toFixed(2)}</span>
+                          <span>₹{(item.price * item.quantity).toFixed(2)}</span>
                         </div>
                       ))}
                     </div>

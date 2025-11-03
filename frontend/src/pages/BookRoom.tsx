@@ -253,7 +253,7 @@ const BookRoom: React.FC = () => {
                     <p className="text-gray-600 mt-1">{room.description}</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-3xl font-bold text-blue-600">${room.price}</div>
+                    <div className="text-3xl font-bold text-blue-600">₹{room.price}</div>
                     <div className="text-sm text-gray-500">per night</div>
                   </div>
                 </div>
@@ -374,8 +374,8 @@ const BookRoom: React.FC = () => {
                   {calculateNights() > 0 && (
                     <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                       <div className="flex justify-between text-sm">
-                        <span>{calculateNights()} nights × ${room.price}</span>
-                        <span>${room.price * calculateNights()}</span>
+                        <span>{calculateNights()} nights × ₹{room.price}</span>
+                        <span>₹{room.price * calculateNights()}</span>
                       </div>
                     </div>
                   )}
@@ -398,7 +398,7 @@ const BookRoom: React.FC = () => {
                           />
                           <div>
                             <div className="font-medium">{service.name}</div>
-                            <div className="text-sm text-gray-500">${service.price} per night</div>
+                            <div className="text-sm text-gray-500">₹{service.price} per night</div>
                           </div>
                         </div>
                       </div>
@@ -409,12 +409,12 @@ const BookRoom: React.FC = () => {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span>Room ({calculateNights()} nights)</span>
-                        <span>${room.price * calculateNights()}</span>
+                        <span>₹{room.price * calculateNights()}</span>
                       </div>
                       {bookingForm.services.length > 0 && (
                         <div className="flex justify-between">
                           <span>Services</span>
-                          <span>${bookingForm.services.reduce((total, serviceId) => {
+                          <span>₹{bookingForm.services.reduce((total, serviceId) => {
                             const service = additionalServices.find(s => s.id === serviceId);
                             return total + (service ? service.price * calculateNights() : 0);
                           }, 0)}</span>
@@ -423,7 +423,7 @@ const BookRoom: React.FC = () => {
                       <hr className="my-2" />
                       <div className="flex justify-between font-semibold">
                         <span>Total</span>
-                        <span>${calculateTotal()}</span>
+                        <span>₹{calculateTotal()}</span>
                       </div>
                     </div>
                   </div>
@@ -464,7 +464,7 @@ const BookRoom: React.FC = () => {
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <div className="flex justify-between font-semibold text-lg">
                         <span>Total Amount</span>
-                        <span className="text-blue-600">${calculateTotal()}</span>
+                        <span className="text-blue-600">₹{calculateTotal()}</span>
                       </div>
                     </div>
                   </div>
