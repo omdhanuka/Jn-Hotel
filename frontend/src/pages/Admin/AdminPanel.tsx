@@ -609,7 +609,7 @@ const BillCreator: React.FC = () => {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Hotel Bill - ${booking!._id.slice(-8)}</title>
+        <title>J.N Palace Hotel Bill - ${booking!._id.slice(-8)}</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
           .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
@@ -639,7 +639,7 @@ const BillCreator: React.FC = () => {
       </head>
       <body>
         <div class="header">
-          <h1>Hotel Bill</h1>
+          <h1>J.N Palace Hotel Bill</h1>
           <p>Booking Reference: #${booking!._id.slice(-8)}</p>
           <p>Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
         </div>

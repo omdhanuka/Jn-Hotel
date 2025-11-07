@@ -11,7 +11,7 @@ const Home: React.FC = () => {
         <div className="relative z-10 flex items-center justify-center h-full text-center text-white">
           <div className="max-w-4xl mx-auto px-4">
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
-              Welcome to GrandStay
+              Welcome to J.N Palace
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-gray-200">
               Experience luxury, comfort, and exceptional hospitality in the heart of the city
@@ -39,7 +39,7 @@ const Home: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Why Choose GrandStay?
+              Why Choose J.N Palace?
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Discover our premium services designed to make your stay unforgettable
@@ -129,7 +129,7 @@ const Home: React.FC = () => {
       <section className="py-20 bg-blue-600">
         <div className="max-w-4xl mx-auto text-center px-4">
           <h2 className="text-4xl font-bold text-white mb-4">
-            Ready to Experience GrandStay?
+            Ready to Experience J.N Palace?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
             Book your stay today and discover the perfect blend of luxury and comfort.
