@@ -396,6 +396,8 @@ const BillCreator: React.FC = () => {
   const [currency, setCurrency] = useState<string>('INR');
   const [notes, setNotes] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  // NEW: Add extraCharges state
+  const [extraCharges, setExtraCharges] = useState<number>(0);
 
   useEffect(() => {
     const load = async () => {
@@ -407,19 +409,44 @@ const BillCreator: React.FC = () => {
         const b = bookingRes.data;
         setBooking(b);
 
+        // Initialize items with booking's base amount first
+        let initialItems: BillItem[] = [];
+        let initialDiscount = 0;
+
+        // IMPORTANT: Always use booking totalAmount as the baseline
+        const bookingTotal = b.totalAmount || 0;
+
         // Fetch resource (room or banquet) to get pricing
         if (b.type === 'room') {
           try {
             const roomRes = await axios.get(`/api/rooms/${b.resourceId}`);
             setResource(roomRes.data);
             const nights = Math.max(1, Math.ceil((new Date(b.checkOut).getTime() - new Date(b.checkIn).getTime()) / (1000 * 60 * 60 * 24)));
-            const unit = roomRes.data.price || 0;
-            const amt = unit * nights;
-            setItems([{ description: `Room ${roomRes.data.roomNumber} - ${nights} night(s)`, quantity: nights, unitPrice: unit, amount: amt }]);
-            if (typeof roomRes.data.discount === 'number') setDiscount(roomRes.data.discount);
+            
+            // Use booking totalAmount if available, otherwise calculate from room price
+            const totalAmt = bookingTotal > 0 ? bookingTotal : (roomRes.data.price || 0) * nights;
+            const unit = nights > 0 ? Math.round(totalAmt / nights) : totalAmt;
+            
+            initialItems = [{ 
+              description: `Room ${roomRes.data.roomNumber} - ${nights} night(s)`, 
+              quantity: nights, 
+              unitPrice: unit, 
+              amount: totalAmt 
+            }];
+            if (typeof roomRes.data.discount === 'number' && roomRes.data.discount > 0) {
+              initialDiscount = roomRes.data.discount;
+            }
           } catch (roomError) {
             console.error('Failed to fetch room details:', roomError);
-            setItems([{ description: `Room booking - ${b.guests} guests`, quantity: 1, unitPrice: b.totalAmount || 0, amount: b.totalAmount || 0 }]);
+            // Use booking's totalAmount as fallback
+            const nights = Math.max(1, Math.ceil((new Date(b.checkOut).getTime() - new Date(b.checkIn).getTime()) / (1000 * 60 * 60 * 24)));
+            const unitPrice = nights > 0 ? Math.round(bookingTotal / nights) : bookingTotal;
+            initialItems = [{ 
+              description: `Room booking - ${b.guests} guests, ${nights} night(s)`, 
+              quantity: nights, 
+              unitPrice: unitPrice, 
+              amount: bookingTotal
+            }];
           }
         } else if (b.type === 'banquet') {
           try {
@@ -429,31 +456,87 @@ const BillCreator: React.FC = () => {
             const end = new Date(b.checkOut).getTime();
             const hours = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60)));
             const bookingType = b.eventDetails?.bookingType === 'daily' ? 'daily' : 'hourly';
+            
+            // Use booking totalAmount if available
+            let totalAmt = bookingTotal;
+            let qty = 1;
+            let unit = totalAmt;
+            let desc = '';
+            
             if (bookingType === 'daily') {
-              const unit = banRes.data.pricePerDay || 0;
-              setItems([{ description: `${banRes.data.name} - 1 day`, quantity: 1, unitPrice: unit, amount: unit }]);
+              qty = 1;
+              unit = bookingTotal > 0 ? bookingTotal : (banRes.data.pricePerDay || 0);
+              totalAmt = unit;
+              desc = `${banRes.data.name} - 1 day`;
             } else {
               const minH = banRes.data.minimumHours || 4;
-              const qty = Math.max(hours, minH);
-              const unit = banRes.data.pricePerHour || 0;
-              setItems([{ description: `${banRes.data.name} - ${qty} hour(s)`, quantity: qty, unitPrice: unit, amount: unit * qty }]);
+              qty = Math.max(hours, minH);
+              if (bookingTotal > 0) {
+                unit = Math.round(bookingTotal / qty);
+                totalAmt = bookingTotal;
+              } else {
+                unit = banRes.data.pricePerHour || 0;
+                totalAmt = unit * qty;
+              }
+              desc = `${banRes.data.name} - ${qty} hour(s)`;
             }
+            
+            initialItems = [{ description: desc, quantity: qty, unitPrice: unit, amount: totalAmt }];
           } catch (banquetError) {
             console.error('Failed to fetch banquet details:', banquetError);
-            setItems([{ description: `Banquet booking - ${b.guests} guests`, quantity: 1, unitPrice: b.totalAmount || 0, amount: b.totalAmount || 0 }]);
+            // Use booking's totalAmount as fallback
+            const start = new Date(b.checkIn).getTime();
+            const end = new Date(b.checkOut).getTime();
+            const hours = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60)));
+            const unitPrice = hours > 0 ? Math.round(bookingTotal / hours) : bookingTotal;
+            initialItems = [{ 
+              description: `Banquet booking - ${b.guests} guests, ${hours} hour(s)`, 
+              quantity: hours, 
+              unitPrice: unitPrice, 
+              amount: bookingTotal
+            }];
           }
         } else {
-          setItems([{ description: `${b.type} booking`, quantity: 1, unitPrice: b.totalAmount || 0, amount: b.totalAmount || 0 }]);
+          // For other types, use booking's totalAmount
+          initialItems = [{ 
+            description: `${b.type.charAt(0).toUpperCase() + b.type.slice(1)} booking - ${b.guests} guests`, 
+            quantity: 1, 
+            unitPrice: bookingTotal, 
+            amount: bookingTotal 
+          }];
         }
 
-        // Prefill from existing bill if present
-        if (b.bill) {
-          setItems(b.bill.items || []);
-          setDiscount(typeof b.bill.discount === 'number' ? b.bill.discount : 0);
+        // CRITICAL: Ensure items have the booking amount even if resource fetch failed
+        if (initialItems.length === 0 || initialItems[0].amount === 0) {
+          console.warn('Items amount is zero, using booking totalAmount as fallback');
+          initialItems = [{
+            description: `${b.type.charAt(0).toUpperCase() + b.type.slice(1)} Booking`,
+            quantity: 1,
+            unitPrice: bookingTotal,
+            amount: bookingTotal
+          }];
+        }
+
+        console.log('Initial bill items:', initialItems); // Debug log
+        console.log('Booking totalAmount:', bookingTotal); // Debug log
+
+        // Set the initial items
+        setItems(initialItems);
+        setDiscount(initialDiscount);
+
+        // Prefill from existing bill if present (this will override the initial items)
+        if (b.bill && b.bill.items && b.bill.items.length > 0) {
+          console.log('Loading existing bill items:', b.bill.items);
+          setItems(b.bill.items);
+          setDiscount(typeof b.bill.discount === 'number' ? b.bill.discount : initialDiscount);
           setTaxRate(typeof b.bill.taxRate === 'number' ? b.bill.taxRate : 12);
           setServiceChargeRate(typeof b.bill.serviceChargeRate === 'number' ? b.bill.serviceChargeRate : 10);
           setCurrency(b.bill.currency || 'INR');
           setNotes(b.bill.notes || '');
+          setExtraCharges((b.bill as any).extraCharges || 0);
+        } else {
+          // Reset extra charges when opening modal for new bill
+          setExtraCharges(0);
         }
       } catch (err: any) {
         console.error('Error loading booking:', err);
@@ -506,15 +589,16 @@ const BillCreator: React.FC = () => {
     const serviceChargeAmount = afterDiscount * (Math.max(0, Math.min(100, serviceChargeRate)) / 100);
     const taxable = afterDiscount + serviceChargeAmount;
     const taxAmount = taxable * (Math.max(0, Math.min(100, taxRate)) / 100);
-    const grandTotal = Math.round((taxable + taxAmount) * 100) / 100;
-    return { subtotal, discountAmount, serviceChargeAmount, taxAmount, grandTotal };
+    // Include extraCharges in grand total
+    const grandTotal = Math.round((taxable + taxAmount + (extraCharges || 0)) * 100) / 100;
+    return { subtotal, discountAmount, serviceChargeAmount, taxAmount, extraCharges: extraCharges || 0, grandTotal };
   })();
 
   const saveBill = async () => {
     if (!booking) return;
     try {
       setSaving(true);
-      const bill: Bill = {
+      const bill: any = {
         items,
         subtotal: totals.subtotal,
         discount,
@@ -522,6 +606,7 @@ const BillCreator: React.FC = () => {
         taxAmount: totals.taxAmount,
         serviceChargeRate,
         serviceChargeAmount: totals.serviceChargeAmount,
+        extraCharges: totals.extraCharges, // Include extra charges
         grandTotal: totals.grandTotal,
         currency,
         notes
@@ -588,7 +673,7 @@ const BillCreator: React.FC = () => {
   };
 
   const generateBillHTML = () => {
-    const bill: Bill = booking!.bill || {
+    const bill: any = booking!.bill || {
       items,
       subtotal: totals.subtotal,
       discount,
@@ -596,6 +681,7 @@ const BillCreator: React.FC = () => {
       taxAmount: totals.taxAmount,
       serviceChargeRate,
       serviceChargeAmount: totals.serviceChargeAmount,
+      extraCharges: totals.extraCharges,
       grandTotal: totals.grandTotal,
       currency,
       notes
@@ -691,6 +777,7 @@ const BillCreator: React.FC = () => {
             ${bill.discount > 0 ? `<tr><td>Discount (${bill.discount}%):</td><td class="text-right">- ₹${(bill.subtotal * bill.discount / 100).toFixed(2)}</td></tr>` : ''}
             ${bill.serviceChargeRate > 0 ? `<tr><td>Service Charge (${bill.serviceChargeRate}%):</td><td class="text-right">₹${bill.serviceChargeAmount.toFixed(2)}</td></tr>` : ''}
             ${bill.taxRate > 0 ? `<tr><td>Tax (${bill.taxRate}%):</td><td class="text-right">₹${bill.taxAmount.toFixed(2)}</td></tr>` : ''}
+            ${(bill.extraCharges || 0) > 0 ? `<tr><td>Additional Charges:</td><td class="text-right">₹${bill.extraCharges.toFixed(2)}</td></tr>` : ''}
             <tr class="grand-total"><td>Grand Total:</td><td class="text-right">₹${bill.grandTotal.toFixed(2)}</td></tr>
           </table>
         </div>
@@ -805,7 +892,7 @@ const BillCreator: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
           <label htmlFor="currency" className="block text-sm font-medium mb-1">Currency</label>
           <input
@@ -831,38 +918,57 @@ const BillCreator: React.FC = () => {
             title="Discount percentage (0-100)"
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="serviceChargeRate" className="block text-sm font-medium mb-1">Service Charge (%)</label>
-            <input
-              id="serviceChargeRate"
-              type="number"
-              className="w-full border rounded-md px-3 py-2"
-              value={serviceChargeRate}
-              onChange={e => setServiceChargeRate(Number(e.target.value) || 0)}
-              min={0}
-              max={100}
-              placeholder="e.g. 10"
-              title="Service charge percentage"
-            />
-          </div>
-          <div>
-            <label htmlFor="taxRate" className="block text-sm font-medium mb-1">Tax (%)</label>
-            <input
-              id="taxRate"
-              type="number"
-              className="w-full border rounded-md px-3 py-2"
-              value={taxRate}
-              onChange={e => setTaxRate(Number(e.target.value) || 0)}
-              min={0}
-              max={100}
-              placeholder="e.g. 12"
-              title="Tax percentage"
-            />
-          </div>
+        <div>
+          <label htmlFor="serviceChargeRate" className="block text-sm font-medium mb-1">Service Charge (%)</label>
+          <input
+            id="serviceChargeRate"
+            type="number"
+            className="w-full border rounded-md px-3 py-2"
+            value={serviceChargeRate}
+            onChange={e => setServiceChargeRate(Number(e.target.value) || 0)}
+            min={0}
+            max={100}
+            placeholder="e.g. 10"
+            title="Service charge percentage"
+          />
+        </div>
+        <div>
+          <label htmlFor="taxRate" className="block text-sm font-medium mb-1">Tax (%)</label>
+          <input
+            id="taxRate"
+            type="number"
+            className="w-full border rounded-md px-3 py-2"
+            value={taxRate}
+            onChange={e => setTaxRate(Number(e.target.value) || 0)}
+            min={0}
+            max={100}
+            placeholder="e.g. 12"
+            title="Tax percentage"
+          />
         </div>
       </div>
- 
+
+      {/* NEW: Add Extra Charges field */}
+      <div>
+        <label htmlFor="extraCharges" className="block text-sm font-medium mb-1">
+          Additional Charges (₹) - Optional
+        </label>
+        <input
+          id="extraCharges"
+          type="number"
+          className="w-full border rounded-md px-3 py-2"
+          value={extraCharges}
+          onChange={e => setExtraCharges(Number(e.target.value) || 0)}
+          min={0}
+          step="0.01"
+          placeholder="0.00"
+          title="Any additional charges (minibar, damages, etc.)"
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          Add any extra charges like minibar, room service, damages, etc.
+        </p>
+      </div>
+
       <div>
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-lg font-semibold">Items</h3>
@@ -888,9 +994,14 @@ const BillCreator: React.FC = () => {
         </div>
         <div className="bg-gray-50 p-4 rounded-md space-y-1">
           <div className="flex justify-between"><span>Subtotal</span><span>₹{totals.subtotal.toFixed(2)}</span></div>
-          <div className="flex justify-between"><span>Discount ({discount}%)</span><span>- ₹{totals.discountAmount.toFixed(2)}</span></div>
+          {totals.discountAmount > 0 && (
+            <div className="flex justify-between"><span>Discount ({discount}%)</span><span>- ₹{totals.discountAmount.toFixed(2)}</span></div>
+          )}
           <div className="flex justify-between"><span>Service Charge ({serviceChargeRate}%)</span><span>₹{totals.serviceChargeAmount.toFixed(2)}</span></div>
           <div className="flex justify-between"><span>Tax ({taxRate}%)</span><span>₹{totals.taxAmount.toFixed(2)}</span></div>
+          {totals.extraCharges > 0 && (
+            <div className="flex justify-between"><span>Additional Charges</span><span>₹{totals.extraCharges.toFixed(2)}</span></div>
+          )}
           <div className="flex justify-between font-bold text-lg pt-2 border-t"><span>Total</span><span>₹{totals.grandTotal.toFixed(2)}</span></div>
         </div>
       </div>

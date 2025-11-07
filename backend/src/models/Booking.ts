@@ -41,6 +41,7 @@ export interface IBooking extends Document {
     taxAmount: number;
     serviceChargeRate: number; // percentage 0-100
     serviceChargeAmount: number;
+    extraCharges?: number; // NEW: optional additional charges
     grandTotal: number;
     currency: string;
     notes?: string;
@@ -100,6 +101,7 @@ const bookingSchema = new Schema<IBooking>({
     taxAmount: { type: Number, default: 0 },
     serviceChargeRate: { type: Number, default: 0 },
     serviceChargeAmount: { type: Number, default: 0 },
+    extraCharges: { type: Number, default: 0 }, // NEW
     grandTotal: { type: Number, default: 0 },
     currency: { type: String, default: 'INR' },
     notes: { type: String }
