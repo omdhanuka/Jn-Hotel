@@ -321,12 +321,9 @@ const Restaurant: React.FC = () => {
                       </div>
                       <p className="text-gray-600 text-sm mb-2">{item.description}</p>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-lg font-bold text-green-600">
-                          ₹{item.discount ? (item.price - (item.price * item.discount / 100)).toFixed(2) : item.price}
-                          {item.discount && (
-                            <span className="text-sm text-gray-500 line-through ml-2">₹{item.price}</span>
-                          )}
-                        </span>
+                        <div className="text-lg font-bold text-green-600">
+                          ₹{item.price}
+                        </div>
                         <span className="text-sm text-gray-500">{item.category}</span>
                       </div>
                       {item.preparationTime && (

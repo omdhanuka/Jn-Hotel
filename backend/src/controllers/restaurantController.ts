@@ -21,7 +21,7 @@ export const getMenuItems = async (req: Request, res: Response) => {
     const menuItems = await MenuItem.find(filter)
       .limit(parseInt(limit as string))
       .skip((parseInt(page as string) - 1) * parseInt(limit as string))
-      .sort({ isFeatured: -1, name: 1 });
+      .sort({ category: 1, name: 1 });
 
     const total = await MenuItem.countDocuments(filter);
 
