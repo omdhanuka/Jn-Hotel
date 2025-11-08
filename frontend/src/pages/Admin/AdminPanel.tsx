@@ -9,7 +9,8 @@ import {
   Utensils, 
   BedDouble,
   Building,
-  Calculator
+  Calculator,
+  MessageSquare
 } from 'lucide-react';
 import BookingManagement from './BookingManagement';
 import RoomManagement from './RoomManagement';
@@ -18,6 +19,7 @@ import BanquetManagement from './BanquetManagement';
 import RestaurantManagement from './RestaurantManagement';
 import RestaurantOrderManagement from './RestaurantOrderManagement';
 import BillManagement from './BillManagement';
+import ReviewManagement from './ReviewManagement';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -113,6 +115,7 @@ const AdminPanel: React.FC = () => {
     { id: 'restaurant-orders', label: 'Restaurant Orders', icon: Utensils, path: '/admin/restaurant-orders' },
     { id: 'bills', label: 'Bills', icon: Calculator, path: '/admin/bills' },
     { id: 'bookings', label: 'Bookings', icon: Calendar, path: '/admin/bookings' },
+    { id: 'reviews', label: 'Reviews', icon: MessageSquare, path: '/admin/reviews' },
     { id: 'chart', label: 'Booking Chart', icon: Calendar, path: '/admin/booking-chart' },
     { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' }
@@ -354,6 +357,8 @@ const AdminPanel: React.FC = () => {
 
             <Route path="/bookings" element={<BookingManagement />} />
             <Route path="/bookings/:id/bill" element={<BillCreator />} />
+            
+            <Route path="/reviews" element={<ReviewManagement />} />
             
             <Route path="/booking-chart" element={<BookingChart />} />
             

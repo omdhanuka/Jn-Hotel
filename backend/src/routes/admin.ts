@@ -5,7 +5,8 @@ import {
   getAllUsers, 
   updateUserRole,
   getRevenue,
-  getOccupancyRate 
+  getOccupancyRate,
+  getAllReviews 
 } from '../controllers/adminController';
 import { auth } from '../middleware/auth';
 import { adminAuth } from '../middleware/adminAuth';
@@ -44,5 +45,10 @@ router.get('/revenue', getRevenue);
 // @desc    Get occupancy rate
 // @access  Private (Admin only)
 router.get('/occupancy', getOccupancyRate);
+
+// @route   GET /api/admin/reviews
+// @desc    Get all reviews
+// @access  Private (Admin only)
+router.get('/reviews', getAllReviews);
 
 export default router;

@@ -3,6 +3,7 @@ import Booking from '../models/Booking';
 import User from '../models/User';
 import Room from '../models/Room';
 import Order from '../models/Order';
+import Review from '../models/Review';
 
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
@@ -261,6 +262,38 @@ export const getOccupancyRate = async (req: Request, res: Response) => {
       totalRooms,
       occupiedRooms,
       last30Days
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getAllReviews = async (req: Request, res: Response) => {
+  try {
+    const { page = 1, limit = 20, status = 'all', rating } = req.query;
+    const filter: any = {};
+    if (status === 'pending') filter.isApproved = false;
+    else if (status === 'approved') filter.isApproved = true;
+    if (rating) filter.rating = parseInt(rating as string);
+
+    const reviews = await Review.find(filter)
+      .populate('user', 'firstName lastName email')
+      .populate('booking', 'type checkIn checkOut')
+      .limit(parseInt(limit as string))
+      .skip((parseInt(page as string) - 1) * parseInt(limit as string))
+      .sort({ createdAt: -1 });
+
+    const total = await Review.countDocuments(filter);
+
+    res.json({
+      reviews,
+      pagination: {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        total,
+        pages: Math.ceil(total / parseInt(limit as string))
+      }
     });
   } catch (error) {
     console.error(error);

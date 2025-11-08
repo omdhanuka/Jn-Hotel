@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Calendar, Clock, Users, MapPin, Star, CreditCard, Utensils, Filter, BedDouble, Building, Search } from 'lucide-react';
+import { Calendar, Clock, Users, MapPin, Star, CreditCard, Utensils, Filter, BedDouble, Building, Search, MessageSquare } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import FeedbackModal from '../components/FeedbackModal';
 
 interface Booking {
   _id: string;
@@ -41,6 +42,8 @@ const Dashboard: React.FC = () => {
   const [restaurantBookings, setRestaurantBookings] = useState<Booking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<ExtendedBooking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [selectedBookingForFeedback, setSelectedBookingForFeedback] = useState<ExtendedBooking | null>(null);
   
   // Filter states
   const [filters, setFilters] = useState({
@@ -259,6 +262,17 @@ const Dashboard: React.FC = () => {
     banquet: filteredBookings.filter(b => b.type === 'banquet').length,
     table: filteredBookings.filter(b => b.type === 'table' || (b.source === 'restaurant' && b.deliveryType === 'dine-in')).length,
     restaurant: filteredBookings.filter(b => b.source === 'restaurant' && b.deliveryType !== 'dine-in').length
+  };
+
+  const handleOpenFeedback = (booking: ExtendedBooking) => {
+    setSelectedBookingForFeedback(booking);
+    setShowFeedbackModal(true);
+  };
+
+  const handleFeedbackSuccess = () => {
+    setShowFeedbackModal(false);
+    setSelectedBookingForFeedback(null);
+    fetchAllBookings(); // Refresh bookings
   };
 
   return (
@@ -610,6 +624,16 @@ const Dashboard: React.FC = () => {
                               Download Receipt
                             </Link>
                           )}
+                          {/* NEW: Add feedback button for completed bookings */}
+                          {booking.status === 'completed' && booking.source === 'hotel' && (
+                            <button
+                              onClick={() => handleOpenFeedback(booking)}
+                              className="border border-green-600 text-green-600 px-4 py-2 rounded-md text-sm hover:bg-green-50 flex items-center"
+                            >
+                              <MessageSquare className="h-4 w-4 mr-1" />
+                              Share Feedback
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -682,6 +706,19 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Feedback Modal */}
+      {showFeedbackModal && selectedBookingForFeedback && (
+        <FeedbackModal
+          bookingId={selectedBookingForFeedback._id}
+          bookingType={selectedBookingForFeedback.type}
+          onClose={() => {
+            setShowFeedbackModal(false);
+            setSelectedBookingForFeedback(null);
+          }}
+          onSuccess={handleFeedbackSuccess}
+        />
+      )}
     </div>
   );
 };

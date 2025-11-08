@@ -41,6 +41,8 @@ const Home: React.FC = () => {
   // Add state for rooms
   const [featuredRooms, setFeaturedRooms] = useState<Room[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(true);
+  const [testimonials, setTestimonials] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
 
   // Fetch featured rooms on mount
   useEffect(() => {
@@ -58,6 +60,38 @@ const Home: React.FC = () => {
       setFeaturedRooms([]);
     } finally {
       setLoadingRooms(false);
+    }
+  };
+
+  // Fetch real reviews
+  useEffect(() => {
+    fetchReviews();
+  }, []);
+
+  const fetchReviews = async () => {
+    try {
+      setLoadingReviews(true);
+      const response = await axios.get('/api/reviews?limit=4');
+      const reviews = response.data.reviews || [];
+      
+      // Map reviews to testimonial format
+      const mappedReviews = reviews.map((review: any) => ({
+        name: `${review.user.firstName} ${review.user.lastName}`,
+        role: review.experienceType === 'room' ? 'Hotel Guest' : 
+              review.experienceType === 'banquet' ? 'Event Organizer' :
+              review.experienceType === 'restaurant' ? 'Restaurant Guest' : 'Valued Guest',
+        image: `https://ui-avatars.com/api/?name=${review.user.firstName}+${review.user.lastName}&background=random`,
+        rating: review.rating,
+        comment: review.comment
+      }));
+
+      setTestimonials(mappedReviews);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      // Keep testimonials empty if fetch fails
+      setTestimonials([]);
+    } finally {
+      setLoadingReviews(false);
     }
   };
 
@@ -81,37 +115,6 @@ const Home: React.FC = () => {
       icon: Shield,
       title: '24/7 Security',
       description: 'Round-the-clock security and safety measures'
-    }
-  ];
-
-  const testimonials = [
-    {
-      name: 'Rajesh Kumar',
-      role: 'Business Executive',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
-      rating: 5,
-      comment: 'Exceptional service and luxurious ambiance. The staff went above and beyond to make our stay memorable. The rooms are spacious and well-maintained.'
-    },
-    {
-      name: 'Priya Sharma',
-      role: 'Event Organizer',
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-      rating: 5,
-      comment: 'Hosted our corporate event here and it was flawless! The banquet facilities are top-notch and the catering was absolutely delicious. Highly recommended!'
-    },
-    {
-      name: 'Amit Patel',
-      role: 'Travel Blogger',
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
-      rating: 5,
-      comment: 'One of the finest hotels I\'ve stayed at. Perfect blend of luxury and comfort. The restaurant serves amazing food and the location is very convenient.'
-    },
-    {
-      name: 'Sneha Reddy',
-      role: 'Wedding Planner',
-      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100',
-      rating: 5,
-      comment: 'Organized multiple weddings here and each time the experience has been outstanding. The event team is professional and the venues are beautiful!'
     }
   ];
 
@@ -339,7 +342,7 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Testimonials Section */}
+      {/* Testimonials Section - Updated */}
       <div className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -347,31 +350,41 @@ const Home: React.FC = () => {
             <p className="text-xl text-gray-600">What our valued guests say about us</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-gray-50 rounded-lg p-6 shadow-md hover:shadow-xl transition-shadow">
-                <div className="flex items-center mb-4">
-                  <img
-                    src={testimonial.image}
-                    alt={testimonial.name}
-                    className="w-16 h-16 rounded-full object-cover mr-4"
-                  />
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
-                    <p className="text-sm text-gray-600">{testimonial.role}</p>
+          {loadingReviews ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : testimonials.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {testimonials.map((testimonial, index) => (
+                <div key={index} className="bg-gray-50 rounded-lg p-6 shadow-md hover:shadow-xl transition-shadow">
+                  <div className="flex items-center mb-4">
+                    <img
+                      src={testimonial.image}
+                      alt={testimonial.name}
+                      className="w-16 h-16 rounded-full object-cover mr-4"
+                    />
+                    <div>
+                      <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
+                      <p className="text-sm text-gray-600">{testimonial.role}</p>
+                    </div>
                   </div>
+                  <div className="flex mb-3">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-gray-700 text-sm leading-relaxed">
+                    "{testimonial.comment}"
+                  </p>
                 </div>
-                <div className="flex mb-3">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-700 text-sm leading-relaxed">
-                  "{testimonial.comment}"
-                </p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-600">No reviews available yet. Be the first to share your experience!</p>
+            </div>
+          )}
         </div>
       </div>
 

@@ -8,10 +8,15 @@ import bookingRoutes from './routes/bookings';
 import banquetRoutes from './routes/banquets';
 import restaurantRoutes from './routes/restaurant';
 import billRoutes from './routes/bills';
+import reviewRoutes from './routes/reviews';
 import Banquet from './models/Banquet';
 import Booking from './models/Booking';
 import Room from './models/Room';
 import User from './models/User';
+import { auth } from './middleware/auth';
+import { adminAuth } from './middleware/adminAuth';
+import { getAllReviews } from './controllers/adminController';
+
 
 // Load environment variables first
 dotenv.config();
@@ -38,6 +43,11 @@ app.use('/api/banquets', banquetRoutes);
 app.use('/api/restaurant', restaurantRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/bills', billRoutes);
+app.use('/api/reviews', reviewRoutes);
+
+// Admin review listing (keeps admin panel endpoint working)
+app.get('/api/admin/reviews', auth, adminAuth, getAllReviews);
+
 
 // Health check route
 app.get('/api/health', (req, res) => {
