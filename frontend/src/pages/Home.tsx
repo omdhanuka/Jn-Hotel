@@ -156,6 +156,22 @@ const Home: React.FC = () => {
     return room.price;
   };
 
+  const handleVisitUsClick = () => {
+    window.open(
+      'https://www.google.com/maps/place/The+Taj+Mahal+Palace,+Mumbai/@18.9217,72.8330,17z/data=!3m1!4b1!4m6!3m5!1s0x3be7d1c73a0d5cad:0xc70a25a7209c733c!8m2!3d18.9216631!4d72.8330167!16zL20vMDZfcGhm',
+      '_blank',
+      'noopener,noreferrer'
+    );
+  };
+
+  const handleEmailClick = () => {
+    window.location.href = 'mailto:info@jnpalace.com';
+  };
+
+  const handleCallClick = () => {
+    window.location.href = 'tel:+911234567890';
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -418,31 +434,43 @@ const Home: React.FC = () => {
       <div className="py-20 bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div className="text-center">
+            <div 
+              onClick={handleCallClick}
+              className="text-center cursor-pointer transform transition-transform hover:scale-105"
+            >
               <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
                 <Phone className="h-8 w-8" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Call Us</h3>
               <p className="text-gray-400">+91 123 456 7890</p>
               <p className="text-gray-400">24/7 Support Available</p>
+              <p className="text-blue-400 mt-2 text-sm">Click to call</p>
             </div>
             
-            <div className="text-center">
+            <div 
+              onClick={handleEmailClick}
+              className="text-center cursor-pointer transform transition-transform hover:scale-105"
+            >
               <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
                 <Mail className="h-8 w-8" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Email Us</h3>
               <p className="text-gray-400">info@jnpalace.com</p>
               <p className="text-gray-400">reservations@jnpalace.com</p>
+              <p className="text-blue-400 mt-2 text-sm">Click to send email</p>
             </div>
             
-            <div className="text-center">
+            <div 
+              onClick={handleVisitUsClick}
+              className="text-center cursor-pointer transform transition-transform hover:scale-105"
+            >
               <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
                 <MapPin className="h-8 w-8" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Visit Us</h3>
               <p className="text-gray-400">123 Luxury Avenue</p>
               <p className="text-gray-400">City Center, State 12345</p>
+              <p className="text-blue-400 mt-2 text-sm">Click to open in Google Maps</p>
             </div>
           </div>
         </div>
