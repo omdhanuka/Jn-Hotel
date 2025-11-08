@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Hotel, 
@@ -16,8 +16,51 @@ import {
   CheckCircle,
   ArrowRight
 } from 'lucide-react';
+import axios from 'axios';
+
+// Add Room interface
+interface Room {
+  _id: string;
+  roomNumber: string;
+  roomName?: string;
+  type: string;
+  title: string;
+  description: string;
+  price: number;
+  discount?: number;
+  maxGuests: number;
+  bedCount: number;
+  bedType: string;
+  roomSize: string;
+  images: string[];
+  facilities: any;
+  amenities: string[];
+}
 
 const Home: React.FC = () => {
+  // Add state for rooms
+  const [featuredRooms, setFeaturedRooms] = useState<Room[]>([]);
+  const [loadingRooms, setLoadingRooms] = useState(true);
+
+  // Fetch featured rooms on mount
+  useEffect(() => {
+    fetchFeaturedRooms();
+  }, []);
+
+  const fetchFeaturedRooms = async () => {
+    try {
+      setLoadingRooms(true);
+      // Fetch 3 rooms for display
+      const response = await axios.get('/api/rooms?limit=3&status=active');
+      setFeaturedRooms(response.data.rooms || []);
+    } catch (error) {
+      console.error('Error fetching rooms:', error);
+      setFeaturedRooms([]);
+    } finally {
+      setLoadingRooms(false);
+    }
+  };
+
   const features = [
     {
       icon: Hotel,
@@ -38,27 +81,6 @@ const Home: React.FC = () => {
       icon: Shield,
       title: '24/7 Security',
       description: 'Round-the-clock security and safety measures'
-    }
-  ];
-
-  const roomTypes = [
-    {
-      name: 'Deluxe Room',
-      image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500',
-      price: 3999,
-      features: ['King Size Bed', 'City View', 'Free WiFi', 'Mini Bar']
-    },
-    {
-      name: 'Executive Suite',
-      image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=500',
-      price: 7999,
-      features: ['Separate Living Area', 'Premium Amenities', 'Complimentary Breakfast', 'Butler Service']
-    },
-    {
-      name: 'Presidential Suite',
-      image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=500',
-      price: 15999,
-      features: ['Panoramic Views', 'Private Terrace', 'Jacuzzi', 'Personal Chef']
     }
   ];
 
@@ -99,6 +121,37 @@ const Home: React.FC = () => {
     { icon: Hotel, value: '100+', label: 'Luxury Rooms' },
     { icon: Star, value: '4.9/5', label: 'Guest Rating' }
   ];
+
+  // Helper function to get top amenities
+  const getTopAmenities = (room: Room) => {
+    const amenities: string[] = [];
+    
+    // Add bed info
+    amenities.push(`${room.bedCount} ${room.bedType} Bed${room.bedCount > 1 ? 's' : ''}`);
+    
+    // Add key facilities
+    if (room.facilities?.wifi) amenities.push('Free WiFi');
+    if (room.facilities?.ac) amenities.push('Air Conditioning');
+    if (room.facilities?.breakfast) amenities.push('Breakfast Included');
+    if (room.facilities?.roomService) amenities.push('Room Service');
+    if (room.facilities?.miniFridge) amenities.push('Mini Bar');
+    if (room.facilities?.balcony) amenities.push('Private Balcony');
+    
+    // Add room size if not already 4 items
+    if (amenities.length < 4) {
+      amenities.push(room.roomSize);
+    }
+    
+    return amenities.slice(0, 4);
+  };
+
+  // Calculate final price after discount
+  const getFinalPrice = (room: Room) => {
+    if (room.discount && room.discount > 0) {
+      return Math.round(room.price - (room.price * room.discount / 100));
+    }
+    return room.price;
+  };
 
   return (
     <div className="min-h-screen">
@@ -182,7 +235,7 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Room Types Section */}
+      {/* Room Types Section - Updated */}
       <div className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -190,40 +243,99 @@ const Home: React.FC = () => {
             <p className="text-xl text-gray-600">Choose from our range of luxury rooms</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {roomTypes.map((room, index) => (
-              <div key={index} className="bg-white rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
-                <div className="h-64 bg-gray-300 overflow-hidden">
-                  <img 
-                    src={room.image} 
-                    alt={room.name}
-                    className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-6">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">{room.name}</h3>
-                  <div className="text-3xl font-bold text-blue-600 mb-4">
-                    ₹{room.price.toLocaleString()}
-                    <span className="text-sm text-gray-500 font-normal">/night</span>
+          {loadingRooms ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : featuredRooms.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {featuredRooms.map((room) => (
+                <div key={room._id} className="bg-white rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
+                  <div className="h-64 bg-gray-300 overflow-hidden relative">
+                    <img 
+                      src={room.images[0] || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500'} 
+                      alt={room.title}
+                      className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                    />
+                    {room.discount && room.discount > 0 && (
+                      <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                        {room.discount}% OFF
+                      </div>
+                    )}
+                    <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold uppercase">
+                      {room.type}
+                    </div>
                   </div>
-                  <ul className="space-y-2 mb-6">
-                    {room.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-center text-gray-600">
-                        <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    to="/rooms"
-                    className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-3 rounded-lg font-semibold transition"
-                  >
-                    Book Now
-                  </Link>
+                  <div className="p-6">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                      {room.roomName || room.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                      {room.description}
+                    </p>
+                    <div className="mb-4">
+                      {room.discount && room.discount > 0 ? (
+                        <div className="flex items-baseline gap-2">
+                          <div className="text-3xl font-bold text-blue-600">
+                            ₹{getFinalPrice(room).toLocaleString()}
+                          </div>
+                          <div className="text-lg text-gray-400 line-through">
+                            ₹{room.price.toLocaleString()}
+                          </div>
+                          <span className="text-sm text-gray-500 font-normal">/night</span>
+                        </div>
+                      ) : (
+                        <div className="text-3xl font-bold text-blue-600">
+                          ₹{room.price.toLocaleString()}
+                          <span className="text-sm text-gray-500 font-normal">/night</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mb-4 flex items-center text-sm text-gray-600">
+                      <Users className="h-4 w-4 mr-1" />
+                      <span>Up to {room.maxGuests} guests</span>
+                    </div>
+                    <ul className="space-y-2 mb-6">
+                      {getTopAmenities(room).map((amenity, idx) => (
+                        <li key={idx} className="flex items-center text-gray-600 text-sm">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                          {amenity}
+                        </li>
+                      ))}
+                    </ul>
+                    <Link
+                      to={`/rooms`}
+                      className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-3 rounded-lg font-semibold transition"
+                    >
+                      View Details & Book
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-600 mb-4">No rooms available at the moment</p>
+              <Link
+                to="/rooms"
+                className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition"
+              >
+                Browse All Rooms
+              </Link>
+            </div>
+          )}
+
+          {featuredRooms.length > 0 && (
+            <div className="text-center mt-12">
+              <Link
+                to="/rooms"
+                className="inline-flex items-center bg-white hover:bg-gray-50 text-blue-600 border-2 border-blue-600 px-8 py-4 rounded-lg text-lg font-semibold transition transform hover:scale-105"
+              >
+                View All Rooms
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
