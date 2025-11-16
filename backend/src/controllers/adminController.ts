@@ -48,6 +48,25 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       }
     ]);
 
+    // Calculate average guest rating from approved reviews
+    const ratingStats = await Review.aggregate([
+      {
+        $match: {
+          isApproved: true
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          avgRating: { $avg: '$rating' },
+          totalReviews: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const avgRating = ratingStats.length > 0 ? ratingStats[0].avgRating : 0;
+    const totalReviews = ratingStats.length > 0 ? ratingStats[0].totalReviews : 0;
+
     // Occupancy rate
     const occupiedRooms = await Booking.countDocuments({
       type: 'room',
@@ -71,7 +90,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         totalBookings,
         todayBookings,
         todayRevenue: todayRevenue[0]?.total || 0,
-        occupancyRate: Math.round(occupancyRate)
+        occupancyRate: Math.round(occupancyRate),
+        avgRating: Math.round(avgRating * 10) / 10, // Round to 1 decimal
+        totalReviews
       },
       recentBookings
     });

@@ -39,6 +39,8 @@ interface StatsState {
   todayBookings: number;
   totalRevenue: number;
   totalUsers: number;
+  avgRating?: number;
+  totalReviews?: number;
 }
 
 interface BillItem {
@@ -104,7 +106,9 @@ const AdminPanel: React.FC = () => {
     banquetBookings: 0,
     todayBookings: 0,
     totalRevenue: 0,
-    totalUsers: 0
+    totalUsers: 0,
+    avgRating: 0,
+    totalReviews: 0
   });
 
   const menuItems = [
@@ -137,6 +141,16 @@ const AdminPanel: React.FC = () => {
         banquetBookings: banquetBookings || 0,
         todayBookings: todayBookings || 0
       }));
+
+      // Fetch dashboard stats for rating
+      const dashboardResponse = await axios.get('/api/admin/dashboard');
+      if (dashboardResponse.data.stats) {
+        setStats(prev => ({
+          ...prev,
+          avgRating: dashboardResponse.data.stats.avgRating || 0,
+          totalReviews: dashboardResponse.data.stats.totalReviews || 0
+        }));
+      }
     } catch (error) {
       console.error('Failed to fetch booking stats:', error);
       setStats({
@@ -145,7 +159,9 @@ const AdminPanel: React.FC = () => {
         banquetBookings: 0,
         todayBookings: 0,
         totalRevenue: 0,
-        totalUsers: 0
+        totalUsers: 0,
+        avgRating: 0,
+        totalReviews: 0
       });
     }
   };
@@ -158,7 +174,12 @@ const AdminPanel: React.FC = () => {
     { label: 'Total Bookings', value: stats.totalBookings.toString(), change: '+5%', color: 'blue' },
     { label: 'Room Bookings', value: stats.roomBookings.toString(), change: '+12%', color: 'green' },
     { label: 'Banquet Bookings', value: stats.banquetBookings.toString(), change: '+8%', color: 'purple' },
-    { label: 'Today\'s Bookings', value: stats.todayBookings.toString(), change: '+3%', color: 'orange' }
+    { 
+      label: 'Guest Rating', 
+      value: `${stats.avgRating?.toFixed(1) || '0.0'}/5`, 
+      change: stats.totalReviews ? `${stats.totalReviews} reviews` : 'No reviews',
+      color: 'orange' 
+    }
   ];
 
   const recentBookings = [

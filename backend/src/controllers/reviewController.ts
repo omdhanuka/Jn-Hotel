@@ -45,22 +45,68 @@ export const createReview = async (req: AuthRequest, res: Response) => {
 
 export const getPublishedReviews = async (req: Request, res: Response) => {
   try {
-    const { page = 1, limit = 10, rating, experienceType } = req.query;
-    const filter: any = { isApproved: true, isPublished: true };
+    const { page = 1, limit = 10, rating } = req.query;
+    
+    const filter: any = { isApproved: true };
     if (rating) filter.rating = parseInt(rating as string);
-    if (experienceType && experienceType !== 'all') filter.experienceType = experienceType;
 
     const reviews = await Review.find(filter)
-      .populate('user', 'firstName lastName')
+      .populate('user', 'firstName lastName email')
+      .populate('booking', 'type')
       .limit(parseInt(limit as string))
       .skip((parseInt(page as string) - 1) * parseInt(limit as string))
       .sort({ createdAt: -1 });
 
     const total = await Review.countDocuments(filter);
-    return res.json({ reviews, pagination: { page: parseInt(page as string), limit: parseInt(limit as string), total, pages: Math.ceil(total / parseInt(limit as string)) } });
-  } catch (err) {
-    console.error('getPublishedReviews error', err);
-    return res.status(500).json({ message: 'Server error' });
+
+    // Calculate rating statistics
+    const ratingStats = await Review.aggregate([
+      {
+        $match: { isApproved: true }
+      },
+      {
+        $group: {
+          _id: null,
+          avgRating: { $avg: '$rating' },
+          totalReviews: { $sum: 1 },
+          ratingDistribution: {
+            $push: '$rating'
+          }
+        }
+      }
+    ]);
+
+    // Calculate rating breakdown (1-5 stars)
+    let ratingBreakdown = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    if (ratingStats.length > 0 && ratingStats[0].ratingDistribution) {
+      ratingStats[0].ratingDistribution.forEach((rating: number) => {
+        ratingBreakdown[rating as keyof typeof ratingBreakdown]++;
+      });
+    }
+
+    const stats = ratingStats.length > 0 ? {
+      avgRating: Math.round(ratingStats[0].avgRating * 10) / 10,
+      totalReviews: ratingStats[0].totalReviews,
+      ratingBreakdown
+    } : {
+      avgRating: 0,
+      totalReviews: 0,
+      ratingBreakdown
+    };
+
+    res.json({
+      reviews,
+      stats,
+      pagination: {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        total,
+        pages: Math.ceil(total / parseInt(limit as string))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching published reviews:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 

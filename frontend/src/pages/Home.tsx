@@ -43,6 +43,8 @@ const Home: React.FC = () => {
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [testimonials, setTestimonials] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
+  const [avgRating, setAvgRating] = useState<number>(0);
+  const [totalReviews, setTotalReviews] = useState<number>(0);
 
   // Fetch featured rooms on mount
   useEffect(() => {
@@ -74,6 +76,12 @@ const Home: React.FC = () => {
       const response = await axios.get('/api/reviews?limit=4');
       const reviews = response.data.reviews || [];
       
+      // Calculate average rating from all approved reviews
+      if (response.data.stats) {
+        setAvgRating(response.data.stats.avgRating || 0);
+        setTotalReviews(response.data.stats.totalReviews || 0);
+      }
+      
       // Map reviews to testimonial format
       const mappedReviews = reviews.map((review: any) => ({
         name: `${review.user.firstName} ${review.user.lastName}`,
@@ -88,8 +96,9 @@ const Home: React.FC = () => {
       setTestimonials(mappedReviews);
     } catch (error) {
       console.error('Error fetching reviews:', error);
-      // Keep testimonials empty if fetch fails
       setTestimonials([]);
+      setAvgRating(0);
+      setTotalReviews(0);
     } finally {
       setLoadingReviews(false);
     }
@@ -122,7 +131,11 @@ const Home: React.FC = () => {
     { icon: Users, value: '10,000+', label: 'Happy Guests' },
     { icon: Award, value: '50+', label: 'Awards Won' },
     { icon: Hotel, value: '100+', label: 'Luxury Rooms' },
-    { icon: Star, value: '4.9/5', label: 'Guest Rating' }
+    { 
+      icon: Star, 
+      value: avgRating > 0 ? `${avgRating.toFixed(1)}/5` : '0.0/5', 
+      label: totalReviews > 0 ? `${totalReviews} Reviews` : 'Guest Rating' 
+    }
   ];
 
   // Helper function to get top amenities
