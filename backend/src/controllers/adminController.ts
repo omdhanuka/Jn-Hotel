@@ -7,6 +7,18 @@ import Review from '../models/Review';
 
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
+    // Auto-update confirmed bookings to completed if checkout date has passed
+    const now = new Date();
+    await Booking.updateMany(
+      {
+        status: 'confirmed',
+        checkOut: { $lt: now }
+      },
+      {
+        $set: { status: 'completed' }
+      }
+    );
+
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);

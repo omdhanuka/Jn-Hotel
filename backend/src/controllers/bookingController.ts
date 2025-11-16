@@ -185,6 +185,19 @@ export const getBookings = async (req: AuthRequest, res: Response) => {
     if (status) filter.status = status;
     if (type) filter.type = type;
 
+    // Auto-update confirmed bookings to completed if checkout date has passed
+    const now = new Date();
+    await Booking.updateMany(
+      {
+        user: req.user!._id,
+        status: 'confirmed',
+        checkOut: { $lt: now }
+      },
+      {
+        $set: { status: 'completed' }
+      }
+    );
+
     const bookings = await Booking.find(filter)
       .limit(parseInt(limit as string))
       .skip((parseInt(page as string) - 1) * parseInt(limit as string))
@@ -482,6 +495,18 @@ export const getAllBookingsForAdmin = async (req: AuthRequest, res: Response) =>
     if (req.user!.role !== 'admin') {
       return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
+
+    // Auto-update confirmed bookings to completed if checkout date has passed
+    const now = new Date();
+    await Booking.updateMany(
+      {
+        status: 'confirmed',
+        checkOut: { $lt: now }
+      },
+      {
+        $set: { status: 'completed' }
+      }
+    );
 
     const { page = 1, limit = 20, status, type, paymentStatus } = req.query;
     
