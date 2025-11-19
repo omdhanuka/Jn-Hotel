@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, EyeOff, Upload, Link as LinkIcon, X as XIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Upload, Link as LinkIcon, X as XIcon, Check } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -85,6 +85,12 @@ const RoomManagement: React.FC = () => {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [compressionQuality, setCompressionQuality] = useState(80);
+  const [compressionStats, setCompressionStats] = useState<{
+    originalSize: number;
+    compressedSize: number;
+    compressionRatio: string;
+  } | null>(null);
 
   useEffect(() => {
     fetchRooms();
@@ -267,11 +273,16 @@ const RoomManagement: React.FC = () => {
     }
 
     setUploadingImages(true);
+    setCompressionStats(null);
+    
     try {
       const formData = new FormData();
       selectedFiles.forEach(file => {
         formData.append('images', file);
       });
+      
+      // Add compression quality to form data
+      formData.append('quality', compressionQuality.toString());
 
       const response = await axios.post('/api/rooms/upload-images', formData, {
         headers: {
@@ -280,6 +291,17 @@ const RoomManagement: React.FC = () => {
       });
 
       const uploadedUrls = response.data.images.map((img: any) => img.compressed);
+      
+      // Calculate total compression stats
+      const totalOriginalSize = response.data.images.reduce((sum: number, img: any) => sum + img.originalSize, 0);
+      const totalCompressedSize = response.data.images.reduce((sum: number, img: any) => sum + img.compressedSize, 0);
+      const avgCompressionRatio = ((1 - totalCompressedSize / totalOriginalSize) * 100).toFixed(1);
+      
+      setCompressionStats({
+        originalSize: totalOriginalSize,
+        compressedSize: totalCompressedSize,
+        compressionRatio: `${avgCompressionRatio}%`
+      });
       
       // Add uploaded URLs to form
       setFormData(prev => ({
@@ -291,7 +313,7 @@ const RoomManagement: React.FC = () => {
       setSelectedFiles([]);
       setPreviewUrls([]);
       
-      toast.success(`${uploadedUrls.length} images uploaded successfully`);
+      toast.success(`${uploadedUrls.length} images uploaded successfully with ${avgCompressionRatio}% compression`);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Image upload failed');
     } finally {
@@ -303,6 +325,22 @@ const RoomManagement: React.FC = () => {
     previewUrls.forEach(url => URL.revokeObjectURL(url));
     setPreviewUrls([]);
     setSelectedFiles([]);
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const getQualityLabel = (quality: number): { label: string; color: string } => {
+    if (quality >= 90) return { label: 'Maximum Quality', color: 'text-green-600' };
+    if (quality >= 80) return { label: 'High Quality', color: 'text-blue-600' };
+    if (quality >= 70) return { label: 'Good Quality', color: 'text-yellow-600' };
+    if (quality >= 60) return { label: 'Medium Quality', color: 'text-orange-600' };
+    return { label: 'Low Quality', color: 'text-red-600' };
   };
 
   if (loading) {
@@ -641,6 +679,68 @@ const RoomManagement: React.FC = () => {
               {/* File Upload Mode */}
               {imageUploadMode === 'upload' && (
                 <div>
+                  {/* Compression Quality Slider */}
+                  <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-sm font-semibold text-gray-700">
+                        Image Compression Quality
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        <span className={`text-sm font-bold ${getQualityLabel(compressionQuality).color}`}>
+                          {compressionQuality}%
+                        </span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          compressionQuality >= 80 
+                            ? 'bg-green-100 text-green-700' 
+                            : compressionQuality >= 60 
+                            ? 'bg-yellow-100 text-yellow-700' 
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {getQualityLabel(compressionQuality).label}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <input
+                      type="range"
+                      min="10"
+                      max="100"
+                      step="5"
+                      value={compressionQuality}
+                      onChange={(e) => setCompressionQuality(parseInt(e.target.value))}
+                      className="w-full h-2 bg-gradient-to-r from-red-300 via-yellow-300 via-blue-300 to-green-300 rounded-lg appearance-none cursor-pointer"
+                      style={{
+                        background: `linear-gradient(to right, 
+                          #ef4444 0%, 
+                          #f59e0b ${compressionQuality * 0.4}%, 
+                          #3b82f6 ${compressionQuality * 0.7}%, 
+                          #10b981 100%)`
+                      }}
+                    />
+                    
+                    <div className="flex justify-between mt-2 text-xs text-gray-600">
+                      <span className="flex items-center">
+                        <span className="w-2 h-2 bg-red-500 rounded-full mr-1"></span>
+                        Smaller Size
+                      </span>
+                      <span className="flex items-center">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                        Better Quality
+                      </span>
+                    </div>
+                    
+                    <div className="mt-3 p-3 bg-white rounded-md border border-blue-100">
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <p className="font-medium text-gray-700 mb-1">💡 Compression Guide:</p>
+                        <p>• <strong>90-100%:</strong> Maximum quality, larger files (recommended for hero images)</p>
+                        <p>• <strong>80-89%:</strong> High quality, balanced size (recommended default)</p>
+                        <p>• <strong>70-79%:</strong> Good quality, smaller files (good for web)</p>
+                        <p>• <strong>60-69%:</strong> Medium quality, small files (thumbnails)</p>
+                        <p>• <strong>Below 60%:</strong> Low quality, very small files (not recommended)</p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                     <input
                       type="file"
@@ -712,15 +812,39 @@ const RoomManagement: React.FC = () => {
                         {uploadingImages ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Uploading...
+                            Compressing & Uploading ({compressionQuality}% quality)...
                           </>
                         ) : (
                           <>
                             <Upload className="h-4 w-4 mr-2" />
-                            Upload {previewUrls.length} Image{previewUrls.length > 1 ? 's' : ''}
+                            Upload {previewUrls.length} Image{previewUrls.length > 1 ? 's' : ''} ({compressionQuality}% quality)
                           </>
                         )}
                       </button>
+                    </div>
+                  )}
+
+                  {/* Compression Stats */}
+                  {compressionStats && (
+                    <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                      <h4 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+                        <Check className="h-4 w-4 mr-1" />
+                        Compression Results
+                      </h4>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-600 text-xs">Original Size</p>
+                          <p className="font-bold text-gray-900">{formatFileSize(compressionStats.originalSize)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 text-xs">Compressed Size</p>
+                          <p className="font-bold text-green-600">{formatFileSize(compressionStats.compressedSize)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 text-xs">Space Saved</p>
+                          <p className="font-bold text-blue-600">{compressionStats.compressionRatio}</p>
+                        </div>
+                      </div>
                     </div>
                   )}
 

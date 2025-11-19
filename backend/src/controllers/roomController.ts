@@ -183,14 +183,30 @@ export const uploadRoomImages = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'No images uploaded' });
     }
 
+    // Get quality from request body, default to 80
+    const quality = parseInt(req.body.quality as string) || 80;
+    const thumbnailQuality = Math.max(50, quality - 10); // Thumbnail quality slightly lower
+
+    console.log(`Compressing images with quality: ${quality}%`);
+
     const files = req.files as Express.Multer.File[];
-    const uploadedImages: { original: string; compressed: string; thumbnail: string }[] = [];
+    const uploadedImages: { 
+      original: string; 
+      compressed: string; 
+      thumbnail: string;
+      originalSize: number;
+      compressedSize: number;
+      compressionRatio: string;
+    }[] = [];
 
     for (const file of files) {
       try {
-        // Compress image
-        const compressedPath = await compressImage(file.path);
-        const thumbnailPath = await generateThumbnail(compressedPath);
+        // Compress image with specified quality
+        const { outputPath: compressedPath, originalSize, compressedSize } = await compressImage(file.path, quality);
+        const thumbnailPath = await generateThumbnail(compressedPath, thumbnailQuality);
+
+        // Calculate compression ratio
+        const compressionRatio = ((1 - compressedSize / originalSize) * 100).toFixed(1);
 
         // Generate URLs
         const baseUrl = `${req.protocol}://${req.get('host')}`;
@@ -200,7 +216,10 @@ export const uploadRoomImages = async (req: AuthRequest, res: Response) => {
         uploadedImages.push({
           original: compressedUrl,
           compressed: compressedUrl,
-          thumbnail: thumbnailUrl
+          thumbnail: thumbnailUrl,
+          originalSize,
+          compressedSize,
+          compressionRatio: `${compressionRatio}%`
         });
       } catch (error) {
         console.error('Error processing image:', error);
@@ -210,7 +229,8 @@ export const uploadRoomImages = async (req: AuthRequest, res: Response) => {
 
     res.json({
       message: 'Images uploaded successfully',
-      images: uploadedImages
+      images: uploadedImages,
+      quality: quality
     });
   } catch (error) {
     console.error('Upload error:', error);

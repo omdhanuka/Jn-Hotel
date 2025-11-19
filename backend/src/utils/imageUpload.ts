@@ -43,34 +43,40 @@ export const upload = multer({
   fileFilter: fileFilter
 });
 
-// Image compression function
-export const compressImage = async (inputPath: string): Promise<string> => {
+// Image compression function with quality parameter
+export const compressImage = async (inputPath: string, quality: number = 80): Promise<{ outputPath: string; originalSize: number; compressedSize: number }> => {
   const outputPath = inputPath.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '-compressed.webp');
   
   try {
+    // Get original file size
+    const originalSize = fs.statSync(inputPath).size;
+    
     await sharp(inputPath)
       .resize(1920, 1080, { 
         fit: 'inside',
         withoutEnlargement: true 
       })
       .webp({ 
-        quality: 80,
+        quality: Math.max(10, Math.min(100, quality)), // Ensure quality is between 10-100
         effort: 6
       })
       .toFile(outputPath);
     
+    // Get compressed file size
+    const compressedSize = fs.statSync(outputPath).size;
+    
     // Delete original file
     fs.unlinkSync(inputPath);
     
-    return outputPath;
+    return { outputPath, originalSize, compressedSize };
   } catch (error) {
     console.error('Image compression error:', error);
     throw error;
   }
 };
 
-// Generate thumbnail
-export const generateThumbnail = async (inputPath: string): Promise<string> => {
+// Generate thumbnail with quality parameter
+export const generateThumbnail = async (inputPath: string, quality: number = 70): Promise<string> => {
   const thumbnailPath = inputPath.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '-thumb.webp');
   
   try {
@@ -79,7 +85,7 @@ export const generateThumbnail = async (inputPath: string): Promise<string> => {
         fit: 'cover' 
       })
       .webp({ 
-        quality: 70 
+        quality: Math.max(10, Math.min(100, quality)) 
       })
       .toFile(thumbnailPath);
     
