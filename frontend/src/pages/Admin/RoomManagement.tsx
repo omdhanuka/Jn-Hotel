@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Upload, Link as LinkIcon, X as XIcon } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -80,6 +80,11 @@ const RoomManagement: React.FC = () => {
       elevatorAccess: false
     }
   });
+
+  const [imageUploadMode, setImageUploadMode] = useState<'url' | 'upload'>('url');
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
   useEffect(() => {
     fetchRooms();
@@ -243,6 +248,61 @@ const RoomManagement: React.FC = () => {
       ...prev,
       images: prev.images.map((img, i) => i === index ? value : img)
     }));
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Create preview URLs
+    const previews = files.map(file => URL.createObjectURL(file));
+    setPreviewUrls(previews);
+    setSelectedFiles(files);
+  };
+
+  const handleImageUpload = async () => {
+    if (selectedFiles.length === 0) {
+      toast.error('Please select images to upload');
+      return;
+    }
+
+    setUploadingImages(true);
+    try {
+      const formData = new FormData();
+      selectedFiles.forEach(file => {
+        formData.append('images', file);
+      });
+
+      const response = await axios.post('/api/rooms/upload-images', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const uploadedUrls = response.data.images.map((img: any) => img.compressed);
+      
+      // Add uploaded URLs to form
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images.filter(img => img !== ''), ...uploadedUrls]
+      }));
+
+      // Clear selected files and previews
+      setSelectedFiles([]);
+      setPreviewUrls([]);
+      
+      toast.success(`${uploadedUrls.length} images uploaded successfully`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Image upload failed');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const clearPreviews = () => {
+    previewUrls.forEach(url => URL.revokeObjectURL(url));
+    setPreviewUrls([]);
+    setSelectedFiles([]);
   };
 
   if (loading) {
@@ -506,38 +566,196 @@ const RoomManagement: React.FC = () => {
               </div>
             </div>
 
-            {/* Images */}
+            {/* Images Section */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Room Images
               </label>
-              {formData.images.map((image, index) => (
-                <div key={index} className="flex gap-2 mb-2">
-                  <input
-                    type="url"
-                    value={image}
-                    onChange={(e) => updateImageField(index, e.target.value)}
-                    className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Image URL"
-                  />
-                  {formData.images.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeImageField(index)}
-                      className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600"
+
+              {/* Image Upload Mode Toggle */}
+              <div className="flex space-x-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImageUploadMode('url');
+                    clearPreviews();
+                  }}
+                  className={`flex items-center px-4 py-2 rounded-md ${
+                    imageUploadMode === 'url'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  <LinkIcon className="h-4 w-4 mr-2" />
+                  Add URL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImageUploadMode('upload');
+                  }}
+                  className={`flex items-center px-4 py-2 rounded-md ${
+                    imageUploadMode === 'upload'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Images
+                </button>
+              </div>
+
+              {/* URL Input Mode */}
+              {imageUploadMode === 'url' && (
+                <div>
+                  {formData.images.map((image, index) => (
+                    <div key={index} className="flex gap-2 mb-2">
+                      <input
+                        type="url"
+                        value={image}
+                        onChange={(e) => updateImageField(index, e.target.value)}
+                        className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Image URL"
+                      />
+                      {formData.images.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeImageField(index)}
+                          className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addImageField}
+                    className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 text-sm"
+                  >
+                    Add Image URL
+                  </button>
+                </div>
+              )}
+
+              {/* File Upload Mode */}
+              {imageUploadMode === 'upload' && (
+                <div>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <label
+                      htmlFor="image-upload"
+                      className="cursor-pointer flex flex-col items-center"
                     >
-                      Remove
-                    </button>
+                      <Upload className="h-12 w-12 text-gray-400 mb-2" />
+                      <span className="text-sm text-gray-600">
+                        Click to upload images or drag and drop
+                      </span>
+                      <span className="text-xs text-gray-500 mt-1">
+                        PNG, JPG, GIF up to 10MB each
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Image Previews */}
+                  {previewUrls.length > 0 && (
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          Selected Images ({previewUrls.length})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={clearPreviews}
+                          className="text-red-600 text-sm hover:text-red-800"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-4 gap-4">
+                        {previewUrls.map((url, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={url}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-24 object-cover rounded"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newFiles = selectedFiles.filter((_, i) => i !== index);
+                                const newPreviews = previewUrls.filter((_, i) => i !== index);
+                                URL.revokeObjectURL(url);
+                                setSelectedFiles(newFiles);
+                                setPreviewUrls(newPreviews);
+                              }}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                            >
+                              <XIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleImageUpload}
+                        disabled={uploadingImages}
+                        className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
+                      >
+                        {uploadingImages ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Upload {previewUrls.length} Image{previewUrls.length > 1 ? 's' : ''}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Uploaded Images Display */}
+                  {formData.images.filter(img => img !== '').length > 0 && (
+                    <div className="mt-4">
+                      <span className="text-sm font-medium text-gray-700 block mb-2">
+                        Uploaded Images ({formData.images.filter(img => img !== '').length})
+                      </span>
+                      <div className="grid grid-cols-4 gap-4">
+                        {formData.images
+                          .filter(img => img !== '')
+                          .map((url, index) => (
+                            <div key={index} className="relative">
+                              <img
+                                src={url}
+                                alt={`Uploaded ${index + 1}`}
+                                className="w-full h-24 object-cover rounded"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeImageField(
+                                  formData.images.findIndex(img => img === url)
+                                )}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                              >
+                                <XIcon className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
                   )}
                 </div>
-              ))}
-              <button
-                type="button"
-                onClick={addImageField}
-                className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 text-sm"
-              >
-                Add Image
-              </button>
+              )}
             </div>
 
             {/* Video Tour */}

@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import Room from '../models/Room';
 import Booking from '../models/Booking';
+import { compressImage, generateThumbnail, deleteImage } from '../utils/imageUpload';
+import path from 'path';
 
 interface AuthRequest extends Request {
   user?: any;
@@ -172,6 +174,47 @@ export const deleteRoom = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const uploadRoomImages = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
+      return res.status(400).json({ message: 'No images uploaded' });
+    }
+
+    const files = req.files as Express.Multer.File[];
+    const uploadedImages: { original: string; compressed: string; thumbnail: string }[] = [];
+
+    for (const file of files) {
+      try {
+        // Compress image
+        const compressedPath = await compressImage(file.path);
+        const thumbnailPath = await generateThumbnail(compressedPath);
+
+        // Generate URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const compressedUrl = `${baseUrl}/uploads/rooms/${path.basename(compressedPath)}`;
+        const thumbnailUrl = `${baseUrl}/uploads/rooms/${path.basename(thumbnailPath)}`;
+
+        uploadedImages.push({
+          original: compressedUrl,
+          compressed: compressedUrl,
+          thumbnail: thumbnailUrl
+        });
+      } catch (error) {
+        console.error('Error processing image:', error);
+        // Continue with other images
+      }
+    }
+
+    res.json({
+      message: 'Images uploaded successfully',
+      images: uploadedImages
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ message: 'Image upload failed' });
   }
 };
 

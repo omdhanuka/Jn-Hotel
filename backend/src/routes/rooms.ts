@@ -6,10 +6,12 @@ import {
   createRoom, 
   updateRoom, 
   deleteRoom,
-  checkAvailability
+  checkAvailability,
+  uploadRoomImages
 } from '../controllers/roomController';
 import { auth } from '../middleware/auth';
 import { adminAuth } from '../middleware/adminAuth';
+import { upload } from '../utils/imageUpload';
 
 const router = express.Router();
 
@@ -56,6 +58,11 @@ router.put('/:id', [auth, adminAuth], updateRoom);
 // @desc    Delete room
 // @access  Private (Admin only)
 router.delete('/:id', [auth, adminAuth], deleteRoom);
+
+// @route   POST /api/rooms/upload-images
+// @desc    Upload room images
+// @access  Private (Admin only)
+router.post('/upload-images', [auth, adminAuth], upload.array('images', 10), uploadRoomImages);
 
 export default router;
 
