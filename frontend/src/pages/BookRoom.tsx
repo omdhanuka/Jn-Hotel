@@ -55,6 +55,7 @@ const BookRoom: React.FC = () => {
     services: []
   });
   const [imageError, setImageError] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const additionalServices = [
     { id: 'breakfast', name: 'Breakfast included', price: 25 },
@@ -171,17 +172,35 @@ const BookRoom: React.FC = () => {
     }
   };
 
+  // Auto-slide images every 3 seconds
+  useEffect(() => {
+    if (!room || !room.images || room.images.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === room.images.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [room]);
+
   // Handle image error
   const handleImageError = () => {
     setImageError(true);
   };
 
   // Get image source with fallback
-  const getImageSrc = () => {
-    if (imageError || !room?.images?.[0]) {
+  const getImageSrc = (index: number = currentImageIndex) => {
+    if (imageError || !room?.images?.[index]) {
       return 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500';
     }
-    return room.images[0];
+    return room.images[index];
+  };
+
+  // Navigate to specific image
+  const goToImage = (index: number) => {
+    setCurrentImageIndex(index);
   };
 
   if (loading) {
@@ -250,13 +269,55 @@ const BookRoom: React.FC = () => {
           {/* Room Information */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="h-64 bg-gray-300">
-                <img
-                  src={getImageSrc()}
-                  alt={room.roomNumber}
-                  className="w-full h-full object-cover"
-                  onError={handleImageError}
-                />
+              <div className="h-64 bg-gray-300 relative overflow-hidden">
+                {/* Image Slider */}
+                <div className="relative w-full h-full">
+                  {room?.images && room.images.length > 0 ? (
+                    room.images.map((image, index) => (
+                      <img
+                        key={index}
+                        src={getImageSrc(index)}
+                        alt={`${room.roomNumber} - Image ${index + 1}`}
+                        className={`absolute w-full h-full object-cover transition-opacity duration-500 ${
+                          index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+                        }`}
+                        onError={handleImageError}
+                      />
+                    ))
+                  ) : (
+                    <img
+                      src={getImageSrc(0)}
+                      alt={room?.roomNumber}
+                      className="w-full h-full object-cover"
+                      onError={handleImageError}
+                    />
+                  )}
+                </div>
+
+                {/* Image Indicators */}
+                {room?.images && room.images.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                    {room.images.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => goToImage(index)}
+                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                          index === currentImageIndex
+                            ? 'bg-white w-8'
+                            : 'bg-white/50 hover:bg-white/75'
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Image Counter */}
+                {room?.images && room.images.length > 1 && (
+                  <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                    {currentImageIndex + 1} / {room.images.length}
+                  </div>
+                )}
               </div>
               
               <div className="p-6">
