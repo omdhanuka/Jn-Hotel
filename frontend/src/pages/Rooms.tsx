@@ -38,6 +38,7 @@ const Rooms: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
+  const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>({});
 
   // Set default dates (today and tomorrow)
   useEffect(() => {
@@ -127,6 +128,19 @@ const Rooms: React.FC = () => {
     if (filters.capacity) params.append('guests', filters.capacity);
     
     return `/rooms/book/${roomId}?${params.toString()}`;
+  };
+
+  // Handle image error
+  const handleImageError = (roomId: string) => {
+    setImageErrors(prev => ({ ...prev, [roomId]: true }));
+  };
+
+  // Get image source with fallback
+  const getImageSrc = (room: Room) => {
+    if (imageErrors[room._id] || !room.images?.[0]) {
+      return 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500';
+    }
+    return room.images[0];
   };
 
   return (
@@ -226,13 +240,10 @@ const Rooms: React.FC = () => {
               <div key={room._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
                 <div className="h-48 bg-gray-300 relative">
                   <img
-                    src={room.images?.[0] || '/api/placeholder/400/300'}
+                    src={getImageSrc(room)}
                     alt={`Room ${room.roomNumber}`}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/api/placeholder/400/300';
-                    }}
+                    onError={() => handleImageError(room._id)}
                   />
                   <div className="absolute top-4 right-4 bg-white px-2 py-1 rounded-md">
                     <div className="flex items-center">

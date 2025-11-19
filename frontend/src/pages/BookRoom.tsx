@@ -54,6 +54,7 @@ const BookRoom: React.FC = () => {
     specialRequests: '',
     services: []
   });
+  const [imageError, setImageError] = useState(false);
 
   const additionalServices = [
     { id: 'breakfast', name: 'Breakfast included', price: 25 },
@@ -170,6 +171,19 @@ const BookRoom: React.FC = () => {
     }
   };
 
+  // Handle image error
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  // Get image source with fallback
+  const getImageSrc = () => {
+    if (imageError || !room?.images?.[0]) {
+      return 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500';
+    }
+    return room.images[0];
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -238,9 +252,10 @@ const BookRoom: React.FC = () => {
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="h-64 bg-gray-300">
                 <img
-                  src={room.images?.[0] || '/api/placeholder/600/300'}
+                  src={getImageSrc()}
                   alt={room.roomNumber}
                   className="w-full h-full object-cover"
+                  onError={handleImageError}
                 />
               </div>
               

@@ -45,6 +45,7 @@ const Home: React.FC = () => {
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [avgRating, setAvgRating] = useState<number>(0);
   const [totalReviews, setTotalReviews] = useState<number>(0);
+  const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>({});
 
   // Fetch featured rooms on mount
   useEffect(() => {
@@ -185,6 +186,19 @@ const Home: React.FC = () => {
     window.location.href = 'tel:+911234567890';
   };
 
+  // Handle image error
+  const handleImageError = (roomId: string) => {
+    setImageErrors(prev => ({ ...prev, [roomId]: true }));
+  };
+
+  // Get image source with fallback
+  const getImageSrc = (room: Room) => {
+    if (imageErrors[room._id] || !room.images[0]) {
+      return 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500';
+    }
+    return room.images[0];
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -285,9 +299,10 @@ const Home: React.FC = () => {
                 <div key={room._id} className="bg-white rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
                   <div className="h-64 bg-gray-300 overflow-hidden relative">
                     <img 
-                      src={room.images[0] || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500'} 
+                      src={getImageSrc(room)} 
                       alt={room.title}
                       className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                      onError={() => handleImageError(room._id)}
                     />
                     {room.discount && room.discount > 0 && (
                       <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
