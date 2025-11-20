@@ -494,24 +494,6 @@ const BookingChart: React.FC = () => {
         </div>
       </div>
 
-      {/* Debug Information */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-          <h4 className="font-medium mb-2">Debug Info:</h4>
-          <p className="text-sm">Total bookings loaded: {bookings.length}</p>
-          <p className="text-sm">Filter type: {filters.type}</p>
-          <p className="text-sm">Current month: {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</p>
-          {bookings.length > 0 && (
-            <div className="mt-2">
-              <p className="text-sm font-medium">Sample booking:</p>
-              <pre className="text-xs bg-white p-2 rounded mt-1">
-                {JSON.stringify(bookings[0], null, 2)}
-              </pre>
-            </div>
-          )}
-        </div>
-      )}
-
       {loading && (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
