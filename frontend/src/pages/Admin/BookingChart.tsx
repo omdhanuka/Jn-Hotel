@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Filter, Clock } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Filter, Clock, X, User, Phone, Mail, CreditCard } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import ClockIcon from '../../components/ClockIcon';
@@ -35,6 +35,8 @@ const BookingChart: React.FC = () => {
   const [filters, setFilters] = useState({
     type: 'all', // 'all', 'room', 'banquet'
   });
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showDateModal, setShowDateModal] = useState(false);
 
   useEffect(() => {
     fetchBookings();
@@ -218,6 +220,62 @@ const BookingChart: React.FC = () => {
     );
   };
 
+  const handleDateClick = (cell: DateCell) => {
+    if (cell.bookings.length > 0) {
+      setSelectedDate(cell.date);
+      setShowDateModal(true);
+    }
+  };
+
+  const getBookingTypeLabel = (booking: BookingData) => {
+    if (booking.bookingType === 'room') {
+      return `Room ${booking.roomNumber || 'N/A'}`;
+    }
+    return booking.banquetName || 'Banquet';
+  };
+
+  const getBookingDuration = (booking: BookingData) => {
+    const checkIn = new Date(booking.checkIn);
+    const checkOut = new Date(booking.checkOut);
+    const duration = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60));
+    
+    if (booking.bookingType === 'banquet') {
+      return `${duration} hours`;
+    }
+    const days = Math.ceil(duration / 24);
+    return `${days} ${days === 1 ? 'day' : 'days'}`;
+  };
+
+  const getSelectedDateBookings = () => {
+    if (!selectedDate) return [];
+    
+    const cellDateStart = new Date(selectedDate);
+    cellDateStart.setHours(0, 0, 0, 0);
+    
+    const cellDateEnd = new Date(selectedDate);
+    cellDateEnd.setHours(23, 59, 59, 999);
+    
+    return bookings.filter(booking => {
+      const checkIn = new Date(booking.checkIn);
+      const checkOut = new Date(booking.checkOut);
+      const isSameDay = checkIn.toDateString() === selectedDate.toDateString();
+      
+      return (
+        (checkIn >= cellDateStart && checkIn <= cellDateEnd) ||
+        (checkOut >= cellDateStart && checkOut <= cellDateEnd) ||
+        (checkIn <= cellDateStart && checkOut >= cellDateEnd) ||
+        isSameDay
+      );
+    }).sort((a, b) => {
+      // Sort by booking type (room first, then banquet)
+      if (a.bookingType !== b.bookingType) {
+        return a.bookingType === 'room' ? -1 : 1;
+      }
+      // Then sort by check-in time
+      return new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime();
+    });
+  };
+
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
@@ -309,26 +367,32 @@ const BookingChart: React.FC = () => {
           {calendar.flat().map((cell, index) => (
             <div
               key={index}
-              className={`min-h-[120px] border border-gray-200 p-2 ${
+              onClick={() => handleDateClick(cell)}
+              className={`min-h-[120px] border border-gray-200 p-2 transition-all ${
                 !cell.isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'
-              } ${cell.isToday ? 'ring-2 ring-blue-500' : ''}`}
+              } ${cell.isToday ? 'ring-2 ring-blue-500' : ''} ${
+                cell.bookings.length > 0 ? 'cursor-pointer hover:bg-blue-50 hover:shadow-md' : ''
+              }`}
             >
-              <div className={`text-sm font-medium mb-2 ${cell.isToday ? 'text-blue-600' : ''}`}>
-                {cell.date.getDate()}
+              <div className={`text-sm font-medium mb-2 flex justify-between items-center ${
+                cell.isToday ? 'text-blue-600' : ''
+              }`}>
+                <span>{cell.date.getDate()}</span>
+                {cell.bookings.length > 0 && (
+                  <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">
+                    {cell.bookings.length}
+                  </span>
+                )}
               </div>
               
               <div className="space-y-1">
-                {cell.bookings.map((booking, bookingIndex) => (
+                {cell.bookings.slice(0, 2).map((booking, bookingIndex) => (
                   <div
                     key={bookingIndex}
                     className={`text-xs p-2 rounded text-white ${getStatusColor(booking.status)} ${
                       booking.bookingType === 'banquet' ? 'border-l-4 border-purple-300' : ''
                     }`}
-                    title={`${booking.guestName} - ${
-                      booking.bookingType === 'room' 
-                        ? `Room ${booking.roomNumber}` 
-                        : `${booking.banquetName} (${booking.banquetType})`
-                    } (${booking.status})${booking.eventType ? ` - ${booking.eventType}` : ''}`}
+                    title={`Click to view all bookings for ${cell.date.toLocaleDateString()}`}
                   >
                     <div className="font-medium truncate">
                       {booking.bookingType === 'room' 
@@ -347,6 +411,11 @@ const BookingChart: React.FC = () => {
                     )}
                   </div>
                 ))}
+                {cell.bookings.length > 2 && (
+                  <div className="text-xs text-center text-blue-600 font-medium py-1 bg-blue-50 rounded cursor-pointer hover:bg-blue-100">
+                    +{cell.bookings.length - 2} more
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -446,6 +515,222 @@ const BookingChart: React.FC = () => {
       {loading && (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      )}
+
+      {/* Date Bookings Modal */}
+      {showDateModal && selectedDate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b sticky top-0 bg-white z-10">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Bookings for {selectedDate.toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Total: {getSelectedDateBookings().length} booking(s)
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowDateModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {getSelectedDateBookings().length === 0 ? (
+                <div className="text-center py-12">
+                  <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No bookings for this date</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Room Bookings Section */}
+                  {getSelectedDateBookings().some(b => b.bookingType === 'room') && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                        <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-sm mr-2">
+                          Room Bookings
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          ({getSelectedDateBookings().filter(b => b.bookingType === 'room').length})
+                        </span>
+                      </h3>
+                      <div className="space-y-3">
+                        {getSelectedDateBookings()
+                          .filter(b => b.bookingType === 'room')
+                          .map((booking) => (
+                            <div
+                              key={booking._id}
+                              className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+                            >
+                              <div className="flex justify-between items-start mb-3">
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2 mb-2">
+                                    <h4 className="text-lg font-semibold text-gray-900">
+                                      Room {booking.roomNumber}
+                                    </h4>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                      booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                      booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                      'bg-blue-100 text-blue-800'
+                                    }`}>
+                                      {booking.status}
+                                    </span>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      booking.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' :
+                                      booking.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                      'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {booking.paymentStatus}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-gray-600 capitalize">{booking.roomType}</p>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm font-medium text-gray-700">
+                                    {getBookingDuration(booking)}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <div className="flex items-center text-sm text-gray-600 mb-2">
+                                    <User className="h-4 w-4 mr-2" />
+                                    <span className="font-medium">{booking.guestName}</span>
+                                  </div>
+                                  <div className="text-xs text-gray-500 ml-6">
+                                    ID: {booking._id.slice(-8)}
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div className="flex items-center text-sm text-gray-600">
+                                    <Calendar className="h-4 w-4 mr-2" />
+                                    <span>Check-in: {new Date(booking.checkIn).toLocaleDateString()} at {formatTime(booking.checkIn)}</span>
+                                  </div>
+                                  <div className="flex items-center text-sm text-gray-600">
+                                    <Calendar className="h-4 w-4 mr-2" />
+                                    <span>Check-out: {new Date(booking.checkOut).toLocaleDateString()} at {formatTime(booking.checkOut)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Banquet Bookings Section */}
+                  {getSelectedDateBookings().some(b => b.bookingType === 'banquet') && (
+                    <div className={getSelectedDateBookings().some(b => b.bookingType === 'room') ? 'mt-6' : ''}>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                        <span className="bg-purple-100 text-purple-600 px-3 py-1 rounded-full text-sm mr-2">
+                          Banquet Events
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          ({getSelectedDateBookings().filter(b => b.bookingType === 'banquet').length})
+                        </span>
+                      </h3>
+                      <div className="space-y-3">
+                        {getSelectedDateBookings()
+                          .filter(b => b.bookingType === 'banquet')
+                          .map((booking) => (
+                            <div
+                              key={booking._id}
+                              className="border border-purple-200 rounded-lg p-4 hover:shadow-md transition bg-purple-50"
+                            >
+                              <div className="flex justify-between items-start mb-3">
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2 mb-2">
+                                    <h4 className="text-lg font-semibold text-gray-900">
+                                      {booking.banquetName}
+                                    </h4>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                      booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                      booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                      'bg-blue-100 text-blue-800'
+                                    }`}>
+                                      {booking.status}
+                                    </span>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      booking.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' :
+                                      booking.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                      'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {booking.paymentStatus}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-3">
+                                    <p className="text-sm text-gray-600 capitalize">{booking.banquetType} Hall</p>
+                                    {booking.eventType && (
+                                      <span className="bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-xs font-medium">
+                                        {booking.eventType}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm font-medium text-gray-700">
+                                    {getBookingDuration(booking)}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <div className="flex items-center text-sm text-gray-600 mb-2">
+                                    <User className="h-4 w-4 mr-2" />
+                                    <span className="font-medium">{booking.guestName}</span>
+                                  </div>
+                                  <div className="text-xs text-gray-500 ml-6">
+                                    ID: {booking._id.slice(-8)}
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div className="flex items-center text-sm text-gray-600">
+                                    <Clock className="h-4 w-4 mr-2" />
+                                    <span>Start: {formatTime(booking.checkIn)}</span>
+                                  </div>
+                                  <div className="flex items-center text-sm text-gray-600">
+                                    <Clock className="h-4 w-4 mr-2" />
+                                    <span>End: {formatTime(booking.checkOut)}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="mt-3 pt-3 border-t border-purple-200">
+                                <TimeDisplay startTime={booking.checkIn} endTime={booking.checkOut} />
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t bg-gray-50">
+              <button
+                onClick={() => setShowDateModal(false)}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
