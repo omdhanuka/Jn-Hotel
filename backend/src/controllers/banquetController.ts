@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import Banquet from '../models/Banquet';
 import { IUser } from '../models/User';
+import { compressMultipleImages } from '../utils/imageCompressor';
+import path from 'path';
+import fs from 'fs';
 
 interface AuthRequest extends Request {
   user?: IUser;
@@ -123,5 +126,64 @@ export const deleteBanquet = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const uploadBanquetImages = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+      return res.status(400).json({ message: 'No images uploaded' });
+    }
+
+    const uploadedFiles = req.files as Express.Multer.File[];
+    const filePaths = uploadedFiles.map(file => file.path);
+
+    // Get compression quality from request body (default 80)
+    const quality = parseInt(req.body.quality) || 80;
+    const maxWidth = parseInt(req.body.maxWidth) || 1920;
+    const maxHeight = parseInt(req.body.maxHeight) || 1080;
+
+    // Compress images
+    const compressedResults = await compressMultipleImages(filePaths, {
+      quality,
+      maxWidth,
+      maxHeight
+    });
+
+    // Generate URLs and compression stats
+    const imageData = compressedResults.map(result => {
+      const filename = path.basename(result.path);
+      return {
+        url: `/uploads/banquets/${filename}`,
+        originalSize: result.originalSize,
+        compressedSize: result.compressedSize,
+        compressionRatio: result.compressionRatio
+      };
+    });
+
+    res.json({
+      message: 'Images uploaded successfully',
+      images: imageData
+    });
+  } catch (error) {
+    console.error('Image upload error:', error);
+    res.status(500).json({ message: 'Failed to upload images' });
+  }
+};
+
+export const deleteBanquetImage = async (req: AuthRequest, res: Response) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(__dirname, '../../uploads/banquets', filename);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      res.json({ message: 'Image deleted successfully' });
+    } else {
+      res.status(404).json({ message: 'Image not found' });
+    }
+  } catch (error) {
+    console.error('Image deletion error:', error);
+    res.status(500).json({ message: 'Failed to delete image' });
   }
 };

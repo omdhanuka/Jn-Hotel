@@ -13,6 +13,7 @@ import reviewRoutes from './routes/reviews';
 import { auth } from './middleware/auth';
 import { adminAuth } from './middleware/adminAuth';
 import { getAllReviews } from './controllers/adminController';
+import path from 'path';
 
 dotenv.config();
 
@@ -36,6 +37,9 @@ app.use('/api/restaurant', restaurantRoutes);
 app.use('/api/bills', billRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reviews', reviewRoutes);
+
+// Serve static files for uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // explicit admin reviews route
 app.get('/api/admin/reviews', auth, adminAuth, getAllReviews);

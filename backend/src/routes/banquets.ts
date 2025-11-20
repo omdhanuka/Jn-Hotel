@@ -5,10 +5,13 @@ import {
   getBanquetById, 
   createBanquet, 
   updateBanquet, 
-  deleteBanquet
+  deleteBanquet,
+  uploadBanquetImages,
+  deleteBanquetImage
 } from '../controllers/banquetController';
 import { auth } from '../middleware/auth';
 import { adminAuth } from '../middleware/adminAuth';
+import { upload } from '../config/multer';
 
 const router = express.Router();
 
@@ -21,6 +24,16 @@ router.get('/', getBanquets);
 // @desc    Get banquet by ID
 // @access  Public
 router.get('/:id', getBanquetById);
+
+// @route   POST /api/banquets/upload-images
+// @desc    Upload banquet images
+// @access  Private (Admin only)
+router.post('/upload-images', [auth, adminAuth], upload.array('images', 10), uploadBanquetImages);
+
+// @route   DELETE /api/banquets/images/:filename
+// @desc    Delete banquet image
+// @access  Private (Admin only)
+router.delete('/images/:filename', [auth, adminAuth], deleteBanquetImage);
 
 // @route   POST /api/banquets
 // @desc    Create new banquet

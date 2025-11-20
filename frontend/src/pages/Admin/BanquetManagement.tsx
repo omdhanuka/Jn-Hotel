@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, Check, X, Building, Users, DollarSign } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Check, X, Building, Users, DollarSign, Upload, Link2, Trash } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -135,6 +135,18 @@ const BanquetManagement: React.FC = () => {
     decorationThemes: [],
     termsAndConditions: ''
   });
+
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [imageUploadMethod, setImageUploadMethod] = useState<'upload' | 'url'>('upload');
+  const [imageUrl, setImageUrl] = useState('');
+  const [compressionQuality, setCompressionQuality] = useState(80);
+  const [showCompressionStats, setShowCompressionStats] = useState(false);
+  const [compressionStats, setCompressionStats] = useState<Array<{
+    url: string;
+    originalSize: number;
+    compressedSize: number;
+    compressionRatio: number;
+  }>>([]);
 
   const banquetTypes = [
     { value: 'wedding', label: 'Wedding Hall' },
@@ -284,6 +296,105 @@ const BanquetManagement: React.FC = () => {
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to delete banquet');
     }
+  };
+
+  const handleImageUpload = async (files: FileList) => {
+    if (!files || files.length === 0) return;
+
+    setUploadingImages(true);
+    const formData = new FormData();
+    
+    Array.from(files).forEach(file => {
+      formData.append('images', file);
+    });
+
+    // Add compression settings
+    formData.append('quality', compressionQuality.toString());
+    formData.append('maxWidth', '1920');
+    formData.append('maxHeight', '1080');
+
+    try {
+      const response = await axios.post('/api/banquets/upload-images', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const uploadedData = response.data.images;
+      
+      // Store compression stats
+      setCompressionStats(uploadedData);
+      setShowCompressionStats(true);
+
+      // Add URLs to banquet form
+      const uploadedUrls = uploadedData.map((img: any) => img.url);
+      setBanquetForm(prev => ({
+        ...prev,
+        images: [...prev.images, ...uploadedUrls]
+      }));
+
+      toast.success(`${uploadedUrls.length} image(s) uploaded successfully`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to upload images');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const getCompressionQualityLabel = (quality: number): string => {
+    if (quality <= 50) return 'Low Quality (Highest Compression)';
+    if (quality <= 70) return 'Medium Quality (Balanced)';
+    if (quality <= 85) return 'High Quality (Recommended)';
+    return 'Maximum Quality (Low Compression)';
+  };
+
+  const getCompressionColor = (quality: number): string => {
+    if (quality <= 50) return 'text-red-600';
+    if (quality <= 70) return 'text-orange-600';
+    if (quality <= 85) return 'text-green-600';
+    return 'text-blue-600';
+  };
+
+  const handleAddImageUrl = () => {
+    if (!imageUrl.trim()) {
+      toast.error('Please enter a valid image URL');
+      return;
+    }
+
+    setBanquetForm(prev => ({
+      ...prev,
+      images: [...prev.images, imageUrl]
+    }));
+
+    setImageUrl('');
+    toast.success('Image URL added');
+  };
+
+  const handleRemoveImage = async (imageUrl: string, index: number) => {
+    // If it's an uploaded image (starts with /uploads/), delete from server
+    if (imageUrl.startsWith('/uploads/')) {
+      try {
+        const filename = imageUrl.split('/').pop();
+        await axios.delete(`/api/banquets/images/${filename}`);
+      } catch (error) {
+        console.error('Failed to delete image from server:', error);
+      }
+    }
+
+    setBanquetForm(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+
+    toast.success('Image removed');
   };
 
   const resetForm = () => {
@@ -553,77 +664,274 @@ const BanquetManagement: React.FC = () => {
                 </div>
               </div>
 
-              {/* Media & Additional Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Media</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Images (URLs)</label>
-                      <textarea
-                        value={banquetForm.images.join('\n')}
-                        onChange={(e) => handleInputChange('images', e.target.value.split('\n').filter(url => url.trim()))}
-                        rows={3}
-                        className="w-full border rounded-md px-3 py-2"
-                        placeholder="Enter image URLs, one per line"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Video Tour URL</label>
-                      <input
-                        type="url"
-                        value={banquetForm.videoTour}
-                        onChange={(e) => handleInputChange('videoTour', e.target.value)}
-                        className="w-full border rounded-md px-3 py-2"
-                        placeholder="https://..."
-                      />
-                    </div>
-                  </div>
+              {/* Media & Images - Updated Section */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Media & Images</h3>
+                
+                {/* Upload Method Toggle */}
+                <div className="mb-4 flex space-x-4">
+                  <button
+                    type="button"
+                    onClick={() => setImageUploadMethod('upload')}
+                    className={`flex items-center px-4 py-2 rounded-md ${
+                      imageUploadMethod === 'upload'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Images
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImageUploadMethod('url')}
+                    className={`flex items-center px-4 py-2 rounded-md ${
+                      imageUploadMethod === 'url'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    <Link2 className="h-4 w-4 mr-2" />
+                    Add URL
+                  </button>
                 </div>
 
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Availability & Status</h3>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label id="banquet-status-label" htmlFor="banquet-status" className="block text-sm font-medium mb-1">Status</label>
-                        <select
-                          id="banquet-status"
-                          aria-labelledby="banquet-status-label"
-                          title="Status"
-                          value={banquetForm.status}
-                          onChange={(e) => handleInputChange('status', e.target.value)}
-                          className="w-full border rounded-md px-3 py-2"
-                        >
-                          <option value="active">Active</option>
-                          <option value="hidden">Hidden</option>
-                          <option value="maintenance">Under Maintenance</option>
-                          <option value="inactive">Inactive</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="flex items-center space-x-2 mt-6">
-                          <input
-                            type="checkbox"
-                            checked={banquetForm.isAvailable}
-                            onChange={(e) => handleInputChange('isAvailable', e.target.checked)}
-                            className="rounded"
-                          />
-                          <span className="text-sm">Available for Booking</span>
+                {/* Upload Images with Compression Control */}
+                {imageUploadMethod === 'upload' && (
+                  <div className="mb-4">
+                    {/* Compression Quality Slider */}
+                    <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-medium">
+                          Image Compression Quality
                         </label>
+                        <span className={`text-sm font-semibold ${getCompressionColor(compressionQuality)}`}>
+                          {compressionQuality}%
+                        </span>
+                      </div>
+                      
+                      <input
+                        type="range"
+                        min="30"
+                        max="100"
+                        value={compressionQuality}
+                        onChange={(e) => setCompressionQuality(parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        style={{
+                          background: `linear-gradient(to right, 
+                            #ef4444 0%, 
+                            #f97316 25%, 
+                            #22c55e 50%, 
+                            #3b82f6 75%, 
+                            #3b82f6 100%)`
+                        }}
+                      />
+                      
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>30%</span>
+                        <span>50%</span>
+                        <span>70%</span>
+                        <span>85%</span>
+                        <span>100%</span>
+                      </div>
+                      
+                      <div className={`text-center text-sm mt-2 font-medium ${getCompressionColor(compressionQuality)}`}>
+                        {getCompressionQualityLabel(compressionQuality)}
+                      </div>
+                      
+                      <div className="mt-3 text-xs text-gray-600 bg-blue-50 p-3 rounded">
+                        <p className="font-semibold mb-1">💡 Compression Guide:</p>
+                        <ul className="space-y-1 ml-4">
+                          <li>• <strong>30-50%:</strong> Smallest file size, noticeable quality loss</li>
+                          <li>• <strong>50-70%:</strong> Good balance, suitable for web thumbnails</li>
+                          <li>• <strong>70-85%:</strong> Recommended - Great quality with good compression</li>
+                          <li>• <strong>85-100%:</strong> Maximum quality, larger file sizes</li>
+                        </ul>
                       </div>
                     </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Available From (if future)</label>
+
+                    <label className="block text-sm font-medium mb-2">
+                      Upload Images (Max 10)
+                    </label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                       <input
-                        type="date"
-                        value={banquetForm.availableFrom}
-                        onChange={(e) => handleInputChange('availableFrom', e.target.value)}
-                        className="w-full border rounded-md px-3 py-2"
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
+                        className="hidden"
+                        id="image-upload"
+                        disabled={uploadingImages}
                       />
+                      <label
+                        htmlFor="image-upload"
+                        className="cursor-pointer flex flex-col items-center"
+                      >
+                        <Upload className="h-12 w-12 text-gray-400 mb-2" />
+                        <span className="text-sm text-gray-600">
+                          {uploadingImages ? 'Uploading and Compressing...' : 'Click to upload or drag and drop'}
+                        </span>
+                        <span className="text-xs text-gray-500 mt-1">
+                          PNG, JPG, WEBP up to 10MB
+                        </span>
+                        <span className="text-xs text-blue-600 mt-2 font-medium">
+                          Quality: {compressionQuality}% | Max: 1920x1080px
+                        </span>
+                      </label>
                     </div>
+
+                    {/* Compression Stats Display */}
+                    {showCompressionStats && compressionStats.length > 0 && (
+                      <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="text-sm font-semibold text-green-800">
+                            Compression Results
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={() => setShowCompressionStats(false)}
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          {compressionStats.map((stat, index) => (
+                            <div key={index} className="flex justify-between items-center text-xs bg-white p-2 rounded">
+                              <span className="text-gray-600">Image {index + 1}</span>
+                              <div className="flex items-center space-x-4">
+                                <span className="text-gray-500">
+                                  {formatFileSize(stat.originalSize)} → {formatFileSize(stat.compressedSize)}
+                                </span>
+                                <span className="font-semibold text-green-600">
+                                  {stat.compressionRatio}% smaller
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                          <div className="mt-2 pt-2 border-t border-green-200">
+                            <div className="flex justify-between items-center text-sm font-semibold">
+                              <span className="text-green-800">Total Saved:</span>
+                              <span className="text-green-600">
+                                {formatFileSize(
+                                  compressionStats.reduce((acc, stat) => acc + (stat.originalSize - stat.compressedSize), 0)
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Add Image URL */}
+                {imageUploadMethod === 'url' && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">
+                      Image URL
+                    </label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="url"
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        className="flex-1 border rounded-md px-3 py-2"
+                        placeholder="https://example.com/image.jpg"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddImageUrl}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Image Preview Grid */}
+                {banquetForm.images.length > 0 && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">
+                      Uploaded Images ({banquetForm.images.length})
+                    </label>
+                    <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+                      {banquetForm.images.map((image, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={image.startsWith('/uploads/') ? `http://localhost:5000${image}` : image}
+                            alt={`Banquet ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(image, index)}
+                            className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Video Tour URL */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Video Tour URL</label>
+                  <input
+                    type="url"
+                    value={banquetForm.videoTour}
+                    onChange={(e) => handleInputChange('videoTour', e.target.value)}
+                    className="w-full border rounded-md px-3 py-2"
+                    placeholder="https://youtube.com/..."
+                  />
+                </div>
+              </div>
+
+              {/* Availability & Status */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Availability & Status</h3>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label id="banquet-status-label" htmlFor="banquet-status" className="block text-sm font-medium mb-1">Status</label>
+                      <select
+                        id="banquet-status"
+                        aria-labelledby="banquet-status-label"
+                        title="Status"
+                        value={banquetForm.status}
+                        onChange={(e) => handleInputChange('status', e.target.value)}
+                        className="w-full border rounded-md px-3 py-2"
+                      >
+                        <option value="active">Active</option>
+                        <option value="hidden">Hidden</option>
+                        <option value="maintenance">Under Maintenance</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="flex items-center space-x-2 mt-6">
+                        <input
+                          type="checkbox"
+                          checked={banquetForm.isAvailable}
+                          onChange={(e) => handleInputChange('isAvailable', e.target.checked)}
+                          className="rounded"
+                        />
+                        <span className="text-sm">Available for Booking</span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Available From (if future)</label>
+                    <input
+                      type="date"
+                      value={banquetForm.availableFrom}
+                      onChange={(e) => handleInputChange('availableFrom', e.target.value)}
+                      className="w-full border rounded-md px-3 py-2"
+                    />
                   </div>
                 </div>
               </div>

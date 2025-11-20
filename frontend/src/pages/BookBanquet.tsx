@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Calendar, Users, Clock, MapPin, Check, CreditCard, Star } from 'lucide-react';
+import { Calendar, Users, Clock, MapPin, Check, CreditCard, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import ClockTimePicker from '../components/ClockTimePicker';
@@ -62,6 +62,8 @@ const BookBanquet: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   
   const [bookingForm, setBookingForm] = useState<BookingForm>({
     fullName: '',
@@ -222,6 +224,43 @@ const BookBanquet: React.FC = () => {
     }
   };
 
+  const getImageUrl = (imageUrl: string) => {
+    if (imageUrl.startsWith('/uploads/')) {
+      return `http://localhost:5000${imageUrl}`;
+    }
+    return imageUrl;
+  };
+
+  // Auto-play image slider
+  useEffect(() => {
+    if (!banquet || !banquet.images || banquet.images.length <= 1 || !isAutoPlaying) return;
+
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % banquet.images.length);
+    }, 3000); // Change image every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [banquet, isAutoPlaying]);
+
+  const handlePreviousImage = () => {
+    setIsAutoPlaying(false);
+    setCurrentImageIndex((prev) => 
+      prev === 0 ? (banquet?.images.length || 1) - 1 : prev - 1
+    );
+  };
+
+  const handleNextImage = () => {
+    setIsAutoPlaying(false);
+    setCurrentImageIndex((prev) => 
+      (prev + 1) % (banquet?.images.length || 1)
+    );
+  };
+
+  const handleThumbnailClick = (index: number) => {
+    setIsAutoPlaying(false);
+    setCurrentImageIndex(index);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -288,15 +327,97 @@ const BookBanquet: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Banquet Information */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="h-64 bg-gray-300">
+              {/* Image Slider Section */}
+              <div className="relative h-96 bg-gray-300 group">
+                {/* Main Image Display */}
                 <img
-                  src={banquet.images?.[0] || '/api/placeholder/600/300'}
-                  alt={banquet.name}
-                  className="w-full h-full object-cover"
+                  src={getImageUrl(banquet.images?.[currentImageIndex] || '/api/placeholder/600/300')}
+                  alt={`${banquet.name} - Image ${currentImageIndex + 1}`}
+                  className="w-full h-full object-cover transition-opacity duration-500"
                 />
+
+                {/* Image Counter */}
+                {banquet.images && banquet.images.length > 1 && (
+                  <div className="absolute top-4 right-4 bg-black bg-opacity-60 text-white px-3 py-1 rounded-full text-sm">
+                    {currentImageIndex + 1} / {banquet.images.length}
+                  </div>
+                )}
+
+                {/* Auto-play Indicator */}
+                {banquet.images && banquet.images.length > 1 && isAutoPlaying && (
+                  <div className="absolute top-4 left-4 bg-green-600 text-white px-3 py-1 rounded-full text-xs flex items-center">
+                    <span className="animate-pulse mr-2">●</span>
+                    Auto-playing
+                  </div>
+                )}
+
+                {/* Navigation Arrows */}
+                {banquet.images && banquet.images.length > 1 && (
+                  <>
+                    <button
+                      onClick={handlePreviousImage}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      aria-label="Previous image"
+                    >
+                      <ChevronLeft className="h-6 w-6" />
+                    </button>
+                    <button
+                      onClick={handleNextImage}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      aria-label="Next image"
+                    >
+                      <ChevronRight className="h-6 w-6" />
+                    </button>
+                  </>
+                )}
+
+                {/* Thumbnail Navigation */}
+                {banquet.images && banquet.images.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 bg-black bg-opacity-50 p-2 rounded-lg max-w-full overflow-x-auto">
+                    {banquet.images.slice(0, 5).map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleThumbnailClick(index)}
+                        className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 transition-all duration-300 ${
+                          currentImageIndex === index
+                            ? 'border-blue-500 scale-110'
+                            : 'border-transparent opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <img
+                          src={getImageUrl(image)}
+                          alt={`Thumbnail ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                    {banquet.images.length > 5 && (
+                      <div className="flex-shrink-0 w-16 h-16 rounded-md bg-black bg-opacity-70 flex items-center justify-center text-white text-xs">
+                        +{banquet.images.length - 5}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Progress Dots */}
+                {banquet.images && banquet.images.length > 1 && banquet.images.length <= 5 && (
+                  <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex space-x-2">
+                    {banquet.images.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleThumbnailClick(index)}
+                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                          currentImageIndex === index
+                            ? 'bg-blue-500 w-8'
+                            : 'bg-white bg-opacity-60 hover:bg-opacity-100'
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
               
               <div className="p-6">
@@ -760,4 +881,3 @@ const BookBanquet: React.FC = () => {
 };
 
 export default BookBanquet;
-                    
