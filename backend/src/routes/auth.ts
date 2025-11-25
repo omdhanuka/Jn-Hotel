@@ -1,7 +1,8 @@
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login, getProfile, updateProfile } from '../controllers/authController';
+import { register, login, getProfile, updateProfile, getUserOwnPermissions } from '../controllers/authController';
 import { auth } from '../middleware/auth';
+import { validateLoginRole } from '../middleware/roleAuth';
 
 const router = express.Router();
 
@@ -24,6 +25,15 @@ router.post('/login', [
   body('password').exists().withMessage('Password is required')
 ], login);
 
+// @route   POST /api/auth/login/staff
+// @desc    Staff login (validates staff role)
+// @access  Public
+router.post('/login/staff', [
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('password').notEmpty().withMessage('Password is required'),
+  validateLoginRole('staff')
+], login);
+
 // @route   GET /api/auth/me
 // @desc    Get current user
 // @access  Private
@@ -33,6 +43,18 @@ router.get('/me', auth, getProfile);
 // @desc    Get user profile
 // @access  Private
 router.get('/profile', auth, getProfile);
+
+// @route   GET /api/auth/me/permissions
+// @desc    Get current user's permissions
+// @access  Private
+router.get('/me/permissions', auth, getUserOwnPermissions);
+
+// @route   GET /api/auth/verify
+// @desc    Verify JWT token
+// @access  Private
+router.get('/verify', auth, (req, res) => {
+  res.json({ valid: true });
+});
 
 // @route   PUT /api/auth/profile
 // @desc    Update user profile

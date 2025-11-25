@@ -23,6 +23,8 @@ import {
 } from '../controllers/restaurantBookingController';
 import { auth } from '../middleware/auth';
 import { adminAuth } from '../middleware/adminAuth';
+import { verifyToken, checkActiveStatus } from '../middleware/roleAuth';
+import { requirePermission, requireAnyPermission } from '../middleware/permissionAuth';
 import { createBill, getBills, getBillById } from '../controllers/billController';
 
 const router = express.Router();
@@ -56,12 +58,12 @@ router.post('/menu', [auth, adminAuth], [
 
 // @route   PUT /api/restaurant/menu/:id
 // @desc    Update menu item
-// @access  Private (Admin only)
-router.put('/menu/:id', [auth, adminAuth], updateMenuItem);
+// @access  Private (Admin or Staff with manageRestaurant permission)
+router.put('/menu/:id', [verifyToken, checkActiveStatus, requireAnyPermission('manageRestaurant')], updateMenuItem);
 
 // @route   DELETE /api/restaurant/menu/:id
 // @desc    Delete menu item
-// @access  Private (Admin only)
+// @access  Private (Admin only - critical operation)
 router.delete('/menu/:id', [auth, adminAuth], deleteMenuItem);
 
 // Restaurant Table Routes
@@ -112,9 +114,9 @@ router.post('/bookings', [auth], [
 router.get('/bookings', auth, getUserRestaurantBookings);
 
 // @route   GET /api/restaurant/bookings/admin
-// @desc    Get all restaurant bookings (Admin)
-// @access  Private (Admin only)
-router.get('/bookings/admin', [auth, adminAuth], getAllRestaurantBookings);
+// @desc    Get all restaurant bookings (Admin or Staff with permission)
+// @access  Private (Admin or Staff with viewRestaurant permission)
+router.get('/bookings/admin', [verifyToken, checkActiveStatus, requireAnyPermission('viewRestaurant', 'manageRestaurant')], getAllRestaurantBookings);
 
 // @route   GET /api/restaurant/bookings/:id
 // @desc    Get booking by ID
@@ -123,8 +125,8 @@ router.get('/bookings/:id', auth, getRestaurantBookingById);
 
 // @route   PUT /api/restaurant/bookings/:id/status
 // @desc    Update booking status
-// @access  Private (Admin only)
-router.put('/bookings/:id/status', [auth, adminAuth], updateRestaurantBookingStatus);
+// @access  Private (Admin or Staff with manageRestaurant permission)
+router.put('/bookings/:id/status', [verifyToken, checkActiveStatus, requireAnyPermission('manageRestaurant')], updateRestaurantBookingStatus);
 
 // @route   PUT /api/restaurant/bookings/:id/rating
 // @desc    Add rating and feedback

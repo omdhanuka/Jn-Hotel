@@ -20,6 +20,7 @@ import RestaurantManagement from './RestaurantManagement';
 import RestaurantOrderManagement from './RestaurantOrderManagement';
 import BillManagement from './BillManagement';
 import ReviewManagement from './ReviewManagement';
+import StaffManagement from './StaffManagement';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -121,6 +122,7 @@ const AdminPanel: React.FC = () => {
     { id: 'bookings', label: 'Bookings', icon: Calendar, path: '/admin/bookings' },
     { id: 'reviews', label: 'Reviews', icon: MessageSquare, path: '/admin/reviews' },
     { id: 'chart', label: 'Booking Chart', icon: Calendar, path: '/admin/booking-chart' },
+    { id: 'staff', label: 'Staff Management', icon: Users, path: '/admin/staff' },
     { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' }
   ];
@@ -382,6 +384,8 @@ const AdminPanel: React.FC = () => {
             <Route path="/reviews" element={<ReviewManagement />} />
             
             <Route path="/booking-chart" element={<BookingChart />} />
+            
+            <Route path="/staff" element={<StaffManagement />} />
             
             <Route path="/users" element={
               <div>

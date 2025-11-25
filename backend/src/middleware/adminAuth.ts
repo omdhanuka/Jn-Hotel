@@ -12,12 +12,15 @@ export const adminAuth = (req: AuthRequest, res: Response, next: NextFunction) =
     }
 
     if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
+      return res.status(403).json({
+        message: 'Access denied. Admin privileges required.',
+        currentRole: req.user.role,
+      });
     }
 
     next();
   } catch (error) {
-    console.error('Admin auth error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Admin auth middleware error:', error);
+    res.status(500).json({ message: 'Server error in admin authentication' });
   }
 };

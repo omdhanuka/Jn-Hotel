@@ -88,6 +88,11 @@ export const createMenuItem = async (req: AuthRequest, res: Response) => {
 
 export const updateMenuItem = async (req: AuthRequest, res: Response) => {
   try {
+    // Allow admin or staff with manageRestaurant permission
+    if (req.user!.role !== 'admin' && !req.user!.permissions?.manageRestaurant) {
+      return res.status(403).json({ message: 'Access denied. Management permission required.' });
+    }
+
     const updateData = {
       ...req.body,
       updatedBy: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'Unknown'

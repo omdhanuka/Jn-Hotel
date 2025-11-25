@@ -76,9 +76,28 @@ const BookingDetails: React.FC = () => {
       
       // Fetch resource details
       await fetchResourceDetails(bookingData.type, bookingData.resourceId);
-    } catch (error) {
-      toast.error('Failed to fetch booking details');
-      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Fetch booking error:', error);
+      
+      if (error.response?.status === 403) {
+        toast.error('You do not have permission to view this booking');
+        // Redirect based on user role
+        if (user?.role === 'staff') {
+          navigate('/staff/dashboard');
+        } else if (user?.role === 'reception') {
+          navigate('/reception/dashboard');
+        } else if (user?.role === 'admin') {
+          navigate('/admin/bookings');
+        } else {
+          navigate('/dashboard');
+        }
+      } else if (error.response?.status === 404) {
+        toast.error('Booking not found');
+        navigate('/dashboard');
+      } else {
+        toast.error('Failed to fetch booking details');
+        navigate('/dashboard');
+      }
     } finally {
       setLoading(false);
     }
@@ -109,7 +128,12 @@ const BookingDetails: React.FC = () => {
   };
 
   const canCancelBooking = () => {
-    if (!booking) return false;
+    if (!booking || !user) return false;
+    
+    // Staff cannot cancel bookings, only view them
+    if (user.role === 'staff' || user.role === 'reception') {
+      return false;
+    }
     
     const now = new Date();
     const checkInDate = new Date(booking.checkIn);
@@ -120,7 +144,12 @@ const BookingDetails: React.FC = () => {
   };
 
   const canModifyBooking = () => {
-    if (!booking) return false;
+    if (!booking || !user) return false;
+    
+    // Staff cannot modify bookings, only view them
+    if (user.role === 'staff' || user.role === 'reception') {
+      return false;
+    }
     
     const now = new Date();
     const checkInDate = new Date(booking.checkIn);
@@ -259,12 +288,26 @@ const BookingDetails: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => {
+              // Redirect back based on user role
+              if (user?.role === 'staff') {
+                navigate('/staff/banquets');
+              } else if (user?.role === 'reception') {
+                navigate('/reception/dashboard');
+              } else if (user?.role === 'admin') {
+                navigate('/admin/bookings');
+              } else {
+                navigate('/dashboard');
+              }
+            }}
             className="text-blue-600 hover:text-blue-800 mb-4"
           >
-            ← Back to Dashboard
+            ← Back to {user?.role === 'staff' ? 'Banquet Bookings' : 'Dashboard'}
           </button>
           <h1 className="text-3xl font-bold text-gray-900">Booking Details</h1>
+          {(user?.role === 'staff' || user?.role === 'reception') && (
+            <p className="text-sm text-gray-600 mt-2">View-only mode (Staff Access)</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

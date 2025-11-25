@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import path from 'path';
+
+// Import routes
 import authRoutes from './routes/auth';
 import roomRoutes from './routes/rooms';
 import bookingRoutes from './routes/bookings';
@@ -9,14 +12,20 @@ import banquetRoutes from './routes/banquets';
 import restaurantRoutes from './routes/restaurant';
 import billRoutes from './routes/bills';
 import reviewRoutes from './routes/reviews';
+import adminRoutes from './routes/admin';
+import receptionRoutes from './routes/reception';
+import staffRoutes from './routes/staff';
+
+// Import models for sample data
 import Banquet from './models/Banquet';
 import Booking from './models/Booking';
 import Room from './models/Room';
 import User from './models/User';
+
+// Import middleware
 import { auth } from './middleware/auth';
 import { adminAuth } from './middleware/adminAuth';
 import { getAllReviews } from './controllers/adminController';
-import path from 'path';
 
 // Load environment variables first
 dotenv.config();
@@ -35,11 +44,12 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Serve static files for uploaded images
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Routes
+// API Routes - Register in correct order
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/banquets', banquetRoutes);
@@ -47,14 +57,38 @@ app.use('/api/restaurant', restaurantRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/bills', billRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/reception', receptionRoutes);
+app.use('/api/staff', staffRoutes); // NEW: Add staff routes
 
-// Admin review listing (keeps admin panel endpoint working)
+// Admin review listing (alternate endpoint)
 app.get('/api/admin/reviews', auth, adminAuth, getAllReviews);
 
+// Log all registered routes for debugging
+console.log('✅ Registered routes:');
+console.log('  - /api/auth');
+console.log('  - /api/rooms');
+console.log('  - /api/banquets');
+console.log('  - /api/restaurant');
+console.log('  - /api/bookings');
+console.log('  - /api/bills');
+console.log('  - /api/reviews');
+console.log('  - /api/admin');
+console.log('  - /api/reception');
+console.log('  - /api/staff'); // NEW
 
 // Health check route
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
+});
+
+// Test route to verify server is working
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    message: 'Server is working!', 
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Create sample banquets
@@ -264,22 +298,35 @@ const createSampleBookings = async () => {
 const initializeDatabase = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI!);
-    console.log('MongoDB connected successfully');
+    console.log('✅ MongoDB connected successfully');
     
     // Create sample data
     await createSampleBanquets();
     await createSampleBookings();
     
   } catch (error) {
-    console.error('Database connection failed:', error);
+    console.error('❌ Database connection failed:', error);
     process.exit(1);
   }
 };
 
+// 404 handler - must be after all routes
+app.use((req, res) => {
+  console.log('❌ 404 - Route not found:', req.method, req.path);
+  res.status(404).json({ 
+    message: 'Route not found',
+    path: req.path,
+    method: req.method
+  });
+});
+
 // Error handling middleware
 app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Unhandled error:', error);
-  res.status(500).json({ message: 'Internal server error' });
+  console.error('❌ Server error:', error);
+  res.status(500).json({ 
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? error.message : undefined
+  });
 });
 
 // Start server
@@ -289,8 +336,14 @@ const startServer = async () => {
   await initializeDatabase();
   
   app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`API available at: http://localhost:${PORT}/api`);
+    console.log('');
+    console.log('='.repeat(50));
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📍 API available at: http://localhost:${PORT}/api`);
+    console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`🧪 Test route: http://localhost:${PORT}/api/test`);
+    console.log('='.repeat(50));
+    console.log('');
   });
 };
 

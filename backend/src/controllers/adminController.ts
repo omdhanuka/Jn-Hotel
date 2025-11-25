@@ -333,3 +333,186 @@ export const getAllReviews = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const getAllStaff = async (req: Request, res: Response) => {
+  try {
+    const staff = await User.find({ 
+      role: { $in: ['staff', 'reception', 'admin'] } 
+    })
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    res.json({ staff });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const createStaff = async (req: Request, res: Response) => {
+  try {
+    const { firstName, lastName, email, password, phone, role, department, position, isActive, permissions } = req.body;
+
+    // Check if email already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
+
+    // Create new staff member with permissions
+    const staff = new User({
+      firstName,
+      lastName,
+      email,
+      password,
+      phone,
+      role: role || 'staff',
+      department,
+      position,
+      isActive: isActive !== undefined ? isActive : true,
+      permissions: permissions || {
+        viewBookings: false,
+        manageBookings: false,
+        viewRooms: false,
+        manageRooms: false,
+        viewBanquets: false,
+        manageBanquets: false,
+        viewRestaurant: false,
+        manageRestaurant: false,
+        viewOrders: false,
+        manageOrders: false,
+        viewReviews: false,
+        manageReviews: false,
+        viewUsers: false,
+        manageUsers: false,
+        viewReports: false,
+        manageBills: false
+      }
+    });
+
+    await staff.save();
+
+    const staffData = await User.findById(staff._id).select('-password');
+    res.status(201).json(staffData);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateStaff = async (req: Request, res: Response) => {
+  try {
+    const { firstName, lastName, email, password, phone, role, department, position, isActive, permissions } = req.body;
+
+    const updateData: any = {
+      firstName,
+      lastName,
+      email,
+      phone,
+      role,
+      department,
+      position,
+      isActive,
+      permissions
+    };
+
+    // Only update password if provided
+    if (password) {
+      updateData.password = password;
+    }
+
+    const staff = await User.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    ).select('-password');
+
+    if (!staff) {
+      return res.status(404).json({ message: 'Staff not found' });
+    }
+
+    res.json(staff);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const deleteStaff = async (req: Request, res: Response) => {
+  try {
+    const staff = await User.findByIdAndDelete(req.params.id);
+
+    if (!staff) {
+      return res.status(404).json({ message: 'Staff not found' });
+    }
+
+    res.json({ message: 'Staff deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateStaffStatus = async (req: Request, res: Response) => {
+  try {
+    const { isActive } = req.body;
+
+    const staff = await User.findByIdAndUpdate(
+      req.params.id,
+      { isActive },
+      { new: true }
+    ).select('-password');
+
+    if (!staff) {
+      return res.status(404).json({ message: 'Staff not found' });
+    }
+
+    res.json(staff);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+/**
+ * Get user's accessible sections based on permissions
+ */
+const getAccessibleSections = (user: any): string[] => {
+  if (user.role === 'admin') {
+    return ['dashboard', 'bookings', 'rooms', 'banquets', 'restaurant', 'orders', 'reviews', 'users', 'reports', 'bills', 'staff'];
+  }
+
+  const sections: string[] = ['dashboard']; // Everyone gets dashboard
+  const permissions = user.permissions || {};
+
+  if (permissions.viewBookings || permissions.manageBookings) sections.push('bookings');
+  if (permissions.viewRooms || permissions.manageRooms) sections.push('rooms');
+  if (permissions.viewBanquets || permissions.manageBanquets) sections.push('banquets');
+  if (permissions.viewRestaurant || permissions.manageRestaurant) sections.push('restaurant');
+  if (permissions.viewOrders || permissions.manageOrders) sections.push('orders');
+  if (permissions.viewReviews || permissions.manageReviews) sections.push('reviews');
+  if (permissions.viewUsers || permissions.manageUsers) sections.push('users');
+  if (permissions.viewReports) sections.push('reports');
+  if (permissions.manageBills) sections.push('bills');
+
+  return sections;
+};
+
+export const getUserPermissions = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById(req.params.id).select('role permissions');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      role: user.role,
+      permissions: user.permissions || {},
+      accessibleSections: getAccessibleSections(user)
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

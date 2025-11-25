@@ -229,20 +229,29 @@ export const getBookingById = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Invalid booking ID format' });
     }
 
-    const booking = await Booking.findById(id);
+    const booking = await Booking.findById(id).populate('user', 'firstName lastName email phone');
     
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    // Check if user owns this booking or is admin
-    if (booking.user.toString() !== req.user!._id.toString() && req.user!.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied' });
+    // Check access permissions
+    const isOwner = booking.user && (booking.user as any)._id.toString() === req.user!._id.toString();
+    const isAdmin = req.user!.role === 'admin';
+    const isStaffWithPermission = (req.user!.role === 'staff' || req.user!.role === 'reception') && 
+      (req.user!.permissions?.viewBookings || req.user!.permissions?.manageBanquets || req.user!.permissions?.viewBanquets);
+    
+    // Allow access if user is owner, admin, or staff with booking view permissions
+    if (!isOwner && !isAdmin && !isStaffWithPermission) {
+      return res.status(403).json({ 
+        message: 'Access denied. You do not have permission to view this booking.',
+        code: 'INSUFFICIENT_PERMISSIONS'
+      });
     }
 
     res.json(booking);
   } catch (error) {
-    console.error(error);
+    console.error('Get booking by ID error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

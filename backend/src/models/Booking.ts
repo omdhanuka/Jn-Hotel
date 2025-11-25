@@ -13,6 +13,8 @@ export interface IBooking extends Document {
   paymentId?: string;
   specialRequests?: string;
   services: string[];
+  isCheckedIn?: boolean;  // NEW: Add check-in flag
+  isCheckedOut?: boolean; // NEW: Add check-out flag
   eventDetails?: {
     eventType?: string;
     fullName?: string;
@@ -73,6 +75,8 @@ const bookingSchema = new Schema<IBooking>({
   paymentId: { type: String },
   specialRequests: { type: String },
   services: [{ type: String }],
+  isCheckedIn: { type: Boolean, default: false },   // NEW
+  isCheckedOut: { type: Boolean, default: false },  // NEW
   eventDetails: {
     eventType: { type: String },
     fullName: { type: String },

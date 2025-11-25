@@ -202,9 +202,9 @@ export const updateRestaurantBookingStatus = async (req: AuthRequest, res: Respo
   try {
     const { status } = req.body;
     
-    // Only admin can update booking status
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    // Allow admin or staff with manageRestaurant permission
+    if (req.user!.role !== 'admin' && !req.user!.permissions?.manageRestaurant) {
+      return res.status(403).json({ message: 'Access denied. Management permission required.' });
     }
 
     const validStatuses = ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
@@ -261,8 +261,11 @@ export const addRatingAndFeedback = async (req: AuthRequest, res: Response) => {
 // Admin functions
 export const getAllRestaurantBookings = async (req: AuthRequest, res: Response) => {
   try {
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    // Allow admin or staff with viewRestaurant/manageRestaurant permission
+    if (req.user!.role !== 'admin' && 
+        !req.user!.permissions?.viewRestaurant && 
+        !req.user!.permissions?.manageRestaurant) {
+      return res.status(403).json({ message: 'Access denied. Required permissions not found.' });
     }
 
     const { page = 1, limit = 20, type, status } = req.query;
