@@ -18,6 +18,31 @@ import {
   completeCleaningOrMaintenance,
   getAvailableRoomsForMove
 } from '../controllers/managerRoomController';
+import {
+  searchBookings,
+  getAvailableRooms,
+  assignRoom,
+  completeCheckIn,
+  searchActiveGuests,
+  addExtraCharge,
+  completeCheckOut,
+  getInvoice,
+  getRecentActivities
+} from '../controllers/managerCheckInOutController';
+import {
+  getStaffManagementStats,
+  getAllTasks,
+  createTask,
+  updateTask,
+  deleteTask,
+  getStaffPerformance,
+  getTodayAttendance,
+  markAttendance,
+  getAttendanceHistory,
+  getStaffRequests,
+  updateRequestStatus
+} from '../controllers/managerStaffController';
+import User from '../models/User';
 
 const router = express.Router();
 
@@ -46,6 +71,64 @@ router.patch('/rooms/:id/move-guest', moveGuestToAnotherRoom);
 router.patch('/rooms/:id/complete', completeCleaningOrMaintenance);
 router.get('/rooms/available/for-move', getAvailableRoomsForMove);
 
+// Check-In Operations
+router.get('/booking/search', searchBookings);
+router.get('/rooms/available', getAvailableRooms);
+router.patch('/booking/assign-room', assignRoom);
+router.post('/booking/checkin', completeCheckIn);
+
+// Check-Out Operations
+router.get('/active-guests', searchActiveGuests);
+router.post('/charges/add', addExtraCharge);
+router.post('/checkout', completeCheckOut);
+router.get('/invoice/:bookingId', getInvoice);
+
+// Recent check-in/out activities
+router.get('/checkin-checkout/recent-activities', getRecentActivities);
+
+// Staff Task Management
+router.get('/staff/stats', getStaffManagementStats);
+router.get('/staff/tasks', getAllTasks);
+router.post('/staff/tasks', createTask);
+router.put('/staff/tasks/:id', updateTask);
+router.delete('/staff/tasks/:id', deleteTask);
+
+// Staff Performance
+router.get('/staff/performance', getStaffPerformance);
+
+// Attendance Management
+router.get('/staff/attendance/today', getTodayAttendance);
+router.post('/staff/attendance', markAttendance);
+router.get('/staff/attendance/history', getAttendanceHistory);
+
+// Staff Requests
+router.get('/staff/requests', getStaffRequests);
+router.put('/staff/requests/:id', updateRequestStatus);
+
+// Staff list for task assignment (managers can view staff list)
+router.get('/staff/list', async (req, res) => {
+  try {
+    const staff = await User.find({ 
+      role: { $in: ['staff', 'reception'] },
+      isActive: true 
+    })
+      .select('firstName lastName email department position role')
+      .sort({ firstName: 1 });
+
+    console.log(`📋 Manager fetching staff list: ${staff.length} active staff members found`);
+    
+    res.json({ 
+      staff,
+      count: staff.length 
+    });
+  } catch (error) {
+    console.error('Manager get staff list error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 console.log('✅ Manager routes configured with room operations');
+console.log('✅ Manager check-in/out routes configured');
+console.log('✅ Manager staff task routes configured');
 
 export default router;

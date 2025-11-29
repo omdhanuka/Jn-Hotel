@@ -16,6 +16,7 @@ import {
 } from '../controllers/adminController';
 import { auth } from '../middleware/auth';
 import { adminAuth } from '../middleware/adminAuth';
+import User from '../models/User'; // Add this import
 
 const router = express.Router();
 
@@ -44,6 +45,30 @@ router.post('/staff', createStaff);
 router.put('/staff/:id', updateStaff);
 router.delete('/staff/:id', deleteStaff);
 router.put('/staff/:id/status', updateStaffStatus);
+
+// Debug endpoint to check staff in database
+router.get('/debug/staff-count', async (req, res) => {
+  try {
+    const allUsers = await User.find().select('email role firstName lastName');
+    const staffCount = {
+      total: allUsers.length,
+      guests: allUsers.filter((u: any) => u.role === 'guest').length,
+      staff: allUsers.filter((u: any) => u.role === 'staff').length,
+      reception: allUsers.filter((u: any) => u.role === 'reception').length,
+      managers: allUsers.filter((u: any) => u.role === 'manager').length,
+      admins: allUsers.filter((u: any) => u.role === 'admin').length,
+      users: allUsers.map((u: any) => ({
+        email: u.email,
+        name: `${u.firstName} ${u.lastName}`,
+        role: u.role
+      }))
+    };
+    res.json(staffCount);
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({ error: 'Failed to get staff count' });
+  }
+});
 
 console.log('✅ Admin routes configured with permissions endpoint');
 

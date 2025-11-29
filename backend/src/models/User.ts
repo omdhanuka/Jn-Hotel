@@ -67,8 +67,7 @@ const userSchema = new Schema<IUser>({
     viewUsers: { type: Boolean, default: false },
     manageUsers: { type: Boolean, default: false },
     viewReports: { type: Boolean, default: false },
-    manageBills: { type: Boolean, default: false },
-    manageManagers: { type: Boolean, default: false }
+    manageBills: { type: Boolean, default: false }
   }
 }, { timestamps: true });
 

@@ -336,9 +336,9 @@ export const getAllReviews = async (req: Request, res: Response) => {
 
 export const getAllStaff = async (req: Request, res: Response) => {
   try {
-    // Include 'manager' role in the query
+    // Query should include staff, reception, manager, and admin roles
     const staff = await User.find({ 
-      role: { $in: ['staff', 'reception', 'admin', 'manager'] } 
+      role: { $in: ['staff', 'reception', 'manager', 'admin'] } 
     })
       .select('-password')
       .sort({ createdAt: -1 });
@@ -348,6 +348,17 @@ export const getAllStaff = async (req: Request, res: Response) => {
     console.log(`   - Staff: ${staff.filter(s => s.role === 'staff').length}`);
     console.log(`   - Reception: ${staff.filter(s => s.role === 'reception').length}`);
     console.log(`   - Admin: ${staff.filter(s => s.role === 'admin').length}`);
+
+    // Debug: log first staff member to check structure
+    if (staff.length > 0) {
+      console.log('Sample staff member:', {
+        name: `${staff[0].firstName} ${staff[0].lastName}`,
+        email: staff[0].email,
+        role: staff[0].role,
+        isActive: staff[0].isActive,
+        permissions: staff[0].permissions
+      });
+    }
 
     res.json({ staff });
   } catch (error) {
@@ -360,71 +371,101 @@ export const createStaff = async (req: Request, res: Response) => {
   try {
     const { firstName, lastName, email, password, phone, role, department, position, isActive, permissions } = req.body;
 
-    console.log('📝 Creating staff/manager with role:', role); // Debug log
+    console.log('📝 Creating staff/manager with data:', { 
+      email, 
+      role, 
+      firstName, 
+      lastName,
+      hasPermissions: !!permissions 
+    });
+
+    // Validate required fields
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({ 
+        message: 'Missing required fields: firstName, lastName, email, password' 
+      });
+    }
 
     // Validate role
     const validRoles = ['staff', 'reception', 'admin', 'manager'];
-    if (!validRoles.includes(role)) {
+    if (!role || !validRoles.includes(role)) {
       return res.status(400).json({ 
-        message: 'Invalid role. Must be one of: staff, reception, manager, admin' 
+        message: 'Invalid role. Must be one of: staff, reception, manager, admin',
+        providedRole: role 
       });
     }
 
     // Check if email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'Email already registered' });
+      return res.status(400).json({ 
+        message: 'Email already registered',
+        existingRole: existingUser.role 
+      });
     }
 
-    // Create new staff member with permissions
+    // Create default permissions for non-admin roles
+    const defaultPermissions = role === 'admin' ? {} : {
+      viewBookings: false,
+      manageBookings: false,
+      viewRooms: false,
+      manageRooms: false,
+      viewBanquets: false,
+      manageBanquets: false,
+      viewRestaurant: false,
+      manageRestaurant: false,
+      viewOrders: false,
+      manageOrders: false,
+      viewReviews: false,
+      manageReviews: false,
+      viewUsers: false,
+      manageUsers: false,
+      viewReports: false,
+      manageBills: false,
+      ...permissions // Merge with provided permissions
+    };
+
+    // Create new staff member
     const staff = new User({
       firstName,
       lastName,
       email,
       password,
-      phone,
-      role: role, // IMPORTANT: Ensure role is set correctly
-      department,
-      position,
+      phone: phone || '',
+      role: role,
+      department: department || '',
+      position: position || '',
       isActive: isActive !== undefined ? isActive : true,
-      permissions: role === 'admin' ? {} : (permissions || {
-        viewBookings: false,
-        manageBookings: false,
-        viewRooms: false,
-        manageRooms: false,
-        viewBanquets: false,
-        manageBanquets: false,
-        viewRestaurant: false,
-        manageRestaurant: false,
-        viewOrders: false,
-        manageOrders: false,
-        viewReviews: false,
-        manageReviews: false,
-        viewUsers: false,
-        manageUsers: false,
-        viewReports: false,
-        manageBills: false
-      })
+      permissions: defaultPermissions
     });
 
     await staff.save();
 
-    // Verify the saved role
+    // Verify the saved staff member
     const savedStaff = await User.findById(staff._id).select('-password');
-    console.log(`✅ ${role.toUpperCase()} registered successfully:`, {
-      email,
-      name: `${firstName} ${lastName}`,
-      actualRole: savedStaff?.role,
-      expectedRole: role
+    
+    if (!savedStaff) {
+      throw new Error('Failed to retrieve saved staff member');
+    }
+
+    console.log(`✅ ${role.toUpperCase()} created successfully:`, {
+      id: savedStaff._id,
+      email: savedStaff.email,
+      name: `${savedStaff.firstName} ${savedStaff.lastName}`,
+      role: savedStaff.role,
+      isActive: savedStaff.isActive
     });
 
     res.status(201).json({ 
       message: `${role.charAt(0).toUpperCase() + role.slice(1)} registered successfully`,
       staff: savedStaff 
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create staff error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'Server error',
+      error: error.message 
+    });
   }
 };
 

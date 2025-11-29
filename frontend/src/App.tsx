@@ -34,6 +34,8 @@ import ManagerLogin from './pages/Manager/ManagerLogin';
 import ManagerDashboard from './pages/Manager/ManagerDashboard';
 import AllBookings from './pages/Manager/AllBookings';
 import RoomOperations from './pages/Manager/RoomOperations';
+import CheckInCheckOut from './pages/Manager/CheckInCheckOut';
+import StaffTasks from './pages/Manager/StaffTasks';
 
 // Configure axios defaults immediately
 const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -104,13 +106,9 @@ function App() {
               <Route path="/manager/dashboard" element={<ManagerDashboard />} />
               <Route path="/manager/bookings" element={<AllBookings />} />
               <Route path="/manager/room-operations" element={<RoomOperations />} />
-              <Route path="/manager/rooms" element={<div className="p-8">Manager Rooms - Coming Soon</div>} />
-              <Route path="/manager/cleaning" element={<div className="p-8">Manager Cleaning - Coming Soon</div>} />
-              <Route path="/manager/maintenance" element={<div className="p-8">Manager Maintenance - Coming Soon</div>} />
-              <Route path="/manager/notes" element={<div className="p-8">Manager Notes - Coming Soon</div>} />
-              <Route path="/manager/inventory" element={<div className="p-8">Manager Inventory - Coming Soon</div>} />
-              <Route path="/manager/activity" element={<div className="p-8">Manager Activity - Coming Soon</div>} />
-
+              <Route path="/manager/checkin-checkout" element={<CheckInCheckOut />} />
+              <Route path="/manager/staff-tasks" element={<StaffTasks />} />
+              
               {/* Routes WITH Navbar - Public and User Routes */}
               <Route path="*" element={
                 <>

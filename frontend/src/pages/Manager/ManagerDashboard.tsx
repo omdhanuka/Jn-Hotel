@@ -105,18 +105,18 @@ const ManagerDashboard: React.FC = () => {
       id: 'bookings',
       icon: Calendar,
       title: 'All Bookings',
-      description: 'View and manage all bookings',
+      description: 'View and manage all hotel bookings',
       color: 'blue',
       link: '/manager/bookings',
-      stat: stats.totalBookings
+      stat: `${stats.totalBookings} total`
     },
     {
-      id: 'rooms',
+      id: 'room-operations',
       icon: BedDouble,
       title: 'Room Operations',
       description: 'Manage room status and operations',
       color: 'green',
-      link: '/manager/room-operations', // Updated link
+      link: '/manager/room-operations',
       stat: `${stats.occupiedRooms}/${stats.occupiedRooms + stats.availableRooms}`
     },
     {
@@ -125,17 +125,17 @@ const ManagerDashboard: React.FC = () => {
       title: 'Check-In/Out',
       description: 'Handle guest arrivals and departures',
       color: 'purple',
-      link: '/manager/check-in-out',
+      link: '/manager/checkin-checkout',
       stat: `${stats.todayCheckIns}/${stats.todayCheckOuts}`
     },
     {
-      id: 'tasks',
-      icon: ClipboardCheck,
+      id: 'staff-tasks',
+      icon: Users,
       title: 'Staff Tasks',
-      description: 'Monitor and approve staff tasks',
-      color: 'orange',
-      link: '/manager/tasks',
-      stat: stats.pendingTasks
+      description: 'Assign tasks and track performance',
+      color: 'teal',
+      link: '/manager/staff-tasks',
+      stat: `${stats.pendingTasks} pending`
     },
     {
       id: 'banquets',
