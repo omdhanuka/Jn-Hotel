@@ -15,6 +15,7 @@ import reviewRoutes from './routes/reviews';
 import adminRoutes from './routes/admin';
 import receptionRoutes from './routes/reception';
 import staffRoutes from './routes/staff';
+import managerRoutes from './routes/manager';
 
 // Import models for sample data
 import Banquet from './models/Banquet';
@@ -60,6 +61,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reception', receptionRoutes);
 app.use('/api/staff', staffRoutes); // NEW: Add staff routes
+app.use('/api/manager', managerRoutes); // NEW: Add manager routes
 
 // Admin review listing (alternate endpoint)
 app.get('/api/admin/reviews', auth, adminAuth, getAllReviews);
@@ -76,6 +78,7 @@ console.log('  - /api/reviews');
 console.log('  - /api/admin');
 console.log('  - /api/reception');
 console.log('  - /api/staff'); // NEW
+console.log('  - /api/manager'); // NEW
 
 // Health check route
 app.get('/api/health', (req, res) => {

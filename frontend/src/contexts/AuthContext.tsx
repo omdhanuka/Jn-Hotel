@@ -91,13 +91,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string, expectedRole?: string) => {
     try {
-      // Use role-specific endpoint if role is provided
-      let endpoint = '/api/auth/login';
-      if (expectedRole) {
-        endpoint = `/api/auth/login/${expectedRole}`;
+      // Determine login endpoint based on expected role
+      let loginEndpoint = '/api/auth/login';
+      if (expectedRole === 'staff') {
+        loginEndpoint = '/api/auth/login/staff';
+      } else if (expectedRole === 'reception') {
+        loginEndpoint = '/api/auth/login/reception';
+      } else if (expectedRole === 'manager') {
+        loginEndpoint = '/api/auth/login/manager';
       }
 
-      const response = await axios.post(endpoint, { email, password });
+      const response = await axios.post(loginEndpoint, { email, password });
       
       const { token, user: userData, redirectUrl } = response.data;
       
@@ -105,25 +109,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userData));
       
-      // Set default authorization header
+      // Set axios default header
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       setUser(userData);
       
       return { success: true, redirectUrl, user: userData };
     } catch (error: any) {
-      const errorData = error.response?.data;
+      console.error('Login error:', error);
       
-      // Handle specific error codes
-      if (errorData?.code === 'ACCOUNT_INACTIVE') {
-        throw new Error('Your account is inactive. Contact admin.');
+      // Handle different error scenarios
+      if (error.response?.data?.code === 'WRONG_ROLE') {
+        throw new Error(error.response.data.message);
+      } else if (error.response?.data?.code === 'ACCOUNT_INACTIVE') {
+        throw new Error('Your account is inactive. Please contact administrator.');
+      } else if (error.response?.data?.code === 'INVALID_CREDENTIALS') {
+        throw new Error('Invalid email or password');
+      } else if (error.response?.status === 404) {
+        throw new Error('Route not found. Please contact support.');
+      } else {
+        throw new Error(error.response?.data?.message || 'Login failed. Please try again.');
       }
-      
-      if (errorData?.code === 'WRONG_ROLE') {
-        throw new Error(`This login is for ${errorData.expectedRole} only.`);
-      }
-      
-      throw new Error(errorData?.message || 'Login failed');
     }
   };
 

@@ -4,21 +4,11 @@ import User, { IUser } from '../models/User';
 
 interface AuthRequest extends Request {
   user?: IUser;
+  expectedRole?: string;
 }
 
-interface JWTPayload {
-  userId: string;
-  role: string;
-  iat?: number;
-  exp?: number;
-}
-
-/**
- * Verify JWT token and attach user to request
- */
 export const verifyToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // Get token from header
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
@@ -28,10 +18,7 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
       });
     }
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
-
-    // Find user in database
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
     const user = await User.findById(decoded.userId).select('-password');
 
     if (!user) {
@@ -158,6 +145,29 @@ export const staffOnly = (req: AuthRequest, res: Response, next: NextFunction) =
     return res.status(403).json({ 
       message: 'Access denied. Staff privileges required.',
       code: 'STAFF_ONLY',
+      userRole: req.user.role
+    });
+  }
+
+  next();
+};
+
+/**
+ * Manager-only middleware (allows admin too)
+ */
+export const managerOnly = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ 
+      message: 'Authentication required.',
+      code: 'NOT_AUTHENTICATED'
+    });
+  }
+
+  // Allow both manager and admin roles
+  if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+    return res.status(403).json({ 
+      message: 'Access denied. Manager privileges required.',
+      code: 'MANAGER_ONLY',
       userRole: req.user.role
     });
   }

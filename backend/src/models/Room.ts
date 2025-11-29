@@ -42,7 +42,7 @@ export interface IRoom extends Document {
 
   // Status & Availability
   isAvailable: boolean;
-  status: 'active' | 'maintenance' | 'hidden' | 'inactive';
+  status: 'active' | 'maintenance' | 'cleaning' | 'hidden' | 'inactive';
   availableFrom?: Date;
   isBooked: boolean;
 
@@ -111,7 +111,7 @@ const roomSchema = new Schema<IRoom>({
   isAvailable: { type: Boolean, default: true },
   status: { 
     type: String, 
-    enum: ['active', 'maintenance', 'hidden', 'inactive'], 
+    enum: ['active', 'maintenance', 'cleaning', 'hidden', 'inactive'], 
     default: 'active' 
   },
   availableFrom: { type: Date },

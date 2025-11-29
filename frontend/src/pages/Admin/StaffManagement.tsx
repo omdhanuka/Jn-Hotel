@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, EyeOff, User, Mail, Phone, Shield } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, User, Mail, Phone, Shield, Users, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -9,7 +9,7 @@ interface Staff {
   lastName: string;
   email: string;
   phone?: string;
-  role: 'staff' | 'reception' | 'admin';
+  role: 'staff' | 'reception' | 'admin' | 'manager';
   department?: string;
   position?: string;
   isActive: boolean;
@@ -40,35 +40,39 @@ const StaffManagement: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState<'staff' | 'managers'>('staff');
   
+  // Helper function to get default permissions
+  const getDefaultPermissions = () => ({
+    viewBookings: false,
+    manageBookings: false,
+    viewRooms: false,
+    manageRooms: false,
+    viewBanquets: false,
+    manageBanquets: false,
+    viewRestaurant: false,
+    manageRestaurant: false,
+    viewOrders: false,
+    manageOrders: false,
+    viewReviews: false,
+    manageReviews: false,
+    viewUsers: false,
+    manageUsers: false,
+    viewReports: false,
+    manageBills: false
+  });
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
     password: '',
-    role: 'staff' as 'staff' | 'reception' | 'admin',
+    role: 'staff' as 'staff' | 'reception' | 'admin' | 'manager',
     department: '',
     position: '',
     isActive: true,
-    permissions: {
-      viewBookings: false,
-      manageBookings: false,
-      viewRooms: false,
-      manageRooms: false,
-      viewBanquets: false,
-      manageBanquets: false,
-      viewRestaurant: false,
-      manageRestaurant: false,
-      viewOrders: false,
-      manageOrders: false,
-      viewReviews: false,
-      manageReviews: false,
-      viewUsers: false,
-      manageUsers: false,
-      viewReports: false,
-      manageBills: false
-    }
+    permissions: getDefaultPermissions()
   });
 
   const departments = [
@@ -163,42 +167,52 @@ const StaffManagement: React.FC = () => {
     e.preventDefault();
     
     try {
-      if (editingStaff) {
-        // Update staff
-        const updateData: any = {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          role: formData.role,
-          department: formData.department,
-          position: formData.position,
-          isActive: formData.isActive,
-          permissions: formData.permissions
-        };
-        
-        // Only include password if it's being changed
-        if (formData.password) {
-          updateData.password = formData.password;
-        }
-        
-        await axios.put(`/api/admin/staff/${editingStaff._id}`, updateData);
-        toast.success('Staff updated successfully');
-      } else {
-        // Create new staff
-        if (!formData.password) {
-          toast.error('Password is required for new staff');
+      // IMPORTANT: Ensure role is set correctly based on active tab
+      const roleToSubmit = activeTab === 'managers' ? 'manager' : formData.role;
+      
+      // Prepare data based on role
+      const staffData: any = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        role: roleToSubmit, // Use the determined role
+        department: formData.department,
+        position: formData.position,
+        isActive: formData.isActive
+      };
+
+      // Add permissions for non-admin roles
+      if (roleToSubmit !== 'admin') {
+        staffData.permissions = formData.permissions;
+      }
+
+      // Add password if creating new or if password field is filled
+      if (!editingStaff || formData.password) {
+        if (!formData.password && !editingStaff) {
+          toast.error('Password is required for new staff/manager');
           return;
         }
-        
-        await axios.post('/api/admin/staff', formData);
-        toast.success('Staff registered successfully');
+        staffData.password = formData.password;
+      }
+
+      console.log('Submitting data:', { ...staffData, password: '***', activeTab, roleToSubmit }); // Debug log
+
+      if (editingStaff) {
+        const response = await axios.put(`/api/admin/staff/${editingStaff._id}`, staffData);
+        console.log('Update response:', response.data);
+        toast.success(`${roleToSubmit === 'manager' ? 'Manager' : 'Staff'} updated successfully`);
+      } else {
+        const response = await axios.post('/api/admin/staff', staffData);
+        console.log('Create response:', response.data);
+        toast.success(`${roleToSubmit === 'manager' ? 'Manager' : 'Staff'} registered successfully`);
       }
       
-      fetchStaff();
+      await fetchStaff(); // Wait for fetch to complete
       resetForm();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to save staff');
+      console.error('Submit error:', error.response?.data);
+      toast.error(error.response?.data?.message || `Failed to save ${formData.role === 'manager' ? 'manager' : 'staff'}`);
     }
   };
 
@@ -213,24 +227,7 @@ const StaffManagement: React.FC = () => {
       department: '',
       position: '',
       isActive: true,
-      permissions: {
-        viewBookings: false,
-        manageBookings: false,
-        viewRooms: false,
-        manageRooms: false,
-        viewBanquets: false,
-        manageBanquets: false,
-        viewRestaurant: false,
-        manageRestaurant: false,
-        viewOrders: false,
-        manageOrders: false,
-        viewReviews: false,
-        manageReviews: false,
-        viewUsers: false,
-        manageUsers: false,
-        viewReports: false,
-        manageBills: false
-      }
+      permissions: getDefaultPermissions()
     });
     setShowAddForm(false);
     setEditingStaff(null);
@@ -314,6 +311,8 @@ const StaffManagement: React.FC = () => {
         return 'bg-blue-100 text-blue-800';
       case 'staff':
         return 'bg-green-100 text-green-800';
+      case 'manager':
+        return 'bg-indigo-100 text-indigo-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -370,7 +369,7 @@ const StaffManagement: React.FC = () => {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Staff Management</h1>
-          <p className="text-gray-600 mt-1">Register and manage hotel staff members</p>
+          <p className="text-gray-600 mt-1">Register and manage hotel staff members and managers</p>
         </div>
         <div className="flex items-center space-x-4">
           <a
@@ -382,21 +381,75 @@ const StaffManagement: React.FC = () => {
             <Shield className="h-5 w-5 mr-2" />
             Staff Login Page
           </a>
+          <a
+            href="/manager/login"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center"
+          >
+            <Shield className="h-5 w-5 mr-2" />
+            Manager Login Page
+          </a>
           <button
             onClick={() => setShowAddForm(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
           >
             <Plus className="h-5 w-5 mr-2" />
-            Register Staff
+            Register {activeTab === 'staff' ? 'Staff' : 'Manager'}
           </button>
         </div>
       </div>
 
-      {/* Add/Edit Staff Form */}
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-lg shadow-md mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6" aria-label="Tabs">
+            <button
+              onClick={() => {
+                setActiveTab('staff');
+                if (showAddForm) {
+                  // When switching tabs while form is open, reset to appropriate role
+                  setFormData(prev => ({ ...prev, role: 'staff' }));
+                }
+              }}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'staff'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Users className="inline h-5 w-5 mr-2" />
+              Staff & Reception ({staff.filter(s => s.role === 'staff' || s.role === 'reception').length})
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('managers');
+                if (showAddForm) {
+                  // When switching tabs while form is open, set role to manager
+                  setFormData(prev => ({ ...prev, role: 'manager' }));
+                }
+              }}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'managers'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Shield className="inline h-5 w-5 mr-2" />
+              Managers ({staff.filter(s => s.role === 'manager').length})
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      {/* Add/Edit Form */}
       {showAddForm && (
         <div className="bg-white p-8 rounded-lg shadow-md mb-8">
           <h2 className="text-2xl font-semibold mb-6">
-            {editingStaff ? 'Edit Staff Member' : 'Register New Staff'}
+            {editingStaff 
+              ? `Edit ${editingStaff.role === 'manager' ? 'Manager' : editingStaff.role === 'reception' ? 'Reception Manager' : 'Staff'}` 
+              : `Register New ${activeTab === 'managers' ? 'Manager' : activeTab === 'staff' ? 'Staff/Reception' : 'Staff'}`
+            }
           </h2>
           
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -499,17 +552,34 @@ const StaffManagement: React.FC = () => {
                 <select
                   required
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                  onChange={(e) => {
+                    const newRole = e.target.value as any;
+                    setFormData({ 
+                      ...formData, 
+                      role: newRole,
+                      permissions: getDefaultPermissions()
+                    });
+                  }}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="staff">Staff</option>
-                  <option value="reception">Reception Manager</option>
-                  <option value="admin">Admin</option>
+                  {activeTab === 'managers' ? (
+                    <>
+                      <option value="manager">Manager</option>
+                      <option value="admin">Admin (Full Access)</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="staff">Staff</option>
+                      <option value="reception">Reception Manager</option>
+                      <option value="admin">Admin (Full Access)</option>
+                    </>
+                  )}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  {formData.role === 'staff' && 'General staff access'}
-                  {formData.role === 'reception' && 'Front desk operations'}
-                  {formData.role === 'admin' && 'Full system access'}
+                  {formData.role === 'staff' && 'General staff with custom permissions'}
+                  {formData.role === 'reception' && 'Front desk operations manager'}
+                  {formData.role === 'manager' && 'Hotel manager with supervisory access'}
+                  {formData.role === 'admin' && 'Full system access - no restrictions'}
                 </p>
               </div>
               
@@ -556,16 +626,70 @@ const StaffManagement: React.FC = () => {
               </label>
             </div>
 
-            {/* Permissions Section - Only show for staff and reception roles */}
-            {(formData.role === 'staff' || formData.role === 'reception') && (
+            {/* Permissions Section - Show for staff, reception, and manager roles */}
+            {formData.role !== 'admin' && (
               <div className="border-t pt-6">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Access Permissions</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {formData.role === 'manager' ? 'Manager Permissions' : 'Access Permissions'}
+                  </h3>
                   <p className="text-sm text-gray-600">
-                    Select which sections and features this {formData.role} member can access
+                    {formData.role === 'manager' 
+                      ? 'Managers have elevated permissions to supervise operations but cannot modify system settings'
+                      : `Select which sections and features this ${formData.role === 'reception' ? 'reception manager' : 'staff member'} can access`
+                    }
                   </p>
                 </div>
 
+                {formData.role === 'manager' && (
+                  <div className="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <h4 className="font-semibold text-indigo-900 mb-3">✨ Manager Capabilities</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-indigo-800">
+                      <div className="flex items-start">
+                        <span className="mr-2">✓</span>
+                        <span>View and manage all bookings (rooms, banquets, restaurant)</span>
+                      </div>
+                      <div className="flex items-start">
+                        <span className="mr-2">✓</span>
+                        <span>Supervise room operations and staff tasks</span>
+                      </div>
+                      <div className="flex items-start">
+                        <span className="mr-2">✓</span>
+                        <span>Handle guest check-ins and check-outs</span>
+                      </div>
+                      <div className="flex items-start">
+                        <span className="mr-2">✓</span>
+                        <span>Approve/reject bookings and tasks</span>
+                      </div>
+                      <div className="flex items-start">
+                        <span className="mr-2">✓</span>
+                        <span>Manage complaints and issues</span>
+                      </div>
+                      <div className="flex items-start">
+                        <span className="mr-2">✓</span>
+                        <span>View reports and analytics</span>
+                      </div>
+                      <div className="flex items-start text-red-700">
+                        <span className="mr-2">✗</span>
+                        <span>Cannot add/delete rooms or staff</span>
+                      </div>
+                      <div className="flex items-start text-red-700">
+                        <span className="mr-2">✗</span>
+                        <span>Cannot access admin-only settings</span>
+                      </div>
+                    </div>
+                    <div className="mt-3 p-3 bg-white rounded border border-indigo-100">
+                      <p className="text-xs text-indigo-900 font-medium">
+                        💡 <strong>Manager Login:</strong> Managers use the dedicated manager portal at{' '}
+                        <a href="/manager/login" target="_blank" className="underline hover:text-indigo-700">
+                          /manager/login
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Permission Sections */}
                 <div className="space-y-6">
                   {permissionSections.map((section) => (
                     <div key={section.title} className="bg-gray-50 p-4 rounded-lg">
@@ -610,9 +734,40 @@ const StaffManagement: React.FC = () => {
 
                 <div className="mt-4 p-3 bg-blue-50 rounded-md">
                   <p className="text-sm text-blue-800">
-                    <strong>Note:</strong> Admin role has full access to all sections by default. 
-                    Permissions only apply to Staff and Reception Manager roles.
+                    <strong>Note:</strong> {formData.role === 'manager' 
+                      ? 'Managers typically need most permissions enabled. They supervise operations but cannot modify system structure.'
+                      : formData.role === 'reception'
+                      ? 'Reception managers usually need booking, room, and bill management permissions.'
+                      : 'Select only the permissions required for this staff member\'s job role.'
+                    }
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* Admin Role Notice */}
+            {formData.role === 'admin' && (
+              <div className="border-t pt-6">
+                <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                  <div className="flex items-start">
+                    <AlertTriangle className="h-6 w-6 text-red-600 mr-3 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-red-900 mb-2">⚠️ Admin Role - Full System Access</h4>
+                      <p className="text-sm text-red-800 mb-2">
+                        Admin users have unrestricted access to all system features including:
+                      </p>
+                      <ul className="text-sm text-red-800 list-disc list-inside space-y-1">
+                        <li>Add/Edit/Delete rooms, banquet halls, and menu items</li>
+                        <li>Create and manage all staff members and managers</li>
+                        <li>Access all bookings, bills, and financial reports</li>
+                        <li>Modify system settings and configurations</li>
+                        <li>View and manage all guest data</li>
+                      </ul>
+                      <p className="text-sm text-red-900 font-medium mt-3">
+                        Only assign admin role to trusted personnel with full operational responsibility.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -623,7 +778,10 @@ const StaffManagement: React.FC = () => {
                 type="submit"
                 className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
               >
-                {editingStaff ? 'Update Staff' : 'Register Staff'}
+                {editingStaff 
+                  ? `Update ${formData.role === 'manager' ? 'Manager' : formData.role === 'reception' ? 'Reception Manager' : 'Staff'}` 
+                  : `Register ${formData.role === 'manager' ? 'Manager' : formData.role === 'reception' ? 'Reception Manager' : 'Staff'}`
+                }
               </button>
               <button
                 type="button"
@@ -637,18 +795,32 @@ const StaffManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Staff List */}
+      {/* Staff/Manager List */}
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        {staff.length === 0 ? (
+        {staff.filter(s => 
+          activeTab === 'managers' ? s.role === 'manager' : (s.role === 'staff' || s.role === 'reception')
+        ).length === 0 ? (
           <div className="text-center py-12">
             <User className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No staff members</h3>
-            <p className="text-gray-600 mb-4">Register your first staff member to get started</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No {activeTab === 'managers' ? 'managers' : 'staff members'} registered
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Register your first {activeTab === 'managers' ? 'manager' : 'staff member'} to get started
+            </p>
             <button
-              onClick={() => setShowAddForm(true)}
-              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+              onClick={() => {
+                setShowAddForm(true);
+                // Set default role based on active tab
+                setFormData(prev => ({
+                  ...prev,
+                  role: activeTab === 'managers' ? 'manager' : 'staff' // Set role to 'manager' when on managers tab
+                }));
+              }}
+              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 inline-flex items-center"
             >
-              Register Staff
+              <Plus className="h-4 w-4 mr-2" />
+              Register {activeTab === 'managers' ? 'Manager' : 'Staff'}
             </button>
           </div>
         ) : (
@@ -677,98 +849,107 @@ const StaffManagement: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {staff.map((staffMember) => (
-                  <tr key={staffMember._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <User className="h-6 w-6 text-blue-600" />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {staffMember.firstName} {staffMember.lastName}
+                {staff
+                  .filter(s => 
+                    activeTab === 'managers' ? s.role === 'manager' : (s.role === 'staff' || s.role === 'reception')
+                  )
+                  .map((staffMember) => (
+                    <tr key={staffMember._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <User className="h-6 w-6 text-blue-600" />
                           </div>
-                          {staffMember.position && (
-                            <div className="text-sm text-gray-500">{staffMember.position}</div>
-                          )}
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {staffMember.firstName} {staffMember.lastName}
+                            </div>
+                            {staffMember.position && (
+                              <div className="text-sm text-gray-500">{staffMember.position}</div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 flex items-center">
-                        <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                        {staffMember.email}
-                      </div>
-                      {staffMember.phone && (
-                        <div className="text-sm text-gray-500 flex items-center mt-1">
-                          <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                          {staffMember.phone}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 flex items-center">
+                          <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                          {staffMember.email}
                         </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="space-y-1">
-                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${getRoleBadgeColor(staffMember.role)}`}>
-                          {staffMember.role.toUpperCase()}
-                        </span>
-                        {staffMember.department && (
-                          <div className="text-xs text-gray-500">{staffMember.department}</div>
+                        {staffMember.phone && (
+                          <div className="text-sm text-gray-500 flex items-center mt-1">
+                            <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                            {staffMember.phone}
+                          </div>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => toggleStaffStatus(staffMember._id, staffMember.isActive)}
-                        className={`px-3 py-1 text-xs rounded-full font-medium ${
-                          staffMember.isActive
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                            : 'bg-red-100 text-red-800 hover:bg-red-200'
-                        }`}
-                      >
-                        {staffMember.isActive ? 'Active' : 'Inactive'}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {staffMember.role === 'admin' ? (
-                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
-                          Full Access
-                        </span>
-                      ) : (
-                        <div className="text-xs">
-                          {Object.entries(staffMember.permissions || {})
-                            .filter(([_, value]) => value)
-                            .length > 0 ? (
-                            <span className="text-green-600 font-medium">
-                              {Object.entries(staffMember.permissions || {})
-                                .filter(([_, value]) => value)
-                                .length} permissions
-                            </span>
-                          ) : (
-                            <span className="text-red-600">No permissions</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-1">
+                          <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                            staffMember.role === 'manager' ? 'bg-indigo-100 text-indigo-800' :
+                            staffMember.role === 'reception' ? 'bg-blue-100 text-blue-800' :
+                            staffMember.role === 'admin' ? 'bg-red-100 text-red-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {staffMember.role.toUpperCase()}
+                          </span>
+                          {staffMember.department && (
+                            <div className="text-xs text-gray-500">{staffMember.department}</div>
                           )}
                         </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex space-x-2">
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <button
-                          onClick={() => handleEdit(staffMember)}
-                          className="text-blue-600 hover:text-blue-800"
-                          title="Edit Staff"
+                          onClick={() => toggleStaffStatus(staffMember._id, staffMember.isActive)}
+                          className={`px-3 py-1 text-xs rounded-full font-medium ${
+                            staffMember.isActive
+                              ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                              : 'bg-red-100 text-red-800 hover:bg-red-200'
+                          }`}
                         >
-                          <Edit className="h-4 w-4" />
+                          {staffMember.isActive ? 'Active' : 'Inactive'}
                         </button>
-                        <button
-                          onClick={() => handleDelete(staffMember._id)}
-                          className="text-red-600 hover:text-red-800"
-                          title="Delete Staff"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {staffMember.role === 'admin' ? (
+                          <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                            Full Access
+                          </span>
+                        ) : (
+                          <div className="text-xs">
+                            {Object.entries(staffMember.permissions || {})
+                              .filter(([_, value]) => value)
+                              .length > 0 ? (
+                              <span className="text-green-600 font-medium">
+                                {Object.entries(staffMember.permissions || {})
+                                  .filter(([_, value]) => value)
+                                  .length} permissions
+                              </span>
+                            ) : (
+                              <span className="text-red-600">No permissions</span>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleEdit(staffMember)}
+                            className="text-blue-600 hover:text-blue-800"
+                            title="Edit Staff"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(staffMember._id)}
+                            className="text-red-600 hover:text-red-800"
+                            title="Delete Staff"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -782,21 +963,21 @@ const StaffManagement: React.FC = () => {
           <div className="text-3xl font-bold text-gray-900 mt-2">{staff.length}</div>
         </div>
         <div className="bg-blue-50 p-6 rounded-lg shadow-md">
-          <div className="text-sm font-medium text-blue-600">Active Staff</div>
+          <div className="text-sm font-medium text-blue-600">Active</div>
           <div className="text-3xl font-bold text-blue-900 mt-2">
             {staff.filter(s => s.isActive).length}
           </div>
         </div>
-        <div className="bg-purple-50 p-6 rounded-lg shadow-md">
-          <div className="text-sm font-medium text-purple-600">Reception Managers</div>
-          <div className="text-3xl font-bold text-purple-900 mt-2">
-            {staff.filter(s => s.role === 'reception').length}
+        <div className="bg-indigo-50 p-6 rounded-lg shadow-md">
+          <div className="text-sm font-medium text-indigo-600">Managers</div>
+          <div className="text-3xl font-bold text-indigo-900 mt-2">
+            {staff.filter(s => s.role === 'manager').length}
           </div>
         </div>
-        <div className="bg-green-50 p-6 rounded-lg shadow-md">
-          <div className="text-sm font-medium text-green-600">General Staff</div>
-          <div className="text-3xl font-bold text-green-900 mt-2">
-            {staff.filter(s => s.role === 'staff').length}
+        <div className="bg-purple-50 p-6 rounded-lg shadow-md">
+          <div className="text-sm font-medium text-purple-600">Reception</div>
+          <div className="text-3xl font-bold text-purple-900 mt-2">
+            {staff.filter(s => s.role === 'reception').length}
           </div>
         </div>
       </div>

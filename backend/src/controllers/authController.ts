@@ -124,6 +124,8 @@ export const login = async (req: Request, res: Response) => {
       isActive: user.isActive
     };
 
+    console.log(`✅ Login successful - User: ${user.email}, Role: ${user.role}, Redirect: ${getRoleRedirectUrl(user.role)}`);
+
     res.json({ 
       token, 
       user: userData,
@@ -145,6 +147,8 @@ const getRoleRedirectUrl = (role: string): string => {
   switch (role) {
     case 'admin':
       return '/admin/dashboard';
+    case 'manager':
+      return '/manager/dashboard';
     case 'reception':
       return '/reception/dashboard';
     case 'staff':

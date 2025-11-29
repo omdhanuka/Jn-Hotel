@@ -25,14 +25,30 @@ router.post('/login', [
   body('password').exists().withMessage('Password is required')
 ], login);
 
-// @route   POST /api/auth/login/staff
-// @desc    Staff login (validates staff role)
-// @access  Public
-router.post('/login/staff', [
-  body('email').isEmail().withMessage('Valid email is required'),
-  body('password').notEmpty().withMessage('Password is required'),
-  validateLoginRole('staff')
-], login);
+// Role-specific login routes
+router.post('/login/staff', 
+  (req, res, next) => {
+    (req as any).expectedRole = 'staff';
+    next();
+  },
+  login
+);
+
+router.post('/login/reception',
+  (req, res, next) => {
+    (req as any).expectedRole = 'reception';
+    next();
+  },
+  login
+);
+
+router.post('/login/manager',
+  (req, res, next) => {
+    (req as any).expectedRole = 'manager';
+    next();
+  },
+  login
+);
 
 // @route   GET /api/auth/me
 // @desc    Get current user

@@ -1,8 +1,7 @@
 import multer from 'multer';
-import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
-import { Request } from 'express';
+import sharp from 'sharp';
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, '../../uploads/rooms');
@@ -10,7 +9,7 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Configure multer storage
+// Multer storage configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadsDir);
@@ -22,87 +21,66 @@ const storage = multer.diskStorage({
 });
 
 // File filter
-const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const allowedTypes = /jpeg|jpg|png|gif|webp/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   const mimetype = allowedTypes.test(file.mimetype);
 
   if (mimetype && extname) {
-    cb(null, true);
+    return cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed (jpeg, jpg, png, gif, webp)'));
+    cb(new Error('Only image files are allowed!'));
   }
 };
 
-// Multer upload configuration
 export const upload = multer({
   storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  },
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: fileFilter
 });
 
-// Image compression function with quality parameter
-export const compressImage = async (inputPath: string, quality: number = 80): Promise<{ outputPath: string; originalSize: number; compressedSize: number }> => {
-  const outputPath = inputPath.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '-compressed.webp');
+// Compress image
+export const compressImage = async (
+  inputPath: string, 
+  quality: number = 80
+): Promise<{ outputPath: string; originalSize: number; compressedSize: number }> => {
+  const outputPath = inputPath.replace(path.extname(inputPath), '-compressed' + path.extname(inputPath));
   
-  try {
-    // Get original file size
-    const originalSize = fs.statSync(inputPath).size;
-    
-    await sharp(inputPath)
-      .resize(1920, 1080, { 
-        fit: 'inside',
-        withoutEnlargement: true 
-      })
-      .webp({ 
-        quality: Math.max(10, Math.min(100, quality)), // Ensure quality is between 10-100
-        effort: 6
-      })
-      .toFile(outputPath);
-    
-    // Get compressed file size
-    const compressedSize = fs.statSync(outputPath).size;
-    
-    // Delete original file
-    fs.unlinkSync(inputPath);
-    
-    return { outputPath, originalSize, compressedSize };
-  } catch (error) {
-    console.error('Image compression error:', error);
-    throw error;
-  }
+  const originalStats = fs.statSync(inputPath);
+  const originalSize = originalStats.size;
+
+  await sharp(inputPath)
+    .resize(1920, 1080, { fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality, mozjpeg: true })
+    .toFile(outputPath);
+
+  const compressedStats = fs.statSync(outputPath);
+  const compressedSize = compressedStats.size;
+
+  // Delete original if compression successful
+  fs.unlinkSync(inputPath);
+
+  return { outputPath, originalSize, compressedSize };
 };
 
-// Generate thumbnail with quality parameter
-export const generateThumbnail = async (inputPath: string, quality: number = 70): Promise<string> => {
-  const thumbnailPath = inputPath.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '-thumb.webp');
-  
-  try {
-    await sharp(inputPath)
-      .resize(400, 300, { 
-        fit: 'cover' 
-      })
-      .webp({ 
-        quality: Math.max(10, Math.min(100, quality)) 
-      })
-      .toFile(thumbnailPath);
-    
-    return thumbnailPath;
-  } catch (error) {
-    console.error('Thumbnail generation error:', error);
-    throw error;
-  }
+// Generate thumbnail
+export const generateThumbnail = async (
+  inputPath: string, 
+  quality: number = 70
+): Promise<string> => {
+  const thumbnailPath = inputPath.replace(path.extname(inputPath), '-thumb' + path.extname(inputPath));
+
+  await sharp(inputPath)
+    .resize(400, 300, { fit: 'cover' })
+    .jpeg({ quality })
+    .toFile(thumbnailPath);
+
+  return thumbnailPath;
 };
 
-// Delete image file
+// Delete image
 export const deleteImage = (imagePath: string): void => {
-  try {
-    if (fs.existsSync(imagePath)) {
-      fs.unlinkSync(imagePath);
-    }
-  } catch (error) {
-    console.error('Image deletion error:', error);
+  if (fs.existsSync(imagePath)) {
+    fs.unlinkSync(imagePath);
   }
 };

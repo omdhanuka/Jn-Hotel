@@ -8,9 +8,10 @@ export interface IReview extends Document {
   comment: string;
   experienceType: 'room' | 'banquet' | 'restaurant' | 'overall';
   isApproved: boolean;
-  isPublished: boolean;
-  images?: string[];
-  adminResponse?: string;
+  isSpam?: boolean;
+  moderatedBy?: mongoose.Types.ObjectId;
+  moderatedAt?: Date;
+  moderatorNotes?: string;
   helpful: number;
   notHelpful: number;
   createdAt: Date;
@@ -29,9 +30,10 @@ const reviewSchema = new Schema<IReview>({
     default: 'overall'
   },
   isApproved: { type: Boolean, default: false },
-  isPublished: { type: Boolean, default: false },
-  images: [{ type: String }],
-  adminResponse: { type: String },
+  isSpam: { type: Boolean, default: false },
+  moderatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  moderatedAt: { type: Date },
+  moderatorNotes: { type: String },
   helpful: { type: Number, default: 0 },
   notHelpful: { type: Number, default: 0 }
 }, { 

@@ -1,0 +1,330 @@
+import { Request, Response } from 'express';
+import Booking from '../models/Booking';
+import Room from '../models/Room';
+import Banquet from '../models/Banquet';
+import RestaurantBooking from '../models/RestaurantBooking';
+import { IUser } from '../models/User';
+
+interface AuthRequest extends Request {
+  user?: IUser;
+}
+
+export const getManagerDashboard = async (req: AuthRequest, res: Response) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get stats
+    const totalBookings = await Booking.countDocuments();
+    const todayCheckIns = await Booking.countDocuments({
+      type: 'room',
+      checkIn: { $gte: today },
+      status: 'confirmed'
+    });
+    const todayCheckOuts = await Booking.countDocuments({
+      type: 'room',
+      checkOut: { $gte: today },
+      status: 'confirmed'
+    });
+    
+    const occupiedRooms = await Booking.countDocuments({
+      type: 'room',
+      status: 'confirmed',
+      checkIn: { $lte: new Date() },
+      checkOut: { $gt: new Date() }
+    });
+    
+    const totalRooms = await Room.countDocuments({ status: 'active' });
+    const availableRooms = totalRooms - occupiedRooms;
+
+    const pendingTasks = 0; // Implement task system
+    const pendingComplaints = 0; // Implement complaint system
+
+    res.json({
+      totalBookings,
+      todayCheckIns,
+      todayCheckOuts,
+      occupiedRooms,
+      availableRooms,
+      pendingTasks,
+      pendingComplaints
+    });
+  } catch (error) {
+    console.error('Manager dashboard error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getAllBookingsForManager = async (req: AuthRequest, res: Response) => {
+  try {
+    const { 
+      page = 1, 
+      limit = 20, 
+      search = '', 
+      type = 'all', 
+      status = 'all',
+      startDate,
+      endDate,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    // Build filter for regular bookings (room & banquet)
+    const bookingFilter: any = {};
+    
+    if (type !== 'all') {
+      if (type === 'room') bookingFilter.type = 'room';
+      if (type === 'banquet') bookingFilter.type = 'banquet';
+    }
+    
+    if (status !== 'all') bookingFilter.status = status;
+    
+    if (startDate || endDate) {
+      bookingFilter.checkIn = {};
+      if (startDate) bookingFilter.checkIn.$gte = new Date(startDate as string);
+      if (endDate) bookingFilter.checkIn.$lte = new Date(endDate as string);
+    }
+
+    // Fetch room & banquet bookings
+    let bookingsPromise = Promise.resolve([]);
+    if (type === 'all' || type === 'room' || type === 'banquet') {
+      bookingsPromise = Booking.find(bookingFilter)
+        .populate('user', 'firstName lastName email phone')
+        .populate('resourceId')
+        .lean();
+    }
+
+    // Fetch restaurant bookings
+    let restaurantBookingsPromise = Promise.resolve([]);
+    if (type === 'all' || type === 'restaurant') {
+      const restaurantFilter: any = {};
+      if (status !== 'all') restaurantFilter.status = status;
+      if (startDate || endDate) {
+        if (startDate) restaurantFilter.date = { $gte: new Date(startDate as string) };
+        if (endDate) restaurantFilter.date = { ...restaurantFilter.date, $lte: new Date(endDate as string) };
+      }
+      
+      restaurantBookingsPromise = RestaurantBooking.find(restaurantFilter)
+        .populate('user', 'firstName lastName email phone')
+        .lean();
+    }
+
+    const [roomBanquetBookings, restaurantBookings] = await Promise.all([
+      bookingsPromise,
+      restaurantBookingsPromise
+    ]);
+
+    // Transform bookings to unified format
+    const unifiedBookings = [
+      ...roomBanquetBookings.map((b: any) => ({
+        _id: b._id,
+        bookingId: b._id.toString().slice(-8).toUpperCase(),
+        bookingType: b.type,
+        guestName: b.user ? `${b.user.firstName} ${b.user.lastName}` : 'N/A',
+        email: b.user?.email || '',
+        phone: b.user?.phone || '',
+        date: b.checkIn,
+        checkIn: b.checkIn,
+        checkOut: b.checkOut,
+        guests: b.guests,
+        status: b.status,
+        paymentStatus: b.paymentStatus,
+        totalAmount: b.totalAmount,
+        resourceDetails: b.resourceId,
+        specialRequests: b.specialRequests,
+        createdAt: b.createdAt
+      })),
+      ...restaurantBookings.map((b: any) => ({
+        _id: b._id,
+        bookingId: b.bookingId || b._id.toString().slice(-8).toUpperCase(),
+        bookingType: b.bookingType === 'table' ? 'restaurant' : 'restaurant-order',
+        guestName: b.fullName || (b.user ? `${b.user.firstName} ${b.user.lastName}` : 'N/A'),
+        email: b.email || b.user?.email || '',
+        phone: b.phone || b.user?.phone || '',
+        date: b.date || b.createdAt,
+        checkIn: b.date,
+        checkOut: null,
+        guests: b.numberOfGuests || 1,
+        status: b.status,
+        paymentStatus: b.paymentStatus,
+        totalAmount: b.totalAmount,
+        resourceDetails: { tableNumber: b.tableNumber },
+        specialRequests: b.specialRequests,
+        createdAt: b.createdAt
+      }))
+    ];
+
+    // Apply search filter
+    let filteredBookings = unifiedBookings;
+    if (search) {
+      const searchLower = (search as string).toLowerCase();
+      filteredBookings = unifiedBookings.filter(b => 
+        b.guestName.toLowerCase().includes(searchLower) ||
+        b.email.toLowerCase().includes(searchLower) ||
+        b.phone.includes(searchLower) ||
+        b.bookingId.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Sort bookings
+    const sortField = sortBy as string;
+    const order = sortOrder === 'desc' ? -1 : 1;
+    filteredBookings.sort((a: any, b: any) => {
+      const aVal = a[sortField];
+      const bVal = b[sortField];
+      if (aVal < bVal) return -1 * order;
+      if (aVal > bVal) return 1 * order;
+      return 0;
+    });
+
+    // Pagination
+    const startIndex = (parseInt(page as string) - 1) * parseInt(limit as string);
+    const endIndex = startIndex + parseInt(limit as string);
+    const paginatedBookings = filteredBookings.slice(startIndex, endIndex);
+
+    res.json({
+      bookings: paginatedBookings,
+      pagination: {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        total: filteredBookings.length,
+        pages: Math.ceil(filteredBookings.length / parseInt(limit as string))
+      },
+      stats: {
+        total: filteredBookings.length,
+        confirmed: filteredBookings.filter(b => b.status === 'confirmed').length,
+        pending: filteredBookings.filter(b => b.status === 'pending').length,
+        cancelled: filteredBookings.filter(b => b.status === 'cancelled').length,
+        completed: filteredBookings.filter(b => b.status === 'completed').length
+      }
+    });
+  } catch (error) {
+    console.error('Get manager bookings error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getBookingDetailsForManager = async (req: AuthRequest, res: Response) => {
+  try {
+    const bookingId = req.params.id;
+
+    // Try to find in regular bookings
+    let booking = await Booking.findById(bookingId)
+      .populate('user', 'firstName lastName email phone')
+      .populate('resourceId');
+
+    if (booking) {
+      return res.json({ booking, source: 'booking' });
+    }
+
+    // Try restaurant bookings
+    const restaurantBooking = await RestaurantBooking.findById(bookingId)
+      .populate('user', 'firstName lastName email phone');
+
+    if (restaurantBooking) {
+      return res.json({ booking: restaurantBooking, source: 'restaurant' });
+    }
+
+    res.status(404).json({ message: 'Booking not found' });
+  } catch (error) {
+    console.error('Get booking details error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateBookingByManager = async (req: AuthRequest, res: Response) => {
+  try {
+    const { checkIn, checkOut, guests, specialRequests } = req.body;
+
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Managers can update these fields
+    if (checkIn) booking.checkIn = new Date(checkIn);
+    if (checkOut) booking.checkOut = new Date(checkOut);
+    if (guests) booking.guests = guests;
+    if (specialRequests !== undefined) booking.specialRequests = specialRequests;
+
+    await booking.save();
+
+    res.json({ message: 'Booking updated successfully', booking });
+  } catch (error) {
+    console.error('Update booking error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateBookingStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    const { status } = req.body;
+
+    const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed', 'checked-in', 'checked-out'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    booking.status = status;
+    
+    // Update room status based on booking status
+    if (booking.type === 'room') {
+      if (status === 'checked-in') {
+        booking.isCheckedIn = true;
+        await Room.findByIdAndUpdate(booking.resourceId, { isBooked: true });
+      } else if (status === 'checked-out') {
+        booking.isCheckedOut = true;
+        await Room.findByIdAndUpdate(booking.resourceId, { isBooked: false });
+      } else if (status === 'cancelled') {
+        await Room.findByIdAndUpdate(booking.resourceId, { isBooked: false });
+      }
+    }
+
+    await booking.save();
+
+    res.json({ message: 'Booking status updated successfully', booking });
+  } catch (error) {
+    console.error('Update booking status error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const assignResource = async (req: AuthRequest, res: Response) => {
+  try {
+    const { resourceId } = req.body;
+
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Verify resource exists and is available
+    if (booking.type === 'room') {
+      const room = await Room.findById(resourceId);
+      if (!room) {
+        return res.status(404).json({ message: 'Room not found' });
+      }
+      if (room.isBooked) {
+        return res.status(400).json({ message: 'Room is already booked' });
+      }
+    } else if (booking.type === 'banquet') {
+      const banquet = await Banquet.findById(resourceId);
+      if (!banquet) {
+        return res.status(404).json({ message: 'Banquet hall not found' });
+      }
+    }
+
+    booking.resourceId = resourceId;
+    await booking.save();
+
+    res.json({ message: 'Resource assigned successfully', booking });
+  } catch (error) {
+    console.error('Assign resource error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

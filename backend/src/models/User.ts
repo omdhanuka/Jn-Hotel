@@ -7,7 +7,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   phone: string;
-  role: 'guest' | 'admin' | 'staff' | 'reception';
+  role: 'guest' | 'admin' | 'staff' | 'reception' | 'manager';
   department?: string;
   position?: string;
   isActive: boolean;
@@ -30,6 +30,7 @@ export interface IUser extends Document {
     manageUsers?: boolean;
     viewReports?: boolean;
     manageBills?: boolean;
+    manageManagers?: boolean;
   };
   comparePassword(password: string): Promise<boolean>;
 }
@@ -42,7 +43,7 @@ const userSchema = new Schema<IUser>({
   phone: { type: String, required: true },
   role: { 
     type: String, 
-    enum: ['guest', 'admin', 'staff', 'reception'], 
+    enum: ['guest', 'admin', 'staff', 'reception', 'manager'], 
     default: 'guest' 
   },
   department: { type: String },
@@ -66,13 +67,37 @@ const userSchema = new Schema<IUser>({
     viewUsers: { type: Boolean, default: false },
     manageUsers: { type: Boolean, default: false },
     viewReports: { type: Boolean, default: false },
-    manageBills: { type: Boolean, default: false }
+    manageBills: { type: Boolean, default: false },
+    manageManagers: { type: Boolean, default: false }
   }
 }, { timestamps: true });
 
+// Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
+  
+  try {
+    this.password = await bcrypt.hash(this.password, 12);
+    console.log(`🔐 Password hashed for user: ${this.email}`);
+    next();
+  } catch (error: any) {
+    next(error);
+  }
+});
+
+// Hash password before updating
+userSchema.pre('findOneAndUpdate', async function(next) {
+  const update = this.getUpdate() as any;
+  
+  if (update.password) {
+    try {
+      update.password = await bcrypt.hash(update.password, 12);
+      console.log('🔐 Password hashed during update');
+    } catch (error: any) {
+      return next(error);
+    }
+  }
+  
   next();
 });
 

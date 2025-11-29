@@ -10,16 +10,18 @@ export interface IBooking extends Document {
   totalAmount: number;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   paymentStatus: 'pending' | 'paid' | 'refunded' | 'cancelled' | 'failed';
-  paymentId?: string;
+  paymentMethod?: string;
+  paymentId?: string; // Add payment ID field
+  transactionId?: string;
   specialRequests?: string;
-  services: string[];
-  isCheckedIn?: boolean;  // NEW: Add check-in flag
-  isCheckedOut?: boolean; // NEW: Add check-out flag
+  isCheckedIn?: boolean;
+  isCheckedOut?: boolean;
+  discountApplied?: number;
+  discountReason?: string;
   eventDetails?: {
     eventType?: string;
     fullName?: string;
     phone?: string;
-    address?: string;
     cateringPreference?: string;
     decorationTheme?: string;
     seatingArrangement?: string;
@@ -38,12 +40,12 @@ export interface IBooking extends Document {
       amount: number;
     }>;
     subtotal: number;
-    discount: number; // percentage 0-100
-    taxRate: number; // percentage 0-100
+    discount: number;
+    taxRate: number;
     taxAmount: number;
-    serviceChargeRate: number; // percentage 0-100
+    serviceChargeRate: number;
     serviceChargeAmount: number;
-    extraCharges?: number; // NEW: optional additional charges
+    extraCharges?: number;
     grandTotal: number;
     currency: string;
     notes?: string;
@@ -60,8 +62,8 @@ const bookingSchema = new Schema<IBooking>({
   resourceId: { type: Schema.Types.ObjectId, required: true },
   checkIn: { type: Date, required: true },
   checkOut: { type: Date, required: true },
-  guests: { type: Number, required: true, min: 1 },
-  totalAmount: { type: Number, required: true, min: 0 },
+  guests: { type: Number, required: true },
+  totalAmount: { type: Number, required: true },
   status: { 
     type: String, 
     enum: ['pending', 'confirmed', 'cancelled', 'completed'], 
@@ -72,16 +74,18 @@ const bookingSchema = new Schema<IBooking>({
     enum: ['pending', 'paid', 'refunded', 'cancelled', 'failed'], 
     default: 'pending' 
   },
+  paymentMethod: { type: String },
   paymentId: { type: String },
+  transactionId: { type: String },
   specialRequests: { type: String },
-  services: [{ type: String }],
-  isCheckedIn: { type: Boolean, default: false },   // NEW
-  isCheckedOut: { type: Boolean, default: false },  // NEW
+  isCheckedIn: { type: Boolean, default: false },
+  isCheckedOut: { type: Boolean, default: false },
+  discountApplied: { type: Number },
+  discountReason: { type: String },
   eventDetails: {
     eventType: { type: String },
     fullName: { type: String },
     phone: { type: String },
-    address: { type: String },
     cateringPreference: { type: String },
     decorationTheme: { type: String },
     seatingArrangement: { type: String },
@@ -94,30 +98,29 @@ const bookingSchema = new Schema<IBooking>({
   },
   bill: {
     items: [{
-      description: { type: String, required: true },
-      quantity: { type: Number, default: 1 },
-      unitPrice: { type: Number, default: 0 },
-      amount: { type: Number, default: 0 }
+      description: { type: String },
+      quantity: { type: Number },
+      unitPrice: { type: Number },
+      amount: { type: Number }
     }],
-    subtotal: { type: Number, default: 0 },
-    discount: { type: Number, default: 0 },
-    taxRate: { type: Number, default: 0 },
-    taxAmount: { type: Number, default: 0 },
-    serviceChargeRate: { type: Number, default: 0 },
-    serviceChargeAmount: { type: Number, default: 0 },
-    extraCharges: { type: Number, default: 0 }, // NEW
-    grandTotal: { type: Number, default: 0 },
-    currency: { type: String, default: 'INR' },
+    subtotal: { type: Number },
+    discount: { type: Number },
+    taxRate: { type: Number },
+    taxAmount: { type: Number },
+    serviceChargeRate: { type: Number },
+    serviceChargeAmount: { type: Number },
+    extraCharges: { type: Number },
+    grandTotal: { type: Number },
+    currency: { type: String },
     notes: { type: String }
   }
-}, { 
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
-});
+}, { timestamps: true });
 
-// Index for efficient queries
-bookingSchema.index({ type: 1, resourceId: 1, checkIn: 1, checkOut: 1 });
-bookingSchema.index({ user: 1, createdAt: -1 });
+// Create indexes for better query performance
+bookingSchema.index({ user: 1 });
+bookingSchema.index({ type: 1, resourceId: 1 });
+bookingSchema.index({ checkIn: 1, checkOut: 1 });
+bookingSchema.index({ status: 1 });
+bookingSchema.index({ paymentStatus: 1 });
 
 export default mongoose.model<IBooking>('Booking', bookingSchema);

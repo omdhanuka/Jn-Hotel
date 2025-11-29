@@ -336,15 +336,22 @@ export const getAllReviews = async (req: Request, res: Response) => {
 
 export const getAllStaff = async (req: Request, res: Response) => {
   try {
+    // Include 'manager' role in the query
     const staff = await User.find({ 
-      role: { $in: ['staff', 'reception', 'admin'] } 
+      role: { $in: ['staff', 'reception', 'admin', 'manager'] } 
     })
       .select('-password')
       .sort({ createdAt: -1 });
 
+    console.log(`📊 Total staff/managers found: ${staff.length}`);
+    console.log(`   - Managers: ${staff.filter(s => s.role === 'manager').length}`);
+    console.log(`   - Staff: ${staff.filter(s => s.role === 'staff').length}`);
+    console.log(`   - Reception: ${staff.filter(s => s.role === 'reception').length}`);
+    console.log(`   - Admin: ${staff.filter(s => s.role === 'admin').length}`);
+
     res.json({ staff });
   } catch (error) {
-    console.error(error);
+    console.error('Get staff error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -352,6 +359,16 @@ export const getAllStaff = async (req: Request, res: Response) => {
 export const createStaff = async (req: Request, res: Response) => {
   try {
     const { firstName, lastName, email, password, phone, role, department, position, isActive, permissions } = req.body;
+
+    console.log('📝 Creating staff/manager with role:', role); // Debug log
+
+    // Validate role
+    const validRoles = ['staff', 'reception', 'admin', 'manager'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ 
+        message: 'Invalid role. Must be one of: staff, reception, manager, admin' 
+      });
+    }
 
     // Check if email already exists
     const existingUser = await User.findOne({ email });
@@ -366,11 +383,11 @@ export const createStaff = async (req: Request, res: Response) => {
       email,
       password,
       phone,
-      role: role || 'staff',
+      role: role, // IMPORTANT: Ensure role is set correctly
       department,
       position,
       isActive: isActive !== undefined ? isActive : true,
-      permissions: permissions || {
+      permissions: role === 'admin' ? {} : (permissions || {
         viewBookings: false,
         manageBookings: false,
         viewRooms: false,
@@ -387,15 +404,26 @@ export const createStaff = async (req: Request, res: Response) => {
         manageUsers: false,
         viewReports: false,
         manageBills: false
-      }
+      })
     });
 
     await staff.save();
 
-    const staffData = await User.findById(staff._id).select('-password');
-    res.status(201).json(staffData);
+    // Verify the saved role
+    const savedStaff = await User.findById(staff._id).select('-password');
+    console.log(`✅ ${role.toUpperCase()} registered successfully:`, {
+      email,
+      name: `${firstName} ${lastName}`,
+      actualRole: savedStaff?.role,
+      expectedRole: role
+    });
+
+    res.status(201).json({ 
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} registered successfully`,
+      staff: savedStaff 
+    });
   } catch (error) {
-    console.error(error);
+    console.error('Create staff error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -404,21 +432,40 @@ export const updateStaff = async (req: Request, res: Response) => {
   try {
     const { firstName, lastName, email, password, phone, role, department, position, isActive, permissions } = req.body;
 
+    // Validate role if provided
+    if (role) {
+      const validRoles = ['staff', 'reception', 'admin', 'manager'];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ 
+          message: 'Invalid role. Must be one of: staff, reception, manager, admin' 
+        });
+      }
+    }
+
     const updateData: any = {
       firstName,
       lastName,
       email,
       phone,
-      role,
+      role, // Include role in update
       department,
       position,
-      isActive,
-      permissions
+      isActive
     };
 
+    // Only update permissions for non-admin roles
+    if (role !== 'admin') {
+      updateData.permissions = permissions;
+    }
+
     // Only update password if provided
-    if (password) {
-      updateData.password = password;
+    if (password && password.trim() !== '') {
+      // Password will be hashed by the pre-save middleware
+      const user = await User.findById(req.params.id);
+      if (user) {
+        user.password = password;
+        await user.save();
+      }
     }
 
     const staff = await User.findByIdAndUpdate(
@@ -431,9 +478,14 @@ export const updateStaff = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Staff not found' });
     }
 
-    res.json(staff);
+    console.log(`✅ ${staff.role.toUpperCase()} updated: ${staff.email} (${staff.firstName} ${staff.lastName})`);
+
+    res.json({ 
+      message: `${staff.role.charAt(0).toUpperCase() + staff.role.slice(1)} updated successfully`,
+      staff 
+    });
   } catch (error) {
-    console.error(error);
+    console.error('Update staff error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

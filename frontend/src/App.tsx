@@ -28,7 +28,12 @@ import StaffBookingManagement from './pages/Staff/StaffBookingManagement';
 import StaffBanquetBookings from './pages/Staff/StaffBanquetBookings';
 import StaffRestaurant from './pages/Staff/StaffRestaurant';
 import StaffRestaurantOrders from './pages/Staff/StaffRestaurantOrders';
+import StaffRooms from './pages/Staff/StaffRooms';
 import { AdminGuard, ReceptionGuard, StaffGuard } from './utils/roleGuard';
+import ManagerLogin from './pages/Manager/ManagerLogin';
+import ManagerDashboard from './pages/Manager/ManagerDashboard';
+import AllBookings from './pages/Manager/AllBookings';
+import RoomOperations from './pages/Manager/RoomOperations';
 
 // Configure axios defaults immediately
 const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -56,6 +61,11 @@ function App() {
                   <Route path="bookings" element={
                     <StaffGuard>
                       <StaffBookingManagement />
+                    </StaffGuard>
+                  } />
+                  <Route path="rooms" element={
+                    <StaffGuard>
+                      <StaffRooms />
                     </StaffGuard>
                   } />
                   <Route path="banquets" element={
@@ -88,6 +98,18 @@ function App() {
                   } />
                 </Routes>
               } />
+
+              {/* Manager Routes */}
+              <Route path="/manager/login" element={<ManagerLogin />} />
+              <Route path="/manager/dashboard" element={<ManagerDashboard />} />
+              <Route path="/manager/bookings" element={<AllBookings />} />
+              <Route path="/manager/room-operations" element={<RoomOperations />} />
+              <Route path="/manager/rooms" element={<div className="p-8">Manager Rooms - Coming Soon</div>} />
+              <Route path="/manager/cleaning" element={<div className="p-8">Manager Cleaning - Coming Soon</div>} />
+              <Route path="/manager/maintenance" element={<div className="p-8">Manager Maintenance - Coming Soon</div>} />
+              <Route path="/manager/notes" element={<div className="p-8">Manager Notes - Coming Soon</div>} />
+              <Route path="/manager/inventory" element={<div className="p-8">Manager Inventory - Coming Soon</div>} />
+              <Route path="/manager/activity" element={<div className="p-8">Manager Activity - Coming Soon</div>} />
 
               {/* Routes WITH Navbar - Public and User Routes */}
               <Route path="*" element={
