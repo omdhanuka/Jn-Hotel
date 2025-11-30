@@ -333,21 +333,54 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
+const PORT = parseInt(process.env.PORT || '5000', 10);
 
+// Start server
 const startServer = async () => {
   await initializeDatabase();
-  
-  app.listen(PORT, () => {
-    console.log('');
-    console.log('='.repeat(50));
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📍 API available at: http://localhost:${PORT}/api`);
-    console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`🧪 Test route: http://localhost:${PORT}/api/test`);
-    console.log('='.repeat(50));
-    console.log('');
-  });
+
+  const basePort = PORT;
+  const maxAttempts = 10; // try basePort .. basePort+maxAttempts-1
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const tryPort = basePort + i;
+
+    try {
+      const server = await new Promise<import('http').Server>((resolve, reject) => {
+        const s = app.listen(tryPort)
+          .once('listening', () => resolve(s))
+          .once('error', (err: any) => reject(err));
+      });
+
+      console.log('');
+      console.log('='.repeat(50));
+      console.log(`🚀 Server running on port ${tryPort}`);
+      console.log(`📍 API available at: http://localhost:${tryPort}/api`);
+      console.log(`🏥 Health check: http://localhost:${tryPort}/api/health`);
+      console.log(`🧪 Test route: http://localhost:${tryPort}/api/test`);
+      console.log('='.repeat(50));
+      console.log('');
+
+      // update process.env.PORT to the actual port used
+      process.env.PORT = String(tryPort);
+      return;
+    } catch (err: any) {
+      if (err && err.code === 'EADDRINUSE') {
+        console.warn(`⚠️  Port ${tryPort} is already in use. Trying next port...`);
+        // try next port
+        continue;
+      } else {
+        console.error('❌ Unable to start server due to unexpected error:', err);
+        process.exit(1);
+      }
+    }
+  }
+
+  console.error(`❌ All ports ${basePort}..${basePort + maxAttempts - 1} are in use. Exiting.`);
+  process.exit(1);
 };
 
-startServer().catch(console.error);
+startServer().catch((err) => {
+  console.error('Fatal error starting server:', err);
+  process.exit(1);
+});
