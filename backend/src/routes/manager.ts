@@ -42,6 +42,15 @@ import {
   getStaffRequests,
   updateRequestStatus
 } from '../controllers/managerStaffController';
+import {
+  getAllBanquetHalls,
+  getBanquetBookings,
+  getBanquetBookingById,
+  updateBanquetBooking,
+  assignBanquetHall,
+  getBanquetStats,
+  getBanquetCalendar
+} from '../controllers/managerBanquetController';
 import User from '../models/User';
 
 const router = express.Router();
@@ -127,8 +136,18 @@ router.get('/staff/list', async (req, res) => {
   }
 });
 
+// Banquet Management Routes
+router.get('/banquets', getAllBanquetHalls);
+router.get('/banquets/bookings', getBanquetBookings);
+router.get('/banquets/stats', getBanquetStats);
+router.get('/banquets/calendar', getBanquetCalendar);
+router.get('/banquets/:id', getBanquetBookingById);
+router.patch('/banquets/:id', updateBanquetBooking);
+router.post('/banquets/assign', assignBanquetHall);
+
 console.log('✅ Manager routes configured with room operations');
 console.log('✅ Manager check-in/out routes configured');
 console.log('✅ Manager staff task routes configured');
+console.log('✅ Manager banquet routes configured');
 
 export default router;

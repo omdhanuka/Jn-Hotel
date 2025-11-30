@@ -24,6 +24,7 @@ interface DashboardStats {
   occupiedRooms: number;
   availableRooms: number;
   pendingTasks: number;
+  pendingBanquets: number;
   pendingComplaints: number;
 }
 
@@ -31,7 +32,6 @@ const ManagerDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user: authUser, logout } = useAuth();
   const [user, setUser] = useState<ManagerUser | null>(null);
-  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     totalBookings: 0,
     todayCheckIns: 0,
@@ -39,8 +39,11 @@ const ManagerDashboard: React.FC = () => {
     occupiedRooms: 0,
     availableRooms: 0,
     pendingTasks: 0,
+    pendingBanquets: 0,
     pendingComplaints: 0
   });
+
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const verifyManagerAccess = async () => {
@@ -141,9 +144,10 @@ const ManagerDashboard: React.FC = () => {
       id: 'banquets',
       icon: Building,
       title: 'Banquet Management',
-      description: 'Oversee banquet bookings',
+      description: 'Manage banquet halls and events',
       color: 'pink',
-      link: '/manager/banquets'
+      link: '/manager/banquets',
+      stat: `${stats.pendingBanquets || 0} pending`
     },
     {
       id: 'restaurant',
