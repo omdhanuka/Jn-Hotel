@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Printer, Eye, Calculator, Clock, Check, Filter, Home, ShoppingBag, Utensils } from 'lucide-react';
-import axios from 'axios';
+import { Search, Printer, Eye, Calculator, Clock, Check, Filter, Home, ShoppingBag, Utensils, Receipt } from 'lucide-react';
+import axios from '../../utils/axios'; // Updated import
 import toast from 'react-hot-toast';
 
 interface OrderItem {
@@ -61,7 +61,7 @@ const BillManagement: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<DineInOrder | null>(null);
   const [showBillModal, setShowBillModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'orders' | 'bills'>('orders');
+  const [activeTab, setActiveTab] = useState<'pending' | 'generated'>('pending');
   const [orderType, setOrderType] = useState<'dine-in' | 'takeaway' | 'delivery'>('dine-in');
   
   // Bill generation form
@@ -328,18 +328,64 @@ const BillManagement: React.FC = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Restaurant Bill Management</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Restaurant Bill Management</h1>
+          <p className="text-gray-600 mt-2">Manage dine-in, takeaway, and delivery bills</p>
+        </div>
         
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder="Search by table, customer, phone, or address..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+          <input
+            type="text"
+            placeholder="Search orders or bills..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-96"
+          />
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-yellow-50 p-6 rounded-lg shadow-md border border-yellow-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-yellow-600">Pending Bills</p>
+              <p className="text-2xl font-bold text-yellow-900">
+                {dineInOrders.length + takeawayOrders.length + deliveryOrders.length}
+              </p>
+            </div>
+            <Clock className="h-12 w-12 text-yellow-500" />
+          </div>
+        </div>
+
+        <div className="bg-green-50 p-6 rounded-lg shadow-md border border-green-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-green-600">Generated Bills</p>
+              <p className="text-2xl font-bold text-green-900">{bills.length}</p>
+            </div>
+            <Check className="h-12 w-12 text-green-500" />
+          </div>
+        </div>
+
+        <div className="bg-blue-50 p-6 rounded-lg shadow-md border border-blue-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-blue-600">Dine-In Orders</p>
+              <p className="text-2xl font-bold text-blue-900">{dineInOrders.length}</p>
+            </div>
+            <Utensils className="h-12 w-12 text-blue-500" />
+          </div>
+        </div>
+
+        <div className="bg-purple-50 p-6 rounded-lg shadow-md border border-purple-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-purple-600">Delivery Orders</p>
+              <p className="text-2xl font-bold text-purple-900">{deliveryOrders.length}</p>
+            </div>
+            <Home className="h-12 w-12 text-purple-500" />
           </div>
         </div>
       </div>
@@ -349,30 +395,32 @@ const BillManagement: React.FC = () => {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             <button
-              onClick={() => setActiveTab('orders')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'orders'
-                  ? 'border-blue-500 text-blue-600'
+              onClick={() => setActiveTab('pending')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center ${
+                activeTab === 'pending'
+                  ? 'border-yellow-500 text-yellow-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              Pending Orders ({dineInOrders.length + takeawayOrders.length + deliveryOrders.length})
+              <Clock className="h-5 w-5 mr-2" />
+              Pending Bills ({dineInOrders.length + takeawayOrders.length + deliveryOrders.length})
             </button>
             <button
-              onClick={() => setActiveTab('bills')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'bills'
-                  ? 'border-blue-500 text-blue-600'
+              onClick={() => setActiveTab('generated')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center ${
+                activeTab === 'generated'
+                  ? 'border-green-500 text-green-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              Generated Bills ({filteredBills.length})
+              <Check className="h-5 w-5 mr-2" />
+              Generated Bills ({bills.length})
             </button>
           </nav>
         </div>
       </div>
 
-      {activeTab === 'orders' && (
+      {activeTab === 'pending' && (
         <>
           {/* Order Type Filter */}
           <div className="mb-6 flex space-x-4">
@@ -411,28 +459,153 @@ const BillManagement: React.FC = () => {
             </button>
           </div>
 
+          {/* Pending Orders Table */}
           <div className="bg-white shadow-md rounded-lg overflow-hidden">
+            {filteredOrders.length === 0 ? (
+              <div className="text-center py-12">
+                <Clock className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Pending Orders</h3>
+                <p className="text-gray-600">
+                  All {orderType.replace('-', ' ')} orders have been billed.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Order Info
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Customer
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Items
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Amount
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Time
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredOrders.map((order) => (
+                      <tr key={order._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            {orderType === 'dine-in' ? <Utensils className="h-5 w-5 text-blue-500 mr-2" /> :
+                             orderType === 'takeaway' ? <ShoppingBag className="h-5 w-5 text-green-500 mr-2" /> :
+                             <Home className="h-5 w-5 text-purple-500 mr-2" />}
+                            <div>
+                              <div className={`text-sm font-bold ${
+                                orderType === 'dine-in' ? 'text-blue-600' :
+                                orderType === 'takeaway' ? 'text-green-600' : 'text-purple-600'
+                              }`}>
+                                {orderType === 'dine-in' ? `Table ${order.tableNumber}` :
+                                 orderType === 'takeaway' ? `TO-${order._id.slice(-4)}` :
+                                 `DL-${order._id.slice(-4)}`}
+                              </div>
+                              <div className="text-xs text-gray-500">{order.bookingId}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900">{order.fullName}</div>
+                          <div className="text-sm text-gray-500">{order.phone}</div>
+                          {orderType === 'delivery' && order.deliveryAddress && (
+                            <div className="text-xs text-gray-500 max-w-xs truncate mt-1">
+                              📍 {order.deliveryAddress}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">{order.items.length} items</div>
+                          <div className="text-xs text-gray-500">
+                            {order.items.slice(0, 2).map(item => item.name).join(', ')}
+                            {order.items.length > 2 && '...'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-lg font-bold text-green-600">
+                            ₹{order.totalAmount.toFixed(2)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(order.status)}`}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {new Date(order.createdAt).toLocaleTimeString()}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setShowBillModal(true);
+                            }}
+                            className="bg-yellow-600 text-white px-4 py-2 rounded-md text-sm hover:bg-yellow-700 flex items-center"
+                          >
+                            <Calculator className="h-4 w-4 mr-1" />
+                            Generate Bill
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'generated' && (
+        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+          {filteredBills.length === 0 ? (
+            <div className="text-center py-12">
+              <Receipt className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Generated Bills</h3>
+              <p className="text-gray-600">
+                Bills will appear here once you generate them from pending orders.
+              </p>
+            </div>
+          ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      {orderType === 'dine-in' ? 'Table' : orderType === 'takeaway' ? 'Order' : 'Delivery'}
+                      Bill Number
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Type & Location
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Customer
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Items
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Amount
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Status
+                      Payment
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Time
+                      Generated
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Actions
@@ -440,152 +613,98 @@ const BillManagement: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredOrders.map((order) => (
-                    <tr key={order._id} className="hover:bg-gray-50">
+                  {filteredBills.map((bill) => (
+                    <tr key={bill._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className={`text-lg font-bold ${
-                          orderType === 'dine-in' ? 'text-blue-600' :
-                          orderType === 'takeaway' ? 'text-green-600' : 'text-purple-600'
-                        }`}>
-                          {orderType === 'dine-in' ? `Table ${order.tableNumber}` :
-                           orderType === 'takeaway' ? `TO-${order._id.slice(-4)}` :
-                           `DL-${order._id.slice(-4)}`}
+                        <div className="text-sm font-bold text-gray-900">
+                          {bill.billNumber || bill._id.slice(-6).toUpperCase()}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {order.fullName}
+                        <div className="flex items-center">
+                          {bill.deliveryType === 'dine-in' ? <Utensils className="h-4 w-4 text-blue-500 mr-2" /> :
+                           bill.deliveryType === 'takeaway' ? <ShoppingBag className="h-4 w-4 text-green-500 mr-2" /> :
+                           <Home className="h-4 w-4 text-purple-500 mr-2" />}
+                          <div>
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              bill.deliveryType === 'dine-in' ? 'bg-blue-100 text-blue-800' :
+                              bill.deliveryType === 'takeaway' ? 'bg-green-100 text-green-800' :
+                              'bg-purple-100 text-purple-800'
+                            }`}>
+                              {bill.deliveryType === 'dine-in' ? `Table ${bill.tableNumber}` :
+                               bill.deliveryType === 'takeaway' ? 'Takeaway' : 'Delivery'}
+                            </span>
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-500">{order.phone}</div>
-                        {orderType === 'delivery' && order.deliveryAddress && (
-                          <div className="text-xs text-gray-500 max-w-xs truncate">
-                            📍 {order.deliveryAddress}
+                        {bill.deliveryType === 'delivery' && bill.deliveryAddress && (
+                          <div className="text-xs text-gray-500 max-w-xs truncate mt-1">
+                            📍 {bill.deliveryAddress}
                           </div>
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">
-                          {order.items.length} items
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {order.items.slice(0, 2).map(item => item.name).join(', ')}
-                          {order.items.length > 2 && '...'}
-                        </div>
+                        <div className="text-sm font-medium text-gray-900">{bill.customerName}</div>
+                        {bill.customerPhone && (
+                          <div className="text-sm text-gray-500">{bill.customerPhone}</div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-lg font-bold text-green-600">
-                          ₹{order.totalAmount.toFixed(2)}
+                          ₹{bill.totalAmount.toFixed(2)}
+                        </div>
+                        {bill.discount > 0 && (
+                          <div className="text-xs text-gray-500">
+                            Discount: -₹{bill.discount.toFixed(2)}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className={`px-2 py-1 text-xs rounded-full w-fit mb-1 ${
+                            bill.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' :
+                            bill.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {bill.paymentStatus === 'paid' ? '✓ Paid' : '⏳ Pending'}
+                          </span>
+                          <span className="text-xs text-gray-600 uppercase">
+                            {bill.paymentMethod}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(order.status)}`}>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(order.createdAt).toLocaleTimeString()}
+                        <div className="text-sm text-gray-900">
+                          {new Date(bill.generatedAt).toLocaleDateString()}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(bill.generatedAt).toLocaleTimeString()}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setShowBillModal(true);
-                          }}
-                          className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 flex items-center"
-                        >
-                          <Calculator className="h-4 w-4 mr-1" />
-                          Generate Bill
-                        </button>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => printBill(bill)}
+                            className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 flex items-center"
+                            title="Print Bill"
+                          >
+                            <Printer className="h-4 w-4 mr-1" />
+                            Print
+                          </button>
+                          <button
+                            onClick={() => {/* Navigate to bill details */}}
+                            className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 flex items-center"
+                            title="View Details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
-        </>
-      )}
-
-      {activeTab === 'bills' && (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Bill Number
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Customer
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Payment
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Generated
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredBills.map((bill) => (
-                  <tr key={bill._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {bill.billNumber || bill._id.slice(-6)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        bill.deliveryType === 'dine-in' ? 'bg-blue-100 text-blue-800' :
-                        bill.deliveryType === 'takeaway' ? 'bg-green-100 text-green-800' :
-                        'bg-purple-100 text-purple-800'
-                      }`}>
-                        {bill.deliveryType === 'dine-in' ? `Table ${bill.tableNumber}` :
-                         bill.deliveryType === 'takeaway' ? 'Takeaway' : 'Delivery'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium">{bill.customerName}</div>
-                      {bill.deliveryType === 'delivery' && bill.deliveryAddress && (
-                        <div className="text-xs text-gray-500 max-w-xs truncate">
-                          📍 {bill.deliveryAddress}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-lg font-bold text-green-600">
-                        ₹{bill.totalAmount.toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                        {bill.paymentMethod.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(bill.generatedAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => printBill(bill)}
-                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 flex items-center"
-                      >
-                        <Printer className="h-4 w-4 mr-1" />
-                        Print
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          )}
         </div>
       )}
 

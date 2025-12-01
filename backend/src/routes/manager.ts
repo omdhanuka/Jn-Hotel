@@ -1,4 +1,5 @@
 import express from 'express';
+import { verifyToken, managerOnly, checkActiveStatus } from '../middleware/roleAuth';
 import {
   getManagerDashboard,
   getAllBookingsForManager,
@@ -7,7 +8,15 @@ import {
   updateBookingStatus,
   assignResource
 } from '../controllers/managerController';
-import { verifyToken, managerOnly, checkActiveStatus } from '../middleware/roleAuth';
+import {
+  getAllBanquetHalls,
+  getBanquetBookings,
+  getBanquetBookingById,
+  updateBanquetBooking,
+  assignBanquetHall,
+  getBanquetStats,
+  getBanquetCalendar
+} from '../controllers/managerBanquetController';
 import {
   getAllRoomOperations,
   getRoomOperationDetails,
@@ -19,18 +28,6 @@ import {
   getAvailableRoomsForMove
 } from '../controllers/managerRoomController';
 import {
-  searchBookings,
-  getAvailableRooms,
-  assignRoom,
-  completeCheckIn,
-  searchActiveGuests,
-  addExtraCharge,
-  completeCheckOut,
-  getInvoice,
-  getRecentActivities
-} from '../controllers/managerCheckInOutController';
-import {
-  getStaffManagementStats,
   getAllTasks,
   createTask,
   updateTask,
@@ -40,18 +37,33 @@ import {
   markAttendance,
   getAttendanceHistory,
   getStaffRequests,
-  updateRequestStatus
+  updateRequestStatus,
+  getStaffManagementStats
 } from '../controllers/managerStaffController';
 import {
-  getAllBanquetHalls,
-  getBanquetBookings,
-  getBanquetBookingById,
-  updateBanquetBooking,
-  assignBanquetHall,
-  getBanquetStats,
-  getBanquetCalendar
-} from '../controllers/managerBanquetController';
-import User from '../models/User';
+  getRestaurantDashboard,
+  getAllRestaurantTables,
+  updateTableStatus,
+  assignWaiterToTable,
+  removeWaiterFromTable,
+  getDineInOrders,
+  createDineInOrder,
+  getOrderById,
+  updateOrderItems,
+  updateOrderStatus,
+  cancelOrder,
+  getKitchenOrders,
+  updateKitchenStatus,
+  generateBill,
+  getBills,
+  getBillById,
+  markBillAsPaid,
+  getRestaurantReports,
+  getWaiters,
+  assignWaiterToOrder,
+  getBillsByTable,
+  generateBillForTable
+} from '../controllers/managerRestaurantController';
 
 const router = express.Router();
 
@@ -60,94 +72,76 @@ router.use(verifyToken);
 router.use(checkActiveStatus);
 router.use(managerOnly);
 
-// Dashboard
+// ===== DASHBOARD =====
 router.get('/dashboard', getManagerDashboard);
 
-// Bookings Management
+// ===== BOOKINGS =====
 router.get('/bookings', getAllBookingsForManager);
 router.get('/bookings/:id', getBookingDetailsForManager);
-router.patch('/bookings/:id', updateBookingByManager);
-router.patch('/bookings/:id/status', updateBookingStatus);
-router.patch('/bookings/:id/assign', assignResource);
+router.put('/bookings/:id', updateBookingByManager);
+router.put('/bookings/:id/status', updateBookingStatus);
+router.post('/bookings/:id/assign-resource', assignResource);
 
-// Room Operations Management
+// ===== BANQUET MANAGEMENT =====
+router.get('/banquets', getAllBanquetHalls);
+router.get('/banquets/stats', getBanquetStats);
+router.get('/banquets/calendar', getBanquetCalendar);
+router.get('/banquets/bookings', getBanquetBookings);
+router.get('/banquets/:id', getBanquetBookingById);
+router.patch('/banquets/:id', updateBanquetBooking);
+router.post('/banquets/assign-hall', assignBanquetHall);
+
+// ===== ROOM OPERATIONS =====
 router.get('/rooms', getAllRoomOperations);
 router.get('/rooms/:id', getRoomOperationDetails);
-router.patch('/rooms/:id/status', updateRoomStatus);
-router.patch('/rooms/:id/assign', assignRoomToBooking);
-router.patch('/rooms/:id/release', releaseRoom);
-router.patch('/rooms/:id/move-guest', moveGuestToAnotherRoom);
-router.patch('/rooms/:id/complete', completeCleaningOrMaintenance);
-router.get('/rooms/available/for-move', getAvailableRoomsForMove);
+router.put('/rooms/:id/status', updateRoomStatus);
+router.post('/rooms/:id/assign', assignRoomToBooking);
+router.post('/rooms/:id/release', releaseRoom);
+router.post('/rooms/:id/move', moveGuestToAnotherRoom);
+router.post('/rooms/:id/complete', completeCleaningOrMaintenance);
+router.get('/rooms/available/move', getAvailableRoomsForMove);
 
-// Check-In Operations
-router.get('/booking/search', searchBookings);
-router.get('/rooms/available', getAvailableRooms);
-router.patch('/booking/assign-room', assignRoom);
-router.post('/booking/checkin', completeCheckIn);
-
-// Check-Out Operations
-router.get('/active-guests', searchActiveGuests);
-router.post('/charges/add', addExtraCharge);
-router.post('/checkout', completeCheckOut);
-router.get('/invoice/:bookingId', getInvoice);
-
-// Recent check-in/out activities
-router.get('/checkin-checkout/recent-activities', getRecentActivities);
-
-// Staff Task Management
+// ===== STAFF & TASK MANAGEMENT =====
 router.get('/staff/stats', getStaffManagementStats);
-router.get('/staff/tasks', getAllTasks);
-router.post('/staff/tasks', createTask);
-router.put('/staff/tasks/:id', updateTask);
-router.delete('/staff/tasks/:id', deleteTask);
-
-// Staff Performance
+router.get('/tasks', getAllTasks);
+router.post('/tasks', createTask);
+router.put('/tasks/:id', updateTask);
+router.delete('/tasks/:id', deleteTask);
 router.get('/staff/performance', getStaffPerformance);
-
-// Attendance Management
-router.get('/staff/attendance/today', getTodayAttendance);
-router.post('/staff/attendance', markAttendance);
-router.get('/staff/attendance/history', getAttendanceHistory);
-
-// Staff Requests
+router.get('/attendance/today', getTodayAttendance);
+router.post('/attendance', markAttendance);
+router.get('/attendance/history', getAttendanceHistory);
 router.get('/staff/requests', getStaffRequests);
 router.put('/staff/requests/:id', updateRequestStatus);
 
-// Staff list for task assignment (managers can view staff list)
-router.get('/staff/list', async (req, res) => {
-  try {
-    const staff = await User.find({ 
-      role: { $in: ['staff', 'reception'] },
-      isActive: true 
-    })
-      .select('firstName lastName email department position role')
-      .sort({ firstName: 1 });
-
-    console.log(`📋 Manager fetching staff list: ${staff.length} active staff members found`);
-    
-    res.json({ 
-      staff,
-      count: staff.length 
-    });
-  } catch (error) {
-    console.error('Manager get staff list error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
+// TEST ROUTE - Remove after debugging
+router.post('/restaurant/tables/test', (req, res) => {
+  console.log('Test route hit!');
+  res.json({ message: 'Test route works' });
 });
 
-// Banquet Management Routes
-router.get('/banquets', getAllBanquetHalls);
-router.get('/banquets/bookings', getBanquetBookings);
-router.get('/banquets/stats', getBanquetStats);
-router.get('/banquets/calendar', getBanquetCalendar);
-router.get('/banquets/:id', getBanquetBookingById);
-router.patch('/banquets/:id', updateBanquetBooking);
-router.post('/banquets/assign', assignBanquetHall);
-
-console.log('✅ Manager routes configured with room operations');
-console.log('✅ Manager check-in/out routes configured');
-console.log('✅ Manager staff task routes configured');
-console.log('✅ Manager banquet routes configured');
+// ===== RESTAURANT MANAGEMENT (DINE-IN ONLY) =====
+router.get('/restaurant/dashboard', getRestaurantDashboard);
+router.get('/restaurant/tables', getAllRestaurantTables);
+router.put('/restaurant/tables/:id/status', updateTableStatus);
+router.post('/restaurant/tables/:id/assign-waiter', assignWaiterToTable);
+router.delete('/restaurant/tables/:id/waiter', removeWaiterFromTable);
+router.get('/restaurant/orders', getDineInOrders);
+router.post('/restaurant/orders', createDineInOrder);
+router.get('/restaurant/orders/:id', getOrderById);
+router.put('/restaurant/orders/:id/items', updateOrderItems);
+router.put('/restaurant/orders/:id/status', updateOrderStatus);
+router.post('/restaurant/orders/:id/assign-waiter', assignWaiterToOrder);
+router.delete('/restaurant/orders/:id', cancelOrder);
+router.get('/restaurant/kitchen', getKitchenOrders);
+router.put('/restaurant/kitchen/:id', updateKitchenStatus);
+router.post('/restaurant/bills', generateBill);
+router.get('/restaurant/bills', getBills);
+router.get('/restaurant/bills/table/:tableNumber', getBillsByTable);
+router.post('/restaurant/bills/generate-for-table', generateBillForTable);
+router.get('/restaurant/bills/:id', getBillById);
+router.put('/restaurant/bills/:id/paid', markBillAsPaid);
+router.get('/restaurant/reports', getRestaurantReports);
+router.get('/restaurant/waiters', getWaiters);
 
 export default router;

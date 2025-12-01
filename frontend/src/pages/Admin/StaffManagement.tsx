@@ -80,6 +80,8 @@ const StaffManagement: React.FC = () => {
     'Housekeeping',
     'Food & Beverage',
     'Kitchen',
+    'Waiter',
+    'Chef',
     'Maintenance',
     'Security',
     'Management',
