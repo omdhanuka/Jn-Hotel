@@ -17,21 +17,39 @@ const ManagerLogin: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
+    setError('');
 
     try {
-      // Use the manager-specific login endpoint
-      const result = await login(formData.email, formData.password, 'manager');
-      
-      if (result.success) {
-        toast.success(`Welcome ${result.user.firstName}!`);
-        navigate(result.redirectUrl);
+      const response = await axios.post('/api/auth/manager/login', {
+        email: formData.email,
+        password: formData.password
+      });
+
+      // Store token and user data
+      const token = response.data.token;
+      const user = response.data.user;
+
+      if (!token) {
+        throw new Error('No token received from server');
       }
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      console.log('✅ Manager login successful:', {
+        token: token ? 'Token stored' : 'No token',
+        tokenLength: token ? token.length : 0,
+        user: `${user.firstName} ${user.lastName}`,
+        role: user.role
+      });
+
+      toast.success('Login successful!');
+      navigate('/manager/dashboard');
     } catch (error: any) {
-      console.error('Manager login error:', error);
-      setError(error.message || 'Login failed. Please try again.');
-      toast.error(error.message || 'Login failed');
+      console.error('❌ Manager login error:', error.response?.data);
+      setError(error.response?.data?.message || 'Invalid email or password');
+      toast.error(error.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
     }

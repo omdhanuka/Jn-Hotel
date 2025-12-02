@@ -27,17 +27,16 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear token and redirect to login
+      // Token expired or invalid
       localStorage.removeItem('token');
       localStorage.removeItem('user');
 
-      // Determine which login page based on current path
-      const currentPath = window.location.pathname;
-      if (currentPath.startsWith('/manager')) {
+      // Redirect based on current path
+      if (window.location.pathname.startsWith('/manager')) {
         window.location.href = '/manager/login';
-      } else if (currentPath.startsWith('/staff')) {
+      } else if (window.location.pathname.startsWith('/staff')) {
         window.location.href = '/staff/login';
-      } else if (currentPath.startsWith('/admin')) {
+      } else if (window.location.pathname.startsWith('/admin')) {
         window.location.href = '/admin/login';
       } else {
         window.location.href = '/login';

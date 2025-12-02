@@ -1,4 +1,5 @@
 import express from 'express';
+import User from '../models/User';
 import { verifyToken, managerOnly, checkActiveStatus } from '../middleware/roleAuth';
 import {
   getManagerDashboard,
@@ -64,6 +65,15 @@ import {
   getBillsByTable,
   generateBillForTable
 } from '../controllers/managerRestaurantController';
+import {
+  getCheckinCheckoutStats,
+  getRecentActivities,
+  getTodayArrivals,
+  getTodayDepartures,
+  performCheckin,
+  performCheckout,
+  searchBookings
+} from '../controllers/managerCheckinCheckoutController';
 
 const router = express.Router();
 
@@ -94,22 +104,43 @@ router.post('/banquets/assign-hall', assignBanquetHall);
 // ===== ROOM OPERATIONS =====
 router.get('/rooms', getAllRoomOperations);
 router.get('/rooms/:id', getRoomOperationDetails);
-router.put('/rooms/:id/status', updateRoomStatus);
+router.patch('/rooms/:id/status', updateRoomStatus);
 router.post('/rooms/:id/assign', assignRoomToBooking);
-router.post('/rooms/:id/release', releaseRoom);
+router.post('/rooms/:id/release', releaseRoom); // This is correct - should be POST
 router.post('/rooms/:id/move', moveGuestToAnotherRoom);
-router.post('/rooms/:id/complete', completeCleaningOrMaintenance);
+router.patch('/rooms/:id/complete', completeCleaningOrMaintenance);
 router.get('/rooms/available/move', getAvailableRoomsForMove);
 
 // ===== STAFF & TASK MANAGEMENT =====
 router.get('/staff/stats', getStaffManagementStats);
-router.get('/tasks', getAllTasks);
+router.get('/staff/list', async (req, res) => {
+  // Get all active staff members for task assignment
+  try {
+    const staff = await User.find({ 
+      role: { $in: ['staff', 'reception'] },
+      isActive: true 
+    }).select('firstName lastName department position email');
+    
+    res.json({ staff });
+  } catch (error) {
+    console.error('Get staff list error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+router.get('/staff/tasks', getAllTasks);
+router.post('/staff/tasks', createTask);
+router.put('/staff/tasks/:id', updateTask);
+router.delete('/staff/tasks/:id', deleteTask);
+router.get('/tasks', getAllTasks); // Keep old route for backward compatibility
 router.post('/tasks', createTask);
 router.put('/tasks/:id', updateTask);
 router.delete('/tasks/:id', deleteTask);
 router.get('/staff/performance', getStaffPerformance);
+router.get('/staff/attendance/today', getTodayAttendance); // Add this line
 router.get('/attendance/today', getTodayAttendance);
+router.post('/staff/attendance', markAttendance); // Add this line
 router.post('/attendance', markAttendance);
+router.get('/staff/attendance/history', getAttendanceHistory); // Add this line
 router.get('/attendance/history', getAttendanceHistory);
 router.get('/staff/requests', getStaffRequests);
 router.put('/staff/requests/:id', updateRequestStatus);
@@ -143,5 +174,14 @@ router.get('/restaurant/bills/:id', getBillById);
 router.put('/restaurant/bills/:id/paid', markBillAsPaid);
 router.get('/restaurant/reports', getRestaurantReports);
 router.get('/restaurant/waiters', getWaiters);
+
+// ===== CHECK-IN / CHECK-OUT MANAGEMENT =====
+router.get('/checkin-checkout/stats', getCheckinCheckoutStats);
+router.get('/checkin-checkout/recent-activities', getRecentActivities);
+router.get('/checkin-checkout/today-arrivals', getTodayArrivals);
+router.get('/checkin-checkout/today-departures', getTodayDepartures);
+router.post('/checkin-checkout/:id/checkin', performCheckin);
+router.post('/checkin-checkout/:id/checkout', performCheckout);
+router.get('/booking/search', searchBookings); // Add search route
 
 export default router;

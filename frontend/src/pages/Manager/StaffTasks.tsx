@@ -17,7 +17,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../../utils/axios'; // Make sure to use the configured axios instance
 import toast from 'react-hot-toast';
 
 type TabType = 'tasks' | 'assign' | 'performance' | 'attendance' | 'requests';
@@ -134,9 +134,29 @@ const StaffTasks: React.FC = () => {
   });
 
   useEffect(() => {
+    // Check authentication before loading
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
+      toast.error('Please login to access this page');
+      navigate('/manager/login');
+      return;
+    }
+
+    const userData = JSON.parse(user);
+    if (userData.role !== 'manager' && userData.role !== 'admin') {
+      toast.error('Access denied. Manager privileges required.');
+      navigate('/');
+      return;
+    }
+
+    // Load data
     fetchStats();
     fetchStaffList();
-  }, []);
+    fetchTasks();
+    fetchAttendance();
+  }, [navigate]);
 
   useEffect(() => {
     switch (activeTab) {
@@ -157,43 +177,59 @@ const StaffTasks: React.FC = () => {
 
   const fetchStats = async () => {
     try {
+      setLoading(true);
+      // Verify token exists before making request
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Session expired. Please login again.');
+        navigate('/manager/login');
+        return;
+      }
+
       const response = await axios.get('/api/manager/staff/stats');
       setStats(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch stats:', error);
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please login again.');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/manager/login');
+      } else {
+        toast.error('Failed to load statistics');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchStaffList = async () => {
     try {
-      // Use manager-specific endpoint instead of admin endpoint
-      const response = await axios.get('/api/manager/staff/list');
-      console.log('📋 Manager staff list response:', response.data);
-      
-      const staffMembers = response.data.staff || [];
-      console.log(`📋 Loaded ${staffMembers.length} staff members for task assignment`);
-      
-      setStaffList(staffMembers);
-      
-      if (staffMembers.length === 0) {
-        toast.error('No staff members found. Please register staff first.');
+      // Verify token exists
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return;
       }
+
+      const response = await axios.get('/api/manager/staff/list');
+      setStaffList(response.data.staff || []);
     } catch (error: any) {
       console.error('Failed to fetch staff list:', error);
-      
-      if (error.response?.status === 403) {
-        toast.error('Access denied. Manager permissions required.');
-      } else {
-        toast.error('Failed to load staff members');
+      if (error.response?.status !== 401) {
+        toast.error('Failed to load staff list');
       }
-      
-      setStaffList([]);
     }
   };
 
   const fetchTasks = async () => {
     try {
       setLoading(true);
+      // Verify token exists
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return;
+      }
+
       const params = new URLSearchParams();
       if (taskFilters.status !== 'all') params.append('status', taskFilters.status);
       if (taskFilters.priority !== 'all') params.append('priority', taskFilters.priority);
@@ -202,8 +238,14 @@ const StaffTasks: React.FC = () => {
 
       const response = await axios.get(`/api/manager/staff/tasks?${params.toString()}`);
       setTasks(response.data.tasks || []);
-    } catch (error) {
-      toast.error('Failed to fetch tasks');
+    } catch (error: any) {
+      console.error('Failed to fetch tasks:', error);
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please login again.');
+        navigate('/manager/login');
+      } else {
+        toast.error('Failed to load tasks');
+      }
     } finally {
       setLoading(false);
     }

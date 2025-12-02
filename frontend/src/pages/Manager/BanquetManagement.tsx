@@ -16,7 +16,7 @@ import {
   Grid,
   List
 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../../utils/axios'; // Update import
 import toast from 'react-hot-toast';
 
 interface BanquetHall {

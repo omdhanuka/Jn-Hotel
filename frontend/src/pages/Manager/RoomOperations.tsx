@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Plus, BedDouble, X, User, Mail, Phone, Calendar, Users as UsersIcon, DollarSign, FileText, Clock, ArrowRight, CheckCircle } from 'lucide-react';
-import axios from 'axios';
+import axios from '../../utils/axios'; // Update import
 import toast from 'react-hot-toast';
 import RoomCard from '../../components/Manager/RoomCard';
 import RoomFilters from '../../components/Manager/RoomFilters';
@@ -105,16 +105,21 @@ const RoomOperations: React.FC = () => {
     }
   };
 
-  const handleCheckoutGuest = async (roomId: string) => {
-    if (!confirm('Are you sure you want to checkout this guest?')) return;
+  const handleReleaseRoom = async (roomId: string) => {
+    if (!window.confirm('Are you sure you want to checkout the guest from this room?')) {
+      return;
+    }
 
     try {
-      await axios.patch(`/api/manager/rooms/${roomId}/release`);
-      toast.success('Guest checked out successfully');
-      setShowDetailModal(false);
+      setLoading(true);
+      await axios.post(`/api/manager/rooms/${roomId}/release`); // Changed from patch to post
+      toast.success('Guest checked out successfully. Room marked for cleaning.');
       fetchRooms();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to checkout guest');
+      console.error('Release room error:', error);
+      toast.error(error.response?.data?.message || 'Failed to release room');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -372,7 +377,7 @@ const RoomOperations: React.FC = () => {
                 {selectedRoom.room?.isBooked && (
                   <div className="flex gap-3">
                     <button
-                      onClick={() => handleCheckoutGuest(selectedRoom.room._id)}
+                      onClick={() => handleReleaseRoom(selectedRoom.room._id)}
                       className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700"
                     >
                       Checkout Guest

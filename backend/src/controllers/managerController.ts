@@ -258,36 +258,48 @@ export const updateBookingByManager = async (req: AuthRequest, res: Response) =>
 
 export const updateBookingStatus = async (req: AuthRequest, res: Response) => {
   try {
-    const { status } = req.body;
-
-    const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed', 'checked-in', 'checked-out'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
-    }
+    const { status, paymentStatus } = req.body;
 
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    booking.status = status;
-    
-    // Update room status based on booking status
-    if (booking.type === 'room') {
-      if (status === 'checked-in') {
-        booking.isCheckedIn = true;
-        await Room.findByIdAndUpdate(booking.resourceId, { isBooked: true });
-      } else if (status === 'checked-out') {
-        booking.isCheckedOut = true;
-        await Room.findByIdAndUpdate(booking.resourceId, { isBooked: false });
-      } else if (status === 'cancelled') {
-        await Room.findByIdAndUpdate(booking.resourceId, { isBooked: false });
+    // Update status if provided
+    if (status) {
+      const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: 'Invalid status' });
       }
+      booking.status = status;
+      
+      // Handle room status based on booking status
+      if (booking.type === 'room') {
+        if (status === 'cancelled') {
+          await Room.findByIdAndUpdate(booking.resourceId, { isBooked: false });
+        }
+      }
+    }
+
+    // Update payment status if provided
+    if (paymentStatus) {
+      const validPaymentStatuses = ['pending', 'paid', 'refunded', 'failed'];
+      if (!validPaymentStatuses.includes(paymentStatus)) {
+        return res.status(400).json({ message: 'Invalid payment status' });
+      }
+      booking.paymentStatus = paymentStatus;
     }
 
     await booking.save();
 
-    res.json({ message: 'Booking status updated successfully', booking });
+    const updatedBooking = await Booking.findById(booking._id)
+      .populate('user', 'firstName lastName email')
+      .populate('resourceId');
+
+    res.json({ 
+      message: 'Booking updated successfully', 
+      booking: updatedBooking 
+    });
   } catch (error) {
     console.error('Update booking status error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -303,7 +315,7 @@ export const assignResource = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    // Verify resource exists and is available
+    // Validate resource exists based on booking type
     if (booking.type === 'room') {
       const room = await Room.findById(resourceId);
       if (!room) {
@@ -319,10 +331,18 @@ export const assignResource = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    // Update booking with new resource
     booking.resourceId = resourceId;
     await booking.save();
 
-    res.json({ message: 'Resource assigned successfully', booking });
+    const updatedBooking = await Booking.findById(booking._id)
+      .populate('user', 'firstName lastName email')
+      .populate('resourceId');
+
+    res.json({ 
+      message: 'Resource assigned successfully', 
+      booking: updatedBooking 
+    });
   } catch (error) {
     console.error('Assign resource error:', error);
     res.status(500).json({ message: 'Server error' });

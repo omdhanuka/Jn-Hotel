@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Mail, Phone, Calendar, Users, DollarSign, FileText, Clock } from 'lucide-react';
+import { X, Calendar, Users, DollarSign, Phone, Mail } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import BookingStatusBadge from './BookingStatusBadge';
-import PaymentBadge from './PaymentBadge';
 
 interface Booking {
   _id: string;
@@ -46,133 +44,108 @@ const BookingViewModal: React.FC<BookingViewModalProps> = ({ booking, onClose, o
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-start p-6 border-b border-gray-200 sticky top-0 bg-white">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Booking Details</h2>
-            <p className="text-gray-600 text-sm mt-1">#{booking.bookingId}</p>
-          </div>
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b flex justify-between items-center">
+          <h2 className="text-xl font-semibold">Booking Details - {booking.bookingId}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-6 w-6" />
           </button>
         </div>
 
         <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center space-x-4">
-              <div>
-                <div className="text-sm text-gray-600 mb-1">Booking Status</div>
-                <BookingStatusBadge status={booking.status} />
+          {/* Guest Information */}
+          <div>
+            <h3 className="text-lg font-medium mb-3">Guest Information</h3>
+            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+              <div className="flex items-center">
+                <Users className="h-5 w-5 text-gray-400 mr-2" />
+                <span className="font-medium">{booking.guestName}</span>
               </div>
-              <div>
-                <div className="text-sm text-gray-600 mb-1">Payment Status</div>
-                <PaymentBadge status={booking.paymentStatus} />
+              <div className="flex items-center">
+                <Mail className="h-5 w-5 text-gray-400 mr-2" />
+                <span className="text-sm">{booking.email}</span>
               </div>
-            </div>
-            
-            {booking.status === 'pending' && (
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleStatusUpdate('confirmed')}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                >
-                  Confirm
-                </button>
-                <button
-                  onClick={() => handleStatusUpdate('cancelled')}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <User className="h-5 w-5 mr-2 text-indigo-600" />
-              Guest Information
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-sm text-gray-600">Name</div>
-                <div className="text-base font-medium text-gray-900">{booking.guestName}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Email</div>
-                <div className="text-base font-medium text-gray-900 flex items-center">
-                  <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                  {booking.email}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Phone</div>
-                <div className="text-base font-medium text-gray-900 flex items-center">
-                  <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                  {booking.phone || 'N/A'}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Guests</div>
-                <div className="text-base font-medium text-gray-900 flex items-center">
-                  <Users className="h-4 w-4 mr-2 text-gray-400" />
-                  {booking.guests} {booking.guests === 1 ? 'guest' : 'guests'}
-                </div>
+              <div className="flex items-center">
+                <Phone className="h-5 w-5 text-gray-400 mr-2" />
+                <span className="text-sm">{booking.phone}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Calendar className="h-5 w-5 mr-2 text-indigo-600" />
-              Booking Details
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-sm text-gray-600">Type</div>
-                <div className="text-base font-medium text-gray-900 capitalize">{booking.bookingType.replace('-', ' ')}</div>
+          {/* Booking Information */}
+          <div>
+            <h3 className="text-lg font-medium mb-3">Booking Information</h3>
+            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Type:</span>
+                <span className="font-medium capitalize">{booking.bookingType}</span>
               </div>
-              {booking.checkIn && (
-                <div>
-                  <div className="text-sm text-gray-600">Check-in</div>
-                  <div className="text-base font-medium text-gray-900">
-                    {new Date(booking.checkIn).toLocaleDateString()}
-                  </div>
-                </div>
-              )}
+              <div className="flex justify-between">
+                <span className="text-gray-600">Check-in:</span>
+                <span className="font-medium">
+                  {booking.checkIn ? new Date(booking.checkIn).toLocaleDateString() : new Date(booking.date).toLocaleDateString()}
+                </span>
+              </div>
               {booking.checkOut && (
-                <div>
-                  <div className="text-sm text-gray-600">Check-out</div>
-                  <div className="text-base font-medium text-gray-900">
-                    {new Date(booking.checkOut).toLocaleDateString()}
-                  </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Check-out:</span>
+                  <span className="font-medium">{new Date(booking.checkOut).toLocaleDateString()}</span>
                 </div>
               )}
-              <div>
-                <div className="text-sm text-gray-600">Total Amount</div>
-                <div className="text-base font-medium text-gray-900 flex items-center">
-                  <DollarSign className="h-4 w-4 mr-1 text-gray-400" />
-                  ₹{booking.totalAmount.toLocaleString()}
-                </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Guests:</span>
+                <span className="font-medium">{booking.guests}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Status:</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                  booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                  'bg-blue-100 text-blue-800'
+                }`}>
+                  {booking.status}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Payment:</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  booking.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' :
+                  booking.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {booking.paymentStatus}
+                </span>
               </div>
             </div>
           </div>
 
+          {/* Payment Information */}
+          <div>
+            <h3 className="text-lg font-medium mb-3">Payment Information</h3>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Total Amount:</span>
+                <span className="text-2xl font-bold text-green-600">₹{booking.totalAmount}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Special Requests */}
           {booking.specialRequests && (
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <FileText className="h-5 w-5 mr-2 text-indigo-600" />
-                Special Requests
-              </h3>
-              <p className="text-gray-700">{booking.specialRequests}</p>
+            <div>
+              <h3 className="text-lg font-medium mb-3">Special Requests</h3>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-700">{booking.specialRequests}</p>
+              </div>
             </div>
           )}
         </div>
 
-        <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+        <div className="p-6 border-t flex justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
+            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
           >
             Close
           </button>

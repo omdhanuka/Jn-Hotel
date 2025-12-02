@@ -1,49 +1,141 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, UserCheck, LogOut, RefreshCw, Clock, User, Mail, Phone, Calendar } from 'lucide-react';
-import axios from 'axios';
+import { Clock, Users, CheckCircle, LogIn, LogOut, Search } from 'lucide-react';
+import axios from '../../utils/axios';
 import toast from 'react-hot-toast';
-import CheckInTab from '../../components/Manager/CheckIn/CheckInTab';
-import CheckOutTab from '../../components/Manager/CheckOut/CheckOutTab';
 
-type TabType = 'checkin' | 'checkout';
+interface Stats {
+  todayArrivals: number;
+  todayDepartures: number;
+  currentGuests: number;
+  pendingCheckouts: number;
+}
 
-interface RecentActivity {
+interface Booking {
   _id: string;
-  type: 'checkin' | 'checkout';
-  bookingId: string;
-  guestName: string;
-  roomNumber: string;
-  timestamp: string;
-  performedBy: string;
+  user: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+  };
+  resourceId: {
+    roomNumber: string;
+    type: string;
+  };
+  checkIn: string;
+  checkOut: string;
+  guests: number;
+  status: string;
+  isCheckedIn?: boolean;
+  isCheckedOut?: boolean;
 }
 
 const CheckInCheckOut: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>('checkin');
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
-  const [loadingActivities, setLoadingActivities] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<Stats>({
+    todayArrivals: 0,
+    todayDepartures: 0,
+    currentGuests: 0,
+    pendingCheckouts: 0
+  });
+  const [todayArrivals, setTodayArrivals] = useState<Booking[]>([]);
+  const [todayDepartures, setTodayDepartures] = useState<Booking[]>([]);
+  const [recentCheckins, setRecentCheckins] = useState<Booking[]>([]);
+  const [recentCheckouts, setRecentCheckouts] = useState<Booking[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    fetchRecentActivities();
-  }, []);
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
+      toast.error('Please login to access this page');
+      navigate('/manager/login');
+      return;
+    }
 
-  const fetchRecentActivities = async () => {
+    fetchStats();
+    fetchRecentActivities();
+    fetchTodayArrivals();
+    fetchTodayDepartures();
+  }, [navigate]);
+
+  const fetchStats = async () => {
     try {
-      setLoadingActivities(true);
-      const response = await axios.get('/api/manager/checkin-checkout/recent-activities');
-      setRecentActivities(response.data.activities || []);
+      const response = await axios.get('/api/manager/checkin-checkout/stats');
+      setStats(response.data);
     } catch (error) {
-      console.error('Failed to fetch recent activities:', error);
-    } finally {
-      setLoadingActivities(false);
+      console.error('Failed to fetch stats:', error);
+      toast.error('Failed to load statistics');
     }
   };
 
-  const handleActivityRefresh = () => {
-    fetchRecentActivities();
-    toast.success('Activity list refreshed');
+  const fetchRecentActivities = async () => {
+    try {
+      const response = await axios.get('/api/manager/checkin-checkout/recent-activities');
+      setRecentCheckins(response.data.recentCheckins || []);
+      setRecentCheckouts(response.data.recentCheckouts || []);
+    } catch (error) {
+      console.error('Failed to fetch recent activities:', error);
+    }
   };
+
+  const fetchTodayArrivals = async () => {
+    try {
+      const response = await axios.get('/api/manager/checkin-checkout/today-arrivals');
+      setTodayArrivals(response.data.arrivals || []);
+    } catch (error) {
+      console.error('Failed to fetch arrivals:', error);
+    }
+  };
+
+  const fetchTodayDepartures = async () => {
+    try {
+      const response = await axios.get('/api/manager/checkin-checkout/today-departures');
+      setTodayDepartures(response.data.departures || []);
+    } catch (error) {
+      console.error('Failed to fetch departures:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCheckin = async (bookingId: string) => {
+    try {
+      await axios.post(`/api/manager/checkin-checkout/${bookingId}/checkin`);
+      toast.success('Guest checked in successfully');
+      fetchStats();
+      fetchTodayArrivals();
+      fetchRecentActivities();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to check in guest');
+    }
+  };
+
+  const handleCheckout = async (bookingId: string) => {
+    try {
+      await axios.post(`/api/manager/checkin-checkout/${bookingId}/checkout`);
+      toast.success('Guest checked out successfully');
+      fetchStats();
+      fetchTodayDepartures();
+      fetchRecentActivities();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to check out guest');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading check-in/checkout data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -52,7 +144,7 @@ const CheckInCheckOut: React.FC = () => {
         <div className="mb-8">
           <button
             onClick={() => navigate('/manager/dashboard')}
-            className="text-indigo-600 hover:text-indigo-800 mb-4 flex items-center"
+            className="text-indigo-600 hover:text-indigo-800 mb-4"
           >
             ← Back to Dashboard
           </button>
@@ -62,148 +154,134 @@ const CheckInCheckOut: React.FC = () => {
               <h1 className="text-3xl font-bold text-gray-900">Check-In / Check-Out</h1>
               <p className="text-gray-600 mt-2">Manage guest arrivals and departures</p>
             </div>
-            <button
-              onClick={handleActivityRefresh}
-              className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </button>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="bg-white rounded-lg shadow-md mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6" aria-label="Tabs">
-              <button
-                onClick={() => setActiveTab('checkin')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center ${
-                  activeTab === 'checkin'
-                    ? 'border-indigo-500 text-indigo-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <UserCheck className="inline h-5 w-5 mr-2" />
-                Check-In
-              </button>
-              <button
-                onClick={() => setActiveTab('checkout')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center ${
-                  activeTab === 'checkout'
-                    ? 'border-indigo-500 text-indigo-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <LogOut className="inline h-5 w-5 mr-2" />
-                Check-Out
-              </button>
-            </nav>
-          </div>
-        </div>
-
-        {/* Tab Content */}
-        <div className="mb-8">
-          {activeTab === 'checkin' ? (
-            <CheckInTab onSuccess={fetchRecentActivities} />
-          ) : (
-            <CheckOutTab onSuccess={fetchRecentActivities} />
-          )}
-        </div>
-
-        {/* Recent Activity List */}
-        <div className="bg-white rounded-lg shadow-md">
-          <div className="px-6 py-4 border-b border-gray-200">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-blue-50 p-6 rounded-lg shadow-md border border-blue-200">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                <Clock className="h-5 w-5 mr-2 text-indigo-600" />
-                Recent Check-In/Out Activity
-              </h2>
-              <span className="text-sm text-gray-500">
-                Last 24 hours
-              </span>
+              <div>
+                <p className="text-sm text-blue-600">Today's Arrivals</p>
+                <p className="text-2xl font-bold text-blue-900">{stats.todayArrivals}</p>
+              </div>
+              <LogIn className="h-12 w-12 text-blue-500" />
             </div>
           </div>
 
-          <div className="divide-y divide-gray-200">
-            {loadingActivities ? (
-              <div className="p-12 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                <p className="mt-4 text-gray-500">Loading activities...</p>
+          <div className="bg-green-50 p-6 rounded-lg shadow-md border border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-green-600">Today's Departures</p>
+                <p className="text-2xl font-bold text-green-900">{stats.todayDepartures}</p>
               </div>
-            ) : recentActivities.length === 0 ? (
-              <div className="p-12 text-center">
-                <Clock className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">No recent check-in/out activity</p>
-                <p className="text-sm text-gray-400 mt-2">Activity from the last 24 hours will appear here</p>
+              <LogOut className="h-12 w-12 text-green-500" />
+            </div>
+          </div>
+
+          <div className="bg-purple-50 p-6 rounded-lg shadow-md border border-purple-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-purple-600">Current Guests</p>
+                <p className="text-2xl font-bold text-purple-900">{stats.currentGuests}</p>
+              </div>
+              <Users className="h-12 w-12 text-purple-500" />
+            </div>
+          </div>
+
+          <div className="bg-yellow-50 p-6 rounded-lg shadow-md border border-yellow-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-yellow-600">Pending Checkouts</p>
+                <p className="text-2xl font-bold text-yellow-900">{stats.pendingCheckouts}</p>
+              </div>
+              <Clock className="h-12 w-12 text-yellow-500" />
+            </div>
+          </div>
+        </div>
+
+        {/* Today's Arrivals */}
+        <div className="bg-white rounded-lg shadow-md mb-8">
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-semibold">Today's Arrivals</h2>
+          </div>
+          <div className="p-6">
+            {todayArrivals.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No arrivals scheduled for today
               </div>
             ) : (
-              recentActivities.map((activity) => (
-                <div key={activity._id} className="p-6 hover:bg-gray-50 transition">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-4">
-                      <div className={`p-3 rounded-full ${
-                        activity.type === 'checkin' 
-                          ? 'bg-green-100' 
-                          : 'bg-blue-100'
-                      }`}>
-                        {activity.type === 'checkin' ? (
-                          <UserCheck className={`h-6 w-6 ${
-                            activity.type === 'checkin' ? 'text-green-600' : 'text-blue-600'
-                          }`} />
-                        ) : (
-                          <LogOut className="h-6 w-6 text-blue-600" />
-                        )}
-                      </div>
-                      
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-base font-semibold text-gray-900">
-                            {activity.type === 'checkin' ? 'Check-In' : 'Check-Out'}
-                          </h3>
-                          <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                            activity.type === 'checkin'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {activity.type === 'checkin' ? 'Checked In' : 'Checked Out'}
-                          </span>
-                        </div>
-                        
-                        <div className="space-y-1 text-sm text-gray-600">
-                          <div className="flex items-center">
-                            <User className="h-4 w-4 mr-2" />
-                            <span className="font-medium">{activity.guestName}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <span className="font-medium mr-2">Room:</span>
-                            <span>{activity.roomNumber}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <span className="font-medium mr-2">Booking ID:</span>
-                            <span className="font-mono text-xs">#{activity.bookingId}</span>
-                          </div>
-                        </div>
-                      </div>
+              <div className="space-y-4">
+                {todayArrivals.map((booking) => (
+                  <div key={booking._id} className="border rounded-lg p-4 flex justify-between items-center">
+                    <div>
+                      <h3 className="font-semibold">
+                        {booking.user.firstName} {booking.user.lastName}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Room {booking.resourceId.roomNumber} • {booking.guests} guests
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {booking.user.email} • {booking.user.phone}
+                      </p>
                     </div>
-
-                    <div className="text-right ml-4">
-                      <div className="text-sm text-gray-900 font-medium">
-                        {new Date(activity.timestamp).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {new Date(activity.timestamp).toLocaleDateString()}
-                      </div>
-                      <div className="text-xs text-gray-400 mt-2">
-                        by {activity.performedBy}
-                      </div>
-                    </div>
+                    <button
+                      onClick={() => handleCheckin(booking._id)}
+                      disabled={booking.isCheckedIn}
+                      className={`px-4 py-2 rounded-md ${
+                        booking.isCheckedIn
+                          ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      {booking.isCheckedIn ? 'Checked In' : 'Check In'}
+                    </button>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Today's Departures */}
+        <div className="bg-white rounded-lg shadow-md">
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-semibold">Today's Departures</h2>
+          </div>
+          <div className="p-6">
+            {todayDepartures.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No departures scheduled for today
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {todayDepartures.map((booking) => (
+                  <div key={booking._id} className="border rounded-lg p-4 flex justify-between items-center">
+                    <div>
+                      <h3 className="font-semibold">
+                        {booking.user.firstName} {booking.user.lastName}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Room {booking.resourceId.roomNumber} • {booking.guests} guests
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {booking.user.email} • {booking.user.phone}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleCheckout(booking._id)}
+                      disabled={booking.isCheckedOut}
+                      className={`px-4 py-2 rounded-md ${
+                        booking.isCheckedOut
+                          ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                          : 'bg-green-600 text-white hover:bg-green-700'
+                      }`}
+                    >
+                      {booking.isCheckedOut ? 'Checked Out' : 'Check Out'}
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>

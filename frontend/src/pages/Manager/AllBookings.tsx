@@ -5,7 +5,7 @@ import {
   Building, Utensils, Eye, Edit, CheckCircle, XCircle, Clock,
   DollarSign, Phone, Mail, ArrowUpDown
 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../../utils/axios'; // Update import
 import toast from 'react-hot-toast';
 import BookingTable from '../../components/Manager/BookingTable';
 import BookingViewModal from '../../components/Manager/BookingViewModal';
@@ -110,6 +110,28 @@ const AllBookings: React.FC = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async (bookingId: string, status: string) => {
+    try {
+      await axios.put(`/api/manager/bookings/${bookingId}/status`, { status });
+      toast.success(`Booking status updated to ${status}`);
+      fetchBookings(); // Refresh the list
+    } catch (error: any) {
+      console.error('Failed to update status:', error);
+      toast.error(error.response?.data?.message || 'Failed to update booking status');
+    }
+  };
+
+  const handlePaymentStatusUpdate = async (bookingId: string, paymentStatus: string) => {
+    try {
+      await axios.put(`/api/manager/bookings/${bookingId}/status`, { paymentStatus });
+      toast.success(`Payment status updated to ${paymentStatus}`);
+      fetchBookings(); // Refresh the list
+    } catch (error: any) {
+      console.error('Failed to update payment status:', error);
+      toast.error(error.response?.data?.message || 'Failed to update payment status');
     }
   };
 
@@ -353,6 +375,8 @@ const AllBookings: React.FC = () => {
           loading={loading}
           onView={handleViewBooking}
           onEdit={handleEditBooking}
+          onStatusUpdate={handleStatusUpdate}
+          onPaymentStatusUpdate={handlePaymentStatusUpdate}
           onSort={handleSort}
           sortBy={filters.sortBy}
           sortOrder={filters.sortOrder}
