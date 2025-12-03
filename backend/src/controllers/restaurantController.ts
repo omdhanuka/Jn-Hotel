@@ -244,3 +244,17 @@ export const getMenuCategories = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const getTodaySpecials = async (req: Request, res: Response) => {
+  try {
+    const specials = await MenuItem.find({
+      isTodaySpecial: true,
+      isAvailable: true
+    }).sort({ createdAt: -1 });
+
+    res.json({ specials });
+  } catch (error) {
+    console.error('Get today specials error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

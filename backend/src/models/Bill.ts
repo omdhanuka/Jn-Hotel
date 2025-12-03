@@ -19,7 +19,9 @@ export interface IBill extends Document {
   subtotal: number;
   discount: number;
   tax: number;
-  deliveryCharges?: number;
+  taxPercent?: number;              // Add this
+  serviceCharge?: number;
+  serviceChargePercent?: number;    // Add this
   totalAmount: number;
   paymentMethod: string;
   paymentStatus: 'pending' | 'paid' | 'partial';
@@ -45,11 +47,13 @@ const billSchema = new Schema<IBill>({
     quantity: { type: Number, required: true },
     addOns: [{ name: String, price: Number }]
   }],
-  subtotal: { type: Number, required: true },
-  discount: { type: Number, default: 0 },
-  tax: { type: Number, required: true },
-  deliveryCharges: { type: Number, default: 0 },
-  totalAmount: { type: Number, required: true },
+  subtotal: { type: Number, required: true, min: 0 },
+  discount: { type: Number, default: 0, min: 0 },
+  tax: { type: Number, required: true, min: 0 },
+  taxPercent: { type: Number, default: 5, min: 0 },              // Add this
+  serviceCharge: { type: Number, default: 0, min: 0 },
+  serviceChargePercent: { type: Number, default: 10, min: 0 },   // Add this
+  totalAmount: { type: Number, required: true, min: 0 },
   paymentMethod: { type: String, required: true },
   paymentStatus: { type: String, enum: ['pending', 'paid', 'partial'], default: 'pending' },
   notes: { type: String },

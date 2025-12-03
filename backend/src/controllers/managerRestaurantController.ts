@@ -4,6 +4,7 @@ import RestaurantBooking from '../models/RestaurantBooking';
 import MenuItem from '../models/MenuItem';
 import Bill from '../models/Bill';
 import User, { IUser } from '../models/User';
+import TodaySpecial from '../models/TodaySpecial';
 
 interface AuthRequest extends Request {
   user?: IUser;
@@ -906,6 +907,247 @@ export const getWaiters = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error('Get waiters error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getAllMenuItems = async (req: AuthRequest, res: Response) => {
+  try {
+    const { category, search, available } = req.query;
+    
+    const filter: any = {};
+    if (category && category !== 'all') filter.category = category;
+    if (available !== undefined) filter.isAvailable = available === 'true';
+    
+    let menuItems = await MenuItem.find(filter)
+      .sort({ category: 1, name: 1 });
+
+    // Apply search filter
+    if (search) {
+      const searchLower = (search as string).toLowerCase();
+      menuItems = menuItems.filter(item =>
+        item.name.toLowerCase().includes(searchLower) ||
+        item.category.toLowerCase().includes(searchLower)
+      );
+    }
+
+    res.json({ menuItems });
+  } catch (error) {
+    console.error('Get menu items error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateMenuItemAvailability = async (req: AuthRequest, res: Response) => {
+  try {
+    const { isAvailable } = req.body;
+
+    const menuItem = await MenuItem.findByIdAndUpdate(
+      req.params.id,
+      { 
+        isAvailable,
+        updatedBy: `${req.user!.firstName} ${req.user!.lastName}`
+      },
+      { new: true }
+    );
+
+    if (!menuItem) {
+      return res.status(404).json({ message: 'Menu item not found' });
+    }
+
+    console.log(`📋 Menu item ${menuItem.name} marked as ${isAvailable ? 'available' : 'out of stock'} by ${req.user!.firstName} ${req.user!.lastName}`);
+
+    res.json({
+      message: `${menuItem.name} ${isAvailable ? 'is now available' : 'marked as out of stock'}`,
+      menuItem
+    });
+  } catch (error) {
+    console.error('Update menu availability error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateMenuItemStock = async (req: AuthRequest, res: Response) => {
+  try {
+    const { stockQuantity, isAvailable } = req.body;
+
+    const updateData: any = {
+      updatedBy: `${req.user!.firstName} ${req.user!.lastName}`
+    };
+
+    if (stockQuantity !== undefined) {
+      updateData.stockQuantity = stockQuantity;
+      // Auto-mark as unavailable if stock is 0
+      if (stockQuantity === 0) {
+        updateData.isAvailable = false;
+      }
+    }
+
+    if (isAvailable !== undefined) {
+      updateData.isAvailable = isAvailable;
+    }
+
+    const menuItem = await MenuItem.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+
+    if (!menuItem) {
+      return res.status(404).json({ message: 'Menu item not found' });
+    }
+
+    console.log(`📦 Stock updated for ${menuItem.name}: ${stockQuantity} units, Available: ${menuItem.isAvailable}`);
+
+    res.json({
+      message: 'Stock updated successfully',
+      menuItem
+    });
+  } catch (error) {
+    console.error('Update menu stock error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// NEW: Get today's special items (separate from regular menu)
+export const getTodaySpecials = async (req: AuthRequest, res: Response) => {
+  try {
+    const now = new Date();
+    
+    const specials = await TodaySpecial.find({ 
+      validUntil: { $gte: now },
+      isAvailable: true 
+    }).sort({ createdAt: -1 });
+
+    res.json({ specials, count: specials.length });
+  } catch (error) {
+    console.error('Get today specials error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// NEW: Create today's special item
+export const createTodaySpecial = async (req: AuthRequest, res: Response) => {
+  try {
+    const { 
+      name, description, category, dishType, price, originalPrice,
+      images, preparationTime, spiceLevels, addOns, stockQuantity 
+    } = req.body;
+
+    // Set valid until end of today
+    const validUntil = new Date();
+    validUntil.setHours(23, 59, 59, 999);
+
+    const special = new TodaySpecial({
+      name,
+      description,
+      category,
+      dishType,
+      price,
+      originalPrice,
+      images: images || [],
+      preparationTime,
+      spiceLevels: spiceLevels || [],
+      addOns: addOns || [],
+      stockQuantity,
+      isAvailable: true,
+      validUntil,
+      createdBy: `${req.user!.firstName} ${req.user!.lastName}`
+    });
+
+    await special.save();
+
+    console.log(`🌟 Today's special created: ${name} by ${req.user!.firstName} ${req.user!.lastName}`);
+
+    res.status(201).json({
+      message: 'Today\'s special item created successfully',
+      special
+    });
+  } catch (error) {
+    console.error('Create today special error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// NEW: Update today's special
+export const updateTodaySpecial = async (req: AuthRequest, res: Response) => {
+  try {
+    const { 
+      name, description, price, originalPrice, stockQuantity, 
+      isAvailable, images, addOns 
+    } = req.body;
+
+    const special = await TodaySpecial.findByIdAndUpdate(
+      req.params.id,
+      {
+        name,
+        description,
+        price,
+        originalPrice,
+        stockQuantity,
+        isAvailable,
+        images,
+        addOns
+      },
+      { new: true }
+    );
+
+    if (!special) {
+      return res.status(404).json({ message: 'Today\'s special not found' });
+    }
+
+    res.json({
+      message: 'Today\'s special updated',
+      special
+    });
+  } catch (error) {
+    console.error('Update today special error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// NEW: Delete today's special
+export const deleteTodaySpecial = async (req: AuthRequest, res: Response) => {
+  try {
+    const special = await TodaySpecial.findByIdAndDelete(req.params.id);
+
+    if (!special) {
+      return res.status(404).json({ message: 'Today\'s special not found' });
+    }
+
+    console.log(`🗑️ Today's special deleted: ${special.name}`);
+
+    res.json({ message: 'Today\'s special removed' });
+  } catch (error) {
+    console.error('Delete today special error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// NEW: Update stock for today's special
+export const updateTodaySpecialStock = async (req: AuthRequest, res: Response) => {
+  try {
+    const { stockQuantity } = req.body;
+
+    const special = await TodaySpecial.findByIdAndUpdate(
+      req.params.id,
+      { 
+        stockQuantity,
+        isAvailable: stockQuantity > 0
+      },
+      { new: true }
+    );
+
+    if (!special) {
+      return res.status(404).json({ message: 'Today\'s special not found' });
+    }
+
+    res.json({
+      message: 'Stock updated',
+      special
+    });
+  } catch (error) {
+    console.error('Update special stock error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

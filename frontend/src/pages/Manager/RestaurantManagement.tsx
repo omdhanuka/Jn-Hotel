@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Utensils, Users, DollarSign, Clock, Plus, Eye, Edit, Trash2,
   Check, X, ChefHat, Receipt, TrendingUp, Calendar, User, AlertCircle,
-  Printer, Download, Filter, Search
+  Printer, Download, Filter, Search, Star
 } from 'lucide-react';
 import axios from '../../utils/axios'; // Fixed import path
 import toast from 'react-hot-toast';
@@ -83,7 +83,7 @@ interface RestaurantReports {
 
 const RestaurantManagement: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'tables' | 'orders' | 'kitchen' | 'bills' | 'reports'>('tables');
+  const [activeTab, setActiveTab] = useState<'tables' | 'orders' | 'kitchen' | 'bills' | 'reports' | 'menu'>('tables');
   const [loading, setLoading] = useState(true);
   
   // Stats
@@ -115,6 +115,32 @@ const RestaurantManagement: React.FC = () => {
   const [showBillModal, setShowBillModal] = useState(false);
   const [billDiscount, setBillDiscount] = useState(0);
   const [billNotes, setBillNotes] = useState('');
+  const [billTaxPercent, setBillTaxPercent] = useState(5); // Add this
+  const [billServiceChargePercent, setBillServiceChargePercent] = useState(10); // Add this
+
+  // Menu
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [menuFilter, setMenuFilter] = useState<'all' | 'available' | 'out-of-stock'>('all');
+  const [todaySpecials, setTodaySpecials] = useState<any[]>([]);
+  const [showAddSpecialModal, setShowAddSpecialModal] = useState(false);
+  const [showSpecialsModal, setShowSpecialsModal] = useState(false);
+  const [selectedSpecialItems, setSelectedSpecialItems] = useState<string[]>([]);
+  const [editingSpecial, setEditingSpecial] = useState<any>(null);
+  const [specialForm, setSpecialForm] = useState({
+    name: '',
+    description: '',
+    category: '',
+    dishType: 'veg' as 'veg' | 'non-veg' | 'vegan',
+    price: 0,
+    originalPrice: 0,
+    stockQuantity: 10,
+    preparationTime: '',
+    images: [] as string[],
+    spiceLevels: [] as string[],
+    addOns: [] as { name: string; price: number }[]
+  });
+
+  const categories = ['Appetizers', 'Main Course', 'Desserts', 'Beverages', 'Soups', 'Salads', 'Snacks', 'Specials'];
 
   useEffect(() => {
     // Check if user is logged in
@@ -142,6 +168,13 @@ const RestaurantManagement: React.FC = () => {
       fetchReports(reportPeriod);
     }
   }, [activeTab, reportPeriod]);
+
+  useEffect(() => {
+    if (activeTab === 'menu') {
+      fetchMenuItems();
+      fetchTodaySpecials();
+    }
+  }, [activeTab, menuFilter]);
 
   const fetchDashboardData = async () => {
     try {
@@ -188,6 +221,29 @@ const RestaurantManagement: React.FC = () => {
       setReportPeriod(period);
     } catch (error) {
       toast.error('Failed to load reports');
+    }
+  };
+
+  const fetchMenuItems = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (menuFilter === 'available') params.append('available', 'true');
+      if (menuFilter === 'out-of-stock') params.append('available', 'false');
+      
+      const response = await axios.get(`/api/manager/restaurant/menu?${params.toString()}`);
+      setMenuItems(response.data.menuItems || []);
+    } catch (error) {
+      console.error('Failed to fetch menu items:', error);
+      toast.error('Failed to load menu items');
+    }
+  };
+
+  const fetchTodaySpecials = async () => {
+    try {
+      const response = await axios.get('/api/manager/restaurant/specials/today');
+      setTodaySpecials(response.data.specials || []);
+    } catch (error) {
+      console.error('Failed to fetch today specials:', error);
     }
   };
 
@@ -606,7 +662,11 @@ const RestaurantManagement: React.FC = () => {
       setBillDiscount(0);
       setBillNotes('');
       
-      fetchDashboardData();
+      // Refresh all data including bills
+      await fetchDashboardData();
+      
+      // Switch to generated bills tab
+      setBillActiveTab('generated');
       
       if (response.data.bill) {
         handlePrintBill(response.data.bill);
@@ -615,6 +675,8 @@ const RestaurantManagement: React.FC = () => {
       if (error.response?.data?.bill) {
         handlePrintBill(error.response.data.bill);
         toast('Bill already generated for this table', { icon: 'ℹ️' });
+        await fetchDashboardData();
+        setBillActiveTab('generated');
       } else {
         toast.error(error.response?.data?.message || 'Failed to generate bill');
       }
@@ -626,6 +688,8 @@ const RestaurantManagement: React.FC = () => {
       const response = await axios.post('/api/manager/restaurant/bills', {
         orderId: order._id,
         discount: billDiscount,
+        taxPercent: billTaxPercent, // Add this
+        serviceChargePercent: billServiceChargePercent, // Add this
         notes: billNotes
       });
 
@@ -633,15 +697,23 @@ const RestaurantManagement: React.FC = () => {
       setShowBillModal(false);
       setSelectedOrderForBill(null);
       setBillDiscount(0);
+      setBillTaxPercent(5); // Reset
+      setBillServiceChargePercent(10); // Reset
       setBillNotes('');
       
-      fetchDashboardData();
+      // Refresh all data including bills
+      await fetchDashboardData();
+      
+      // Switch to generated bills tab
+      setBillActiveTab('generated');
       
       if (response.data.bill) {
         handlePrintBill(response.data.bill);
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to generate bill');
+      // Still refresh data in case bill was created
+      await fetchDashboardData();
     }
   };
 
@@ -742,6 +814,148 @@ const RestaurantManagement: React.FC = () => {
       fetchDashboardData();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update bill');
+    }
+  };
+
+  const handleUpdateStock = async (menuItemId: string, newStock: number) => {
+    try {
+      await axios.put(`/api/manager/restaurant/menu/${menuItemId}/stock`, {
+        stockQuantity: newStock
+      });
+      toast.success('Stock updated successfully');
+      fetchMenuItems();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update stock');
+    }
+  };
+
+  const handleToggleItemAvailability = async (menuItemId: string, currentStatus: boolean) => {
+    try {
+      await axios.put(`/api/manager/restaurant/menu/${menuItemId}/availability`, {
+        isAvailable: !currentStatus
+      });
+      toast.success(`Item marked as ${!currentStatus ? 'available' : 'out of stock'}`);
+      fetchMenuItems();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update availability');
+    }
+  };
+
+  const handleToggleTodaySpecial = async (itemId: string, currentStatus: boolean) => {
+    try {
+      await axios.put(`/api/manager/restaurant/menu/${itemId}/today-special`, {
+        isTodaySpecial: !currentStatus
+      });
+      
+      toast.success(`Item ${!currentStatus ? 'added to' : 'removed from'} today's specials`);
+      fetchMenuItems();
+      fetchTodaySpecials();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update today\'s special');
+    }
+  };
+
+  const handleCreateSpecial = async () => {
+    if (!specialForm.name || !specialForm.category || !specialForm.price) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      if (editingSpecial) {
+        await axios.put(`/api/manager/restaurant/specials/today/${editingSpecial._id}`, specialForm);
+        toast.success('Special updated successfully');
+      } else {
+        await axios.post('/api/manager/restaurant/specials/today', specialForm);
+        toast.success('Today\'s special created successfully');
+      }
+      
+      setShowAddSpecialModal(false);
+      resetSpecialForm();
+      fetchTodaySpecials();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to save special');
+    }
+  };
+
+  const handleEditSpecial = (special: any) => {
+    setEditingSpecial(special);
+    setSpecialForm({
+      name: special.name,
+      description: special.description || '',
+      category: special.category,
+      dishType: special.dishType,
+      price: special.price,
+      originalPrice: special.originalPrice || 0,
+      stockQuantity: special.stockQuantity,
+      preparationTime: special.preparationTime || '',
+      images: special.images || [],
+      spiceLevels: special.spiceLevels || [],
+      addOns: special.addOns || []
+    });
+    setShowAddSpecialModal(true);
+  };
+
+  const handleDeleteSpecial = async (specialId: string) => {
+    if (!window.confirm('Remove this item from today\'s specials?')) return;
+
+    try {
+      await axios.delete(`/api/manager/restaurant/specials/today/${specialId}`);
+      toast.success('Special removed successfully');
+      fetchTodaySpecials();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to remove special');
+    }
+  };
+
+  const resetSpecialForm = () => {
+    setEditingSpecial(null);
+    setSpecialForm({
+      name: '',
+      description: '',
+      category: '',
+      dishType: 'veg',
+      price: 0,
+      originalPrice: 0,
+      stockQuantity: 10,
+      preparationTime: '',
+      images: [],
+      spiceLevels: [],
+      addOns: []
+    });
+  };
+
+  const handleSetBulkSpecials = async () => {
+    if (selectedSpecialItems.length === 0) {
+      toast.error('Please select at least one item');
+      return;
+    }
+
+    try {
+      await axios.post('/api/manager/restaurant/menu/specials/bulk', {
+        itemIds: selectedSpecialItems
+      });
+      
+      toast.success(`${selectedSpecialItems.length} items set as today's specials`);
+      setShowSpecialsModal(false);
+      setSelectedSpecialItems([]);
+      fetchMenuItems();
+      fetchTodaySpecials();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to set specials');
+    }
+  };
+
+  const handleClearAllSpecials = async () => {
+    if (!window.confirm('Clear all today\'s specials?')) return;
+
+    try {
+      await axios.delete('/api/manager/restaurant/menu/specials/clear');
+      toast.success('All today\'s specials cleared');
+      fetchMenuItems();
+      fetchTodaySpecials();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to clear specials');
     }
   };
 
@@ -871,7 +1085,8 @@ const RestaurantManagement: React.FC = () => {
                 { id: 'orders', label: 'Orders', icon: Receipt },
                 { id: 'kitchen', label: 'Kitchen Display', icon: ChefHat },
                 { id: 'bills', label: 'Billing', icon: DollarSign },
-                { id: 'reports', label: 'Reports', icon: TrendingUp }
+                { id: 'reports', label: 'Reports', icon: TrendingUp },
+                { id: 'menu', label: 'Menu Items', icon: Utensils }
               ].map((tab) => {
                 const Icon = tab.icon;
                 return (
@@ -1149,11 +1364,11 @@ const RestaurantManagement: React.FC = () => {
                                 <div className="text-sm font-bold text-blue-600">Table {order.tableNumber}</div>
                               </div>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900">{order.customerName}</div>
                               <div className="text-sm text-gray-500">{order.customerPhone}</div>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">{order.items.length} items</div>
                               <div className="text-xs text-gray-500">
                                 {order.items.slice(0, 2).map(item => item.name).join(', ')}
@@ -1164,12 +1379,11 @@ const RestaurantManagement: React.FC = () => {
                               <div className="text-lg font-bold text-green-600">₹{order.totalAmount.toFixed(2)}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`px-2 py-1 text-xs rounded-full ${
-                                order.status === 'ready' ? 'bg-green-100 text-green-800' :
-                                order.status === 'preparing' ? 'bg-blue-100 text-blue-800' :
+                              <span className={`px-2 py-1 text-xs rounded-full w-fit mb-1 ${
+                                order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' :
                                 'bg-yellow-100 text-yellow-800'
                               }`}>
-                                {order.status}
+                                {order.paymentStatus === 'paid' ? '✓ Paid' : '⏳ Pending'}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -1305,7 +1519,7 @@ const RestaurantManagement: React.FC = () => {
               </div>
             </div>
 
-            {reports ? (
+            {reports && reports.totalOrders > 0 ? (
               <>
                 {/* Key Metrics */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -1352,12 +1566,12 @@ const RestaurantManagement: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Charts Row 1: Popular Dishes & Table Usage */}
+                {/* Charts Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Popular Dishes */}
+                  {/* Popular Dishes Chart */}
                   <div className="bg-white rounded-lg shadow-md p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Top 10 Popular Dishes</h3>
-                    {reports.popularDishes.length > 0 ? (
+                    {reports.popularDishes && reports.popularDishes.length > 0 ? (
                       <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={reports.popularDishes.slice(0, 10)}>
                           <CartesianGrid strokeDasharray="3 3" />
@@ -1367,24 +1581,29 @@ const RestaurantManagement: React.FC = () => {
                             textAnchor="end"
                             height={100}
                             interval={0}
+                            tick={{ fontSize: 12 }}
                           />
                           <YAxis />
-                          <Tooltip />
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc' }}
+                            labelStyle={{ fontWeight: 'bold' }}
+                          />
                           <Legend />
                           <Bar dataKey="count" fill="#8884d8" name="Orders" />
                         </BarChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="text-center py-12 text-gray-500">
-                        No data available for this period
+                      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                        <AlertCircle className="h-16 w-16 mb-4" />
+                        <p className="text-center">No dish data available for this period</p>
                       </div>
                     )}
                   </div>
 
-                  {/* Table Usage */}
+                  {/* Table Usage Chart */}
                   <div className="bg-white rounded-lg shadow-md p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Table Usage Statistics</h3>
-                    {reports.tableUsage.length > 0 ? (
+                    {reports.tableUsage && reports.tableUsage.length > 0 ? (
                       <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
                           <Pie
@@ -1392,7 +1611,7 @@ const RestaurantManagement: React.FC = () => {
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            label={({ _id, orders }) => `${_id}: ${orders}`}
+                            label={({ _id, orders, percent }) => `${_id}: ${orders} (${(percent * 100).toFixed(0)}%)`}
                             outerRadius={80}
                             fill="#8884d8"
                             dataKey="orders"
@@ -1406,8 +1625,9 @@ const RestaurantManagement: React.FC = () => {
                         </PieChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="text-center py-12 text-gray-500">
-                        No data available for this period
+                      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                        <AlertCircle className="h-16 w-16 mb-4" />
+                        <p className="text-center">No table usage data available for this period</p>
                       </div>
                     )}
                   </div>
@@ -1420,32 +1640,43 @@ const RestaurantManagement: React.FC = () => {
                     <div className="p-6 border-b">
                       <h3 className="text-lg font-semibold text-gray-900">Most Ordered Items</h3>
                     </div>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dish Name</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Orders</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {reports.popularDishes.slice(0, 10).map((dish, index) => (
-                            <tr key={index} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {index + 1}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-gray-900">{dish._id}</td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className="px-3 py-1 text-sm font-semibold text-indigo-600 bg-indigo-100 rounded-full">
-                                  {dish.count}
-                                </span>
-                              </td>
+                    {reports.popularDishes && reports.popularDishes.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dish Name</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Orders</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">%</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {reports.popularDishes.slice(0, 10).map((dish, index) => (
+                              <tr key={index} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                  {index + 1}
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-900">{dish._id}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className="px-3 py-1 text-sm font-semibold text-indigo-600 bg-indigo-100 rounded-full">
+                                    {dish.count}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                  {((dish.count / reports.totalOrders) * 100).toFixed(1)}%
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="p-12 text-center text-gray-500">
+                        <Utensils className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p>No dish orders recorded for this period</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Table Performance */}
@@ -1453,49 +1684,58 @@ const RestaurantManagement: React.FC = () => {
                     <div className="p-6 border-b">
                       <h3 className="text-lg font-semibold text-gray-900">Table Performance</h3>
                     </div>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Table</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Orders</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Utilization</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {reports.tableUsage.map((table, index) => (
-                            <tr key={index} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex items-center">
-                                  <Utensils className="h-5 w-5 text-blue-500 mr-2" />
-                                  <span className="text-sm font-medium text-gray-900">{table._id}</span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className="px-3 py-1 text-sm font-semibold text-green-600 bg-green-100 rounded-full">
-                                  {table.orders}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex items-center">
-                                  <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
-                                    <div
-                                      className="bg-blue-600 h-2 rounded-full"
-                                      style={{
-                                        width: `${Math.min((table.orders / Math.max(...reports.tableUsage.map(t => t.orders))) * 100, 100)}%`
-                                      }}
-                                    ></div>
-                                  </div>
-                                  <span className="text-xs text-gray-600">
-                                    {Math.round((table.orders / Math.max(...reports.tableUsage.map(t => t.orders))) * 100)}%
-                                  </span>
-                                </div>
-                              </td>
+                    {reports.tableUsage && reports.tableUsage.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Table</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Orders</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Utilization</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {reports.tableUsage.map((table, index) => {
+                              const maxOrders = Math.max(...reports.tableUsage.map(t => t.orders));
+                              const utilization = (table.orders / maxOrders) * 100;
+                              return (
+                                <tr key={index} className="hover:bg-gray-50">
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                      <Utensils className="h-5 w-5 text-blue-500 mr-2" />
+                                      <span className="text-sm font-medium text-gray-900">{table._id}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="px-3 py-1 text-sm font-semibold text-green-600 bg-green-100 rounded-full">
+                                      {table.orders}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                      <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
+                                        <div
+                                          className="bg-blue-600 h-2 rounded-full"
+                                          style={{ width: `${Math.min(utilization, 100)}%` }}
+                                        ></div>
+                                      </div>
+                                      <span className="text-xs text-gray-600 min-w-[40px]">
+                                        {utilization.toFixed(0)}%
+                                      </span>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="p-12 text-center text-gray-500">
+                        <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p>No table usage data for this period</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1577,289 +1817,648 @@ const RestaurantManagement: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
-                {/* Waiter Assignment Modal */}
-                {showWaiterModal && selectedTable && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                      <h3 className="text-lg font-bold mb-4">Assign Waiter to {selectedTable.tableName}</h3>
-                      
-                      <div className="space-y-2 max-h-96 overflow-y-auto">
-                        {waiters.map((waiter) => (
-                          <button
-                            key={waiter._id}
-                            onClick={() => handleAssignWaiter(waiter._id)}
-                            className="w-full text-left p-3 border border-gray-300 rounded hover:bg-indigo-50 hover:border-indigo-500"
-                          >
-                            <p className="font-medium">{waiter.firstName} {waiter.lastName}</p>
-                            <p className="text-sm text-gray-600">{waiter.department}</p>
-                          </button>
-                        ))}
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          setShowWaiterModal(false);
-                          setSelectedTable(null);
-                        }}
-                        className="mt-4 w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Bill Generation Modal */}
-                {showBillModal && selectedOrderForBill && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                      <div className="p-6 border-b">
-                        <h2 className="text-xl font-semibold">Generate Bill - Table {selectedOrderForBill.tableNumber}</h2>
-                      </div>
-                      
-                      <div className="p-6 space-y-4">
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <h3 className="font-medium mb-2">Order Details</h3>
-                          <p className="text-sm text-gray-600">Customer: {selectedOrderForBill.customerName}</p>
-                          <p className="text-sm text-gray-600">Phone: {selectedOrderForBill.customerPhone}</p>
-                          <p className="text-sm text-gray-600">Table: {selectedOrderForBill.tableNumber}</p>
-                        </div>
-
-                        <div>
-                          <h3 className="font-medium mb-2">Items Ordered</h3>
-                          <div className="space-y-2">
-                            {selectedOrderForBill.items.map((item, index) => (
-                              <div key={index} className="flex justify-between text-sm border-b pb-2">
-                                <span>{item.name} x {item.quantity}</span>
-                                <span>₹{(item.price * item.quantity).toFixed(2)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium mb-1">Discount (₹)</label>
-                          <input
-                            type="number"
-                            value={billDiscount}
-                            onChange={(e) => setBillDiscount(parseFloat(e.target.value) || 0)}
-                            className="w-full border rounded-md px-3 py-2"
-                            min="0"
-                            step="0.01"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium mb-1">Notes (Optional)</label>
-                          <textarea
-                            value={billNotes}
-                            onChange={(e) => setBillNotes(e.target.value)}
-                            className="w-full border rounded-md px-3 py-2"
-                            rows={3}
-                            placeholder="Any special notes for the bill..."
-                          />
-                        </div>
-
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <h3 className="font-medium mb-2">Bill Summary</h3>
-                          <div className="space-y-1 text-sm">
-                            <div className="flex justify-between">
-                              <span>Subtotal:</span>
-                              <span>₹{selectedOrderForBill.totalAmount.toFixed(2)}</span>
-                            </div>
-                            {billDiscount > 0 && (
-                              <div className="flex justify-between">
-                                <span>Discount:</span>
-                                <span>-₹{billDiscount.toFixed(2)}</span>
-                              </div>
-                            )}
-                            <div className="flex justify-between">
-                              <span>Tax (5%):</span>
-                              <span>₹{((selectedOrderForBill.totalAmount - billDiscount) * 0.05).toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Service Charge (10%):</span>
-                              <span>₹{((selectedOrderForBill.totalAmount - billDiscount) * 0.10).toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between font-bold text-lg border-t pt-1">
-                              <span>Total:</span>
-                              <span>₹{((selectedOrderForBill.totalAmount - billDiscount) * 1.15).toFixed(2)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-6 border-t flex justify-end space-x-4">
-                        <button
-                          onClick={() => {
-                            setShowBillModal(false);
-                            setSelectedOrderForBill(null);
-                            setBillDiscount(0);
-                            setBillNotes('');
-                          }}
-                          className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => handleGenerateBillFromOrder(selectedOrderForBill)}
-                          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
-                        >
-                          <Check className="h-4 w-4 mr-2" />
-                          Generate & Print Bill
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </>
             ) : (
               <div className="bg-white rounded-lg shadow-md p-12 text-center">
-                <TrendingUp className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Loading Reports...</h3>
-                <p className="text-gray-600">Please wait while we fetch the analytics data</p>
+                <div className="flex flex-col items-center">
+                  <AlertCircle className="h-20 w-20 text-gray-300 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Data Available</h3>
+                  <p className="text-gray-600 mb-4">
+                    {reports ? 
+                      'No orders found for the selected period. Orders will appear here once customers place orders.' :
+                      'Loading report data...'
+                    }
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Selected Period: <span className="font-semibold capitalize">{reportPeriod}</span>
+                  </p>
+                </div>
               </div>
             )}
           </div>
         )}
-      </div>
 
-      {/* Waiter Assignment Modal - MOVED OUTSIDE TABS */}
-      {showWaiterModal && selectedTable && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold mb-4">Assign Waiter to {selectedTable.tableName}</h3>
-            
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {waiters.map((waiter) => (
+        {/* Menu Management Tab */}
+        {activeTab === 'menu' && (
+          <div>
+            {/* Today's Specials Section - ALWAYS AT TOP */}
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-yellow-900 flex items-center">
+                  <Star className="h-7 w-7 text-yellow-500 mr-2" />
+                  Today's Special Items
+                </h2>
                 <button
-                  key={waiter._id}
-                  onClick={() => handleAssignWaiter(waiter._id)}
-                  className="w-full text-left p-3 border border-gray-300 rounded hover:bg-indigo-50 hover:border-indigo-500"
+                  onClick={() => setShowAddSpecialModal(true)}
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 flex items-center"
                 >
-                  <p className="font-medium">{waiter.firstName} {waiter.lastName}</p>
-                  <p className="text-sm text-gray-600">{waiter.department}</p>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Today's Special
                 </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => {
-                setShowWaiterModal(false);
-                setSelectedTable(null);
-              }}
-              className="mt-4 w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Bill Generation Modal - MOVED OUTSIDE TABS */}
-      {showBillModal && selectedOrderForBill && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
-              <h2 className="text-xl font-semibold">Generate Bill - Table {selectedOrderForBill.tableNumber}</h2>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-medium mb-2">Order Details</h3>
-                <p className="text-sm text-gray-600">Customer: {selectedOrderForBill.customerName}</p>
-                <p className="text-sm text-gray-600">Phone: {selectedOrderForBill.customerPhone}</p>
-                <p className="text-sm text-gray-600">Table: {selectedOrderForBill.tableNumber}</p>
               </div>
 
-              <div>
-                <h3 className="font-medium mb-2">Items Ordered</h3>
-                <div className="space-y-2">
-                  {selectedOrderForBill.items.map((item, index) => (
-                    <div key={index} className="flex justify-between text-sm border-b pb-2">
-                      <span>{item.name} x {item.quantity}</span>
-                      <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+              {todaySpecials.length === 0 ? (
+                <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-8 text-center">
+                  <Star className="h-16 w-16 text-yellow-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+                    No Today's Specials Yet
+                  </h3>
+                  <p className="text-yellow-700 mb-4">
+                    Add new items that are available only for today!
+                  </p>
+                  <button
+                    onClick={() => setShowAddSpecialModal(true)}
+                    className="px-6 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
+                  >
+                    Add First Special
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {todaySpecials.map((special) => (
+                    <div key={special._id} className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg shadow-lg overflow-hidden border-2 border-yellow-400">
+                      <div className="h-48 bg-gray-200 relative">
+                        {special.images?.[0] ? (
+                          <img src={special.images[0]} alt={special.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Utensils className="h-20 w-20 text-yellow-400" />
+                          </div>
+                        )}
+                        <div className="absolute top-3 left-3 bg-yellow-500 text-white px-4 py-2 rounded-full font-bold flex items-center shadow-lg">
+                          <Star className="h-5 w-5 mr-1" />
+                          TODAY'S SPECIAL
+                        </div>
+                      </div>
+                      
+                      <div className="p-5">
+                        <div className="flex justify-between items-start mb-3">
+                          <h3 className="text-xl font-bold text-gray-900">{special.name}</h3>
+                          <span className={`px-3 py-1 text-xs rounded-full font-semibold ${
+                            special.dishType === 'veg' ? 'bg-green-100 text-green-800' :
+                            special.dishType === 'non-veg' ? 'bg-red-100 text-red-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {special.dishType}
+                          </span>
+                        </div>
+                        
+                        <p className="text-sm text-gray-600 mb-3">{special.description}</p>
+                        
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <span className="text-2xl font-bold text-green-600">₹{special.price}</span>
+                            {special.originalPrice && special.originalPrice > special.price && (
+                              <span className="ml-2 text-sm text-gray-500 line-through">
+                                ₹{special.originalPrice}
+                              </span>
+                            )}
+                          </div>
+                          <span className={`text-sm font-semibold ${
+                            special.stockQuantity > 5 ? 'text-green-600' :
+                            special.stockQuantity > 0 ? 'text-yellow-600' : 'text-red-600'
+                          }`}>
+                            Stock: {special.stockQuantity}
+                          </span>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditSpecial(special)}
+                            className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 flex items-center justify-center"
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSpecial(special._id)}
+                            className="flex-1 bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700 flex items-center justify-center"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Remove
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              )}
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Discount (₹)</label>
-                <input
-                  type="number"
-                  value={billDiscount}
-                  onChange={(e) => setBillDiscount(parseFloat(e.target.value) || 0)}
-                  className="w-full border rounded-md px-3 py-2"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Notes (Optional)</label>
-                <textarea
-                  value={billNotes}
-                  onChange={(e) => setBillNotes(e.target.value)}
-                  className="w-full border rounded-md px-3 py-2"
-                  rows={3}
-                  placeholder="Any special notes for the bill..."
-                />
-              </div>
-
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="font-medium mb-2">Bill Summary</h3>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>₹{selectedOrderForBill.totalAmount.toFixed(2)}</span>
-                  </div>
-                  {billDiscount > 0 && (
-                    <div className="flex justify-between">
-                      <span>Discount:</span>
-                      <span>-₹{billDiscount.toFixed(2)}</span>
-                    </div>
+            {/* Regular Menu Items Section */}
+            <div className="border-t-4 border-gray-300 pt-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Regular Menu Items</h2>
+              
+              {/* Filter Buttons */}
+              <div className="mb-6 flex justify-between items-center">
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setMenuFilter('all')}
+                    className={`px-4 py-2 rounded-md ${
+                      menuFilter === 'all'
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    All Items
+                  </button>
+                  <button
+                    onClick={() => setMenuFilter('available')}
+                    className={`px-4 py-2 rounded-md ${
+                      menuFilter === 'available'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Available
+                  </button>
+                  <button
+                    onClick={() => setMenuFilter('out-of-stock')}
+                    className={`px-4 py-2 rounded-md ${
+                      menuFilter === 'out-of-stock'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Out of Stock
+                  </button>
+                </div>
+                
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setShowSpecialsModal(true)}
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 flex items-center"
+                  >
+                    <Star className="h-4 w-4 mr-2" />
+                    Manage Today's Specials
+                  </button>
+                  {todaySpecials.length > 0 && (
+                    <button
+                      onClick={handleClearAllSpecials}
+                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    >
+                      Clear All Specials
+                    </button>
                   )}
-                  <div className="flex justify-between">
-                    <span>Tax (5%):</span>
-                    <span>₹{((selectedOrderForBill.totalAmount - billDiscount) * 0.05).toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Today's Specials Banner */}
+              {todaySpecials.length > 0 && (
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-lg p-4 mb-6">
+                  <div className="flex items-center mb-2">
+                    <Star className="h-6 w-6 text-yellow-600 mr-2" />
+                    <h3 className="text-lg font-bold text-yellow-900">Today's Special Items ({todaySpecials.length})</h3>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Service Charge (10%):</span>
-                    <span>₹{((selectedOrderForBill.totalAmount - billDiscount) * 0.10).toFixed(2)}</span>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {todaySpecials.map(item => (
+                      <div key={item._id} className="bg-white rounded p-2 border border-yellow-200">
+                        <p className="text-sm font-medium text-gray-900">{item.name}</p>
+                        <p className="text-xs text-gray-600">{item.category}</p>
+                        <p className="text-sm font-bold text-green-600">₹{item.price}</p>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex justify-between font-bold text-lg border-t pt-1">
-                    <span>Total:</span>
-                    <span>₹{((selectedOrderForBill.totalAmount - billDiscount) * 1.15).toFixed(2)}</span>
+                </div>
+              )}
+
+              {/* Menu Items Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {menuItems.map((item) => (
+                  <div key={item._id} className={`bg-white rounded-lg shadow-md overflow-hidden ${
+                    item.isTodaySpecial ? 'ring-2 ring-yellow-400' : ''
+                  }`}>
+                    <div className="h-40 bg-gray-200 relative">
+                      {item.images && item.images[0] ? (
+                        <img
+                          src={item.images[0]}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Utensils className="h-16 w-16 text-gray-400" />
+                        </div>
+                      )}
+                      {item.isTodaySpecial && (
+                        <div className="absolute top-2 left-2 bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center">
+                          <Star className="h-3 w-3 mr-1" />
+                          TODAY'S SPECIAL
+                        </div>
+                      )}
+                      {!item.isAvailable && (
+                        <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                          <span className="text-white font-bold text-lg">OUT OF STOCK</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-lg font-bold text-gray-900">{item.name}</h3>
+                        <span className={`px-3 py-1 text-xs rounded-full font-semibold ${
+                          item.dishType === 'veg' ? 'bg-green-100 text-green-800' :
+                          item.dishType === 'non-veg' ? 'bg-red-100 text-red-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
+                          {item.dishType}
+                        </span>
+                      </div>
+                      
+                      <p className="text-sm text-gray-600 mb-2">{item.category}</p>
+                      
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-lg font-bold text-green-600">₹{item.price}</span>
+                        {item.stockQuantity !== undefined && (
+                          <span className="text-sm text-gray-500">
+                            Stock: {item.stockQuantity}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Stock Input */}
+                      {item.stockQuantity !== undefined && (
+                        <div className="mb-3">
+                          <label className="block text-xs text-gray-600 mb-1">Update Stock</label>
+                          <div className="flex space-x-2">
+                            <input
+                              type="number"
+                              min="0"
+                              defaultValue={item.stockQuantity}
+                              className="flex-1 border rounded px-2 py-1 text-sm"
+                              onBlur={(e) => {
+                                const newStock = parseInt(e.target.value);
+                                if (newStock !== item.stockQuantity) {
+                                  handleUpdateStock(item._id, newStock);
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Availability Toggle */}
+                      <div className="flex justify-between items-center">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={item.isAvailable}
+                            onChange={() => handleToggleItemAvailability(item._id, item.isAvailable)}
+                            className="mr-2 h-4 w-4"
+                          />
+                          <span className="text-sm font-medium">
+                            {item.isAvailable ? 'Available' : 'Out of Stock'}
+                          </span>
+                        </label>
+                        
+                        <button
+                          onClick={() => handleToggleItemAvailability(item._id, item.isAvailable)}
+                          className={`px-3 py-1 rounded text-sm font-medium ${
+                            item.isAvailable
+                              ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                              : 'bg-green-100 text-green-700 hover:bg-green-200'
+                          }`}
+                        >
+                          {item.isAvailable ? 'Mark Out' : 'Mark Available'}
+                        </button>
+                      </div>
+
+                      {/* Today's Special Toggle */}
+                      <div className="mt-3 pt-3 border-t">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={item.isTodaySpecial}
+                            onChange={() => handleToggleTodaySpecial(item._id, item.isTodaySpecial)}
+                            className="mr-2 h-4 w-4"
+                          />
+                          <Star className="h-4 w-4 mr-1 text-yellow-600" />
+                          <span className="text-sm font-medium">
+                            {item.isTodaySpecial ? 'Today\'s Special' : 'Mark as Special'}
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {menuItems.length === 0 && (
+                <div className="text-center py-12">
+                  <Utensils className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Menu Items</h3>
+                  <p className="text-gray-600">
+                    {menuFilter === 'out-of-stock' 
+                      ? 'All items are currently in stock'
+                      : 'No menu items found'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Bill Generation Modal */}
+        {showBillModal && selectedOrderForBill && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-semibold">Generate Bill</h2>
+                  <button
+                    onClick={() => {
+                      setShowBillModal(false);
+                      setSelectedOrderForBill(null);
+                      setBillDiscount(0);
+                      setBillTaxPercent(5);
+                      setBillServiceChargePercent(10);
+                      setBillNotes('');
+                    }}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="p-6">
+                {/* Order Details */}
+                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <h3 className="font-semibold text-gray-900 mb-3">Order Details</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Order ID:</span>
+                      <span className="font-medium">{selectedOrderForBill.bookingId}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Table:</span>
+                      <span className="font-medium">{selectedOrderForBill.tableNumber}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Customer:</span>
+                      <span className="font-medium">{selectedOrderForBill.customerName}</span>
+                    </div>
+                    {selectedOrderForBill.customerPhone && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Phone:</span>
+                        <span className="font-medium">{selectedOrderForBill.customerPhone}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Items List */}
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-900 mb-3">Items Ordered</h3>
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
+                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Qty</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {selectedOrderForBill.items.map((item, index) => (
+                          <tr key={index}>
+                            <td className="px-4 py-3 text-sm text-gray-900">{item.name}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900 text-center">{item.quantity}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900 text-right">₹{item.price.toFixed(2)}</td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">
+                              ₹{(item.price * item.quantity).toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Charges Configuration */}
+                <div className="mb-6 bg-indigo-50 rounded-lg p-4 border-2 border-indigo-200">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                    <DollarSign className="h-5 w-5 mr-2 text-indigo-600" />
+                    Bill Adjustments
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Discount Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Discount Amount (₹)
+                      </label>
+                      <input
+                        type="number"
+                        value={billDiscount}
+                        onChange={(e) => setBillDiscount(parseFloat(e.target.value) || 0)}
+                        min="0"
+                        max={selectedOrderForBill.totalAmount}
+                        step="0.01"
+                        className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    {/* Tax Percentage Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tax (%)
+                      </label>
+                      <input
+                        type="number"
+                        value={billTaxPercent}
+                        onChange={(e) => setBillTaxPercent(parseFloat(e.target.value) || 0)}
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="5"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Amount: ₹{((selectedOrderForBill.totalAmount - billDiscount) * (billTaxPercent / 100)).toFixed(2)}
+                      </p>
+                    </div>
+
+                    {/* Service Charge Percentage Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Service Charge (%)
+                      </label>
+                      <input
+                        type="number"
+                        value={billServiceChargePercent}
+                        onChange={(e) => setBillServiceChargePercent(parseFloat(e.target.value) || 0)}
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="10"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Amount: ₹{((selectedOrderForBill.totalAmount - billDiscount) * (billServiceChargePercent / 100)).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-200">
+                    <p className="text-xs text-blue-700">
+                      <strong>Note:</strong> Tax and service charge are calculated on the subtotal after discount.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Notes Input */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    value={billNotes}
+                    onChange={(e) => setBillNotes(e.target.value)}
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Add any notes for the bill..."
+                  />
+                </div>
+
+                {/* Bill Summary */}
+                <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
+                  <h3 className="font-semibold text-gray-900 mb-3">Bill Summary</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span className="font-medium">₹{selectedOrderForBill.totalAmount.toFixed(2)}</span>
+                    </div>
+                    {billDiscount > 0 && (
+                      <div className="flex justify-between text-red-600">
+                        <span>Discount:</span>
+                        <span className="font-medium">-₹{billDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">After Discount:</span>
+                      <span className="font-medium">₹{(selectedOrderForBill.totalAmount - billDiscount).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Tax ({billTaxPercent}%):</span>
+                      <span className="font-medium">
+                        ₹{((selectedOrderForBill.totalAmount - billDiscount) * (billTaxPercent / 100)).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Service Charge ({billServiceChargePercent}%):</span>
+                      <span className="font-medium">
+                        ₹{((selectedOrderForBill.totalAmount - billDiscount) * (billServiceChargePercent / 100)).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="border-t-2 border-blue-300 pt-2 mt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-bold text-gray-900">Grand Total:</span>
+                        <span className="text-2xl font-bold text-green-600">
+                          ₹{(
+                            (selectedOrderForBill.totalAmount - billDiscount) * 
+                            (1 + (billTaxPercent / 100) + (billServiceChargePercent / 100))
+                          ).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="p-6 border-t flex justify-end space-x-4">
-              <button
-                onClick={() => {
-                  setShowBillModal(false);
-                  setSelectedOrderForBill(null);
-                  setBillDiscount(0);
-                  setBillNotes('');
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleGenerateBillFromOrder(selectedOrderForBill)}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Generate & Print Bill
-              </button>
+              <div className="p-6 border-t bg-gray-50">
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowBillModal(false);
+                      setSelectedOrderForBill(null);
+                      setBillDiscount(0);
+                      setBillTaxPercent(5);
+                      setBillServiceChargePercent(10);
+                      setBillNotes('');
+                    }}
+                    className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleGenerateBillFromOrder(selectedOrderForBill)}
+                    className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium flex items-center"
+                  >
+                    <Receipt className="h-5 w-5 mr-2" />
+                    Generate Bill & Print
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Waiter Assignment Modal */}
+        {showWaiterModal && selectedTable && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full">
+              <div className="p-6 border-b">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-semibold">Assign Waiter</h2>
+                  <button
+                    onClick={() => {
+                      setShowWaiterModal(false);
+                      setSelectedTable(null);
+                    }}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  Table: {selectedTable.tableName}
+                </p>
+              </div>
+              
+              <div className="p-6 space-y-4">
+                {waiters.length === 0 ? (
+                  <p className="text-center text-gray-500 py-4">No waiters available</p>
+                ) : (
+                  waiters.map((waiter) => (
+                    <button
+                      key={waiter._id}
+                      onClick={() => handleAssignWaiter(waiter._id)}
+                      className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+                    >
+                      <div className="flex items-center">
+                        <User className="h-8 w-8 text-blue-600 mr-3" />
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {waiter.firstName} {waiter.lastName}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {waiter.position || 'Waiter'}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+
+              <div className="p-6 border-t">
+                <button
+                  onClick={() => {
+                    setShowWaiterModal(false);
+                    setSelectedTable(null);
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

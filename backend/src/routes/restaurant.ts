@@ -11,7 +11,8 @@ import {
   createRestaurantTable,
   updateRestaurantTable,
   deleteRestaurantTable,
-  getMenuCategories
+  getMenuCategories,
+  getTodaySpecials
 } from '../controllers/restaurantController';
 import { 
   createRestaurantBooking,
@@ -34,6 +35,11 @@ const router = express.Router();
 // @desc    Get all menu items
 // @access  Public
 router.get('/menu', getMenuItems);
+
+// @route   GET /api/restaurant/menu/specials/today
+// @desc    Get today's special menu items
+// @access  Public
+router.get('/menu/specials/today', getTodaySpecials);
 
 // @route   GET /api/restaurant/menu/categories
 // @desc    Get all menu categories
@@ -105,7 +111,9 @@ router.post('/bookings', [auth], [
   body('fullName').notEmpty().withMessage('Full name is required'),
   body('email').isEmail().withMessage('Valid email is required'),
   body('phone').notEmpty().withMessage('Phone number is required'),
-  body('paymentMethod').notEmpty().withMessage('Payment method is required')
+  body('paymentMethod').notEmpty().withMessage('Payment method is required'),
+  // tableNumber is optional - only required for dine-in orders (validated in controller)
+  body('tableNumber').optional().isString()
 ], createRestaurantBooking);
 
 // @route   GET /api/restaurant/bookings

@@ -10,10 +10,18 @@ interface AuthRequest extends Request {
 // Generate Restaurant Bill (Dine-in, Takeaway, Delivery)
 export const createBill = async (req: AuthRequest, res: Response) => {
   try {
+    const {
+      orderId,
+      discount = 0,
+      taxPercent = 5,           // Add this with default
+      serviceChargePercent = 10, // Add this with default
+      notes,
+      paymentMethod = 'cash' 
+    } = req.body;
+
     console.log('Creating bill with data:', req.body);
     
     const {
-      orderId,
       customerName,
       customerPhone,
       tableNumber,
@@ -21,16 +29,13 @@ export const createBill = async (req: AuthRequest, res: Response) => {
       deliveryAddress,
       items,
       subtotal,
-      discount,
-      taxPercentage,
-      deliveryCharges,
-      paymentMethod,
-      notes
+      deliveryCharges
     } = req.body;
 
     // Calculate tax amount
-    const taxAmount = (subtotal * (taxPercentage || 10)) / 100;
-    const totalAmount = subtotal - discount + taxAmount + (deliveryCharges || 0);
+    const taxAmount = (subtotal * (taxPercent || 10)) / 100;
+    const serviceChargeAmount = (subtotal * (serviceChargePercent || 10)) / 100;
+    const totalAmount = subtotal - discount + taxAmount + serviceChargeAmount + (deliveryCharges || 0);
 
     // Generate bill number manually if needed
     const count = await Bill.countDocuments();
@@ -49,10 +54,13 @@ export const createBill = async (req: AuthRequest, res: Response) => {
       subtotal,
       discount,
       tax: taxAmount,
+      taxPercent,              // Store the percentage
+      serviceCharge: serviceChargeAmount,
+      serviceChargePercent,    // Store the percentage
       deliveryCharges: deliveryCharges || 0,
       totalAmount,
       paymentMethod,
-      paymentStatus: 'paid',
+      paymentStatus: 'pending',
       notes,
       generatedBy: req.user!._id
     });
@@ -67,7 +75,7 @@ export const createBill = async (req: AuthRequest, res: Response) => {
       message: 'Bill generated successfully', 
       bill 
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Restaurant bill generation error:', error);
     res.status(500).json({ message: 'Server error' });
   }

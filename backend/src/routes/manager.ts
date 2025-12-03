@@ -63,7 +63,15 @@ import {
   getWaiters,
   assignWaiterToOrder,
   getBillsByTable,
-  generateBillForTable
+  generateBillForTable,
+  getAllMenuItems,
+  updateMenuItemAvailability,
+  updateMenuItemStock,
+  getTodaySpecials,
+  createTodaySpecial,
+  updateTodaySpecial,
+  deleteTodaySpecial,
+  updateTodaySpecialStock
 } from '../controllers/managerRestaurantController';
 import {
   getCheckinCheckoutStats,
@@ -76,6 +84,10 @@ import {
 } from '../controllers/managerCheckinCheckoutController';
 
 const router = express.Router();
+
+// PUBLIC ENDPOINTS (No authentication required)
+// Today's Specials - Public read-only access for customers
+router.get('/restaurant/specials/today/public', getTodaySpecials);
 
 // All manager routes require authentication, manager role, and active status
 router.use(verifyToken);
@@ -174,6 +186,17 @@ router.get('/restaurant/bills/:id', getBillById);
 router.put('/restaurant/bills/:id/paid', markBillAsPaid);
 router.get('/restaurant/reports', getRestaurantReports);
 router.get('/restaurant/waiters', getWaiters);
+// Menu management - existing
+router.get('/restaurant/menu', getAllMenuItems);
+router.put('/restaurant/menu/:id/availability', updateMenuItemAvailability);
+router.put('/restaurant/menu/:id/stock', updateMenuItemStock);
+
+// Today's Specials - NEW (separate from regular menu)
+router.get('/restaurant/specials/today', getTodaySpecials);
+router.post('/restaurant/specials/today', createTodaySpecial);
+router.put('/restaurant/specials/today/:id', updateTodaySpecial);
+router.delete('/restaurant/specials/today/:id', deleteTodaySpecial);
+router.put('/restaurant/specials/today/:id/stock', updateTodaySpecialStock);
 
 // ===== CHECK-IN / CHECK-OUT MANAGEMENT =====
 router.get('/checkin-checkout/stats', getCheckinCheckoutStats);

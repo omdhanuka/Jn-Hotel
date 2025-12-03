@@ -28,6 +28,7 @@ export interface IMenuItem extends Document {
   
   // Optional Fields
   isFeatured: boolean;
+  isTodaySpecial: boolean; // NEW
   availabilityTime?: string;
   stockQuantity?: number;
   calories?: number;
@@ -75,6 +76,7 @@ const menuItemSchema = new Schema<IMenuItem>({
   
   // Optional Fields
   isFeatured: { type: Boolean, default: false },
+  isTodaySpecial: { type: Boolean, default: false }, // NEW
   availabilityTime: { type: String },
   stockQuantity: { type: Number, min: 0 },
   calories: { type: Number, min: 0 },
