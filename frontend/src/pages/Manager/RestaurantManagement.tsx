@@ -64,7 +64,9 @@ interface Bill {
   subtotal: number;
   discount: number;
   tax: number;
+  taxPercent?: number;              // Add this
   serviceCharge?: number;
+  serviceChargePercent?: number;    // Add this
   totalAmount: number;
   paymentMethod: string;
   paymentStatus: string;
@@ -722,81 +724,373 @@ const RestaurantManagement: React.FC = () => {
     if (!printWindow) return;
 
     printWindow.document.write(`
+      <!DOCTYPE html>
       <html>
         <head>
           <title>Bill - ${bill.billNumber}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
-            .bill-title { color: #2563eb; font-weight: bold; font-size: 24px; margin-bottom: 10px; }
-            .bill-details { margin-bottom: 20px; background-color: #f8fafc; padding: 15px; border-radius: 5px; }
-            .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            .items-table th { background-color: #f2f2f2; }
-            .total-section { text-align: right; border-top: 2px solid #333; padding-top: 15px; }
-            .total-row { font-weight: bold; font-size: 18px; }
-            @media print { .no-print { display: none; } }
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            
+            body { 
+              font-family: 'Courier New', monospace;
+              margin: 0;
+              padding: 20px;
+              color: #000;
+              background: #fff;
+              font-size: 12px;
+              line-height: 1.4;
+            }
+            
+            .bill-container {
+              max-width: 300mm;
+              margin: 0 auto;
+              border: 2px solid #000;
+              padding: 15px;
+            }
+            
+            /* Header */
+            .header {
+              text-align: center;
+              margin-bottom: 15px;
+              padding-bottom: 10px;
+              border-bottom: 2px solid #000;
+            }
+            
+            .hotel-name {
+              font-size: 20px;
+              font-weight: bold;
+              letter-spacing: 2px;
+              margin-bottom: 5px;
+            }
+            
+            .bill-type {
+              font-size: 14px;
+              font-weight: bold;
+              margin-top: 5px;
+            }
+            
+            .separator {
+              border-top: 1px solid #000;
+              margin: 10px 0;
+            }
+            
+            /* Bill Info */
+            .bill-info {
+              margin-bottom: 15px;
+            }
+            
+            .info-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 5px;
+            }
+            
+            .info-label {
+              font-weight: bold;
+              width: 120px;
+            }
+            
+            .info-value {
+              flex: 1;
+              text-align: left;
+            }
+            
+            /* Items Table */
+            .items-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 15px 0;
+              border: 1px solid #000;
+            }
+            
+            .items-table th,
+            .items-table td {
+              border: 1px solid #000;
+              padding: 8px 5px;
+              text-align: left;
+            }
+            
+            .items-table th {
+              font-weight: bold;
+              text-transform: uppercase;
+              font-size: 11px;
+              background: #fff;
+            }
+            
+            .items-table td:nth-child(2),
+            .items-table th:nth-child(2),
+            .items-table td:nth-child(3),
+            .items-table th:nth-child(3),
+            .items-table td:nth-child(4),
+            .items-table th:nth-child(4) {
+              text-align: right;
+            }
+            
+            .items-table td:first-child,
+            .items-table th:first-child {
+              width: 50%;
+            }
+            
+            .addon-text {
+              font-size: 10px;
+              color: #333;
+              margin-top: 2px;
+            }
+            
+            /* Summary */
+            .summary {
+              margin: 15px 0;
+              padding: 10px;
+              border: 1px solid #000;
+            }
+            
+            .summary-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 5px;
+            }
+            
+            .summary-label {
+              text-align: left;
+            }
+            
+            .summary-value {
+              text-align: right;
+              min-width: 100px;
+            }
+            
+            .summary-total {
+              border-top: 2px solid #000;
+              margin-top: 8px;
+              padding-top: 8px;
+              font-weight: bold;
+              font-size: 14px;
+            }
+            
+            /* Payment Info */
+            .payment-info {
+              margin: 15px 0;
+              padding: 10px;
+              border: 1px solid #000;
+            }
+            
+            .payment-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 5px;
+            }
+            
+            /* Footer */
+            .footer {
+              text-align: center;
+              margin-top: 20px;
+              padding-top: 10px;
+              border-top: 1px solid #000;
+              font-size: 11px;
+            }
+            
+            .footer-message {
+              margin-bottom: 10px;
+              font-weight: bold;
+            }
+            
+            .generated-by {
+              font-size: 10px;
+              color: #333;
+            }
+            
+            /* Print Button */
+            .print-button {
+              display: block;
+              margin: 20px auto 0;
+              padding: 12px 30px;
+              border: 2px solid #000;
+              background: #fff;
+              color: #000;
+              font-weight: bold;
+              font-size: 14px;
+              cursor: pointer;
+              font-family: 'Courier New', monospace;
+            }
+            
+            .print-button:hover {
+              background: #f0f0f0;
+            }
+            
+            /* Print Styles */
+            @media print {
+              body {
+                padding: 0;
+              }
+              
+              .bill-container {
+                border: none;
+                max-width: 100%;
+              }
+              
+              .print-button {
+                display: none;
+              }
+              
+              @page {
+                margin: 10mm;
+                size: A5;
+              }
+            }
+            
+            /* Thermal Printer (80mm) */
+            @media print and (max-width: 80mm) {
+              body {
+                font-size: 11px;
+                padding: 5px;
+              }
+              
+              .bill-container {
+                padding: 5px;
+              }
+              
+              .hotel-name {
+                font-size: 16px;
+              }
+              
+              .bill-type {
+                font-size: 12px;
+              }
+              
+              .items-table th,
+              .items-table td {
+                padding: 5px 3px;
+                font-size: 10px;
+              }
+            }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>Hotel Restaurant</h1>
-            <div class="bill-title">DINE-IN BILL</div>
+          <div class="bill-container">
+            <!-- Header -->
+            <div class="header">
+              <div class="hotel-name">HOTEL RESTAURANT</div>
+              <div class="bill-type">DINE-IN BILL</div>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <!-- Bill Information -->
+            <div class="bill-info">
+              <div class="info-row">
+                <span class="info-label">Bill Number:</span>
+                <span class="info-value">${bill.billNumber}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Table Number:</span>
+                <span class="info-value">${bill.tableNumber}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Customer:</span>
+                <span class="info-value">${bill.customerName}</span>
+              </div>
+              ${bill.customerPhone ? `
+              <div class="info-row">
+                <span class="info-label">Phone:</span>
+                <span class="info-value">${bill.customerPhone}</span>
+              </div>
+              ` : ''}
+              <div class="info-row">
+                <span class="info-label">Date & Time:</span>
+                <span class="info-value">${new Date(bill.generatedAt).toLocaleString()}</span>
+              </div>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <!-- Items Table -->
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Qty</th>
+                  <th>Price</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${bill.items.map(item => {
+                  const addOnsTotal = item.addOns?.reduce((sum, addon) => sum + addon.price, 0) || 0;
+                  const unitPrice = item.price + addOnsTotal;
+                  const itemTotal = unitPrice * item.quantity;
+                  const addOnsText = item.addOns && item.addOns.length > 0 
+                    ? `<div class="addon-text">+ ${item.addOns.map(a => a.name).join(', ')}</div>`
+                    : '';
+                  
+                  return `
+                    <tr>
+                      <td>${item.name}${addOnsText}</td>
+                      <td>${item.quantity}</td>
+                      <td>₹${unitPrice.toFixed(2)}</td>
+                      <td>₹${itemTotal.toFixed(2)}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+            
+            <div class="separator"></div>
+            
+            <!-- Summary -->
+            <div class="summary">
+              <div class="summary-row">
+                <span class="summary-label">Subtotal:</span>
+                <span class="summary-value">₹${bill.subtotal.toFixed(2)}</span>
+              </div>
+              ${bill.discount > 0 ? `
+              <div class="summary-row">
+                <span class="summary-label">Discount:</span>
+                <span class="summary-value">-₹${bill.discount.toFixed(2)}</span>
+              </div>
+              ` : ''}
+              <div class="summary-row">
+                <span class="summary-label">Tax (${bill.taxPercent || 5}%):</span>
+                <span class="summary-value">₹${bill.tax.toFixed(2)}</span>
+              </div>
+              ${(bill.serviceCharge || 0) > 0 ? `
+              <div class="summary-row">
+                <span class="summary-label">Service Charge (${bill.serviceChargePercent || 10}%):</span>
+                <span class="summary-value">₹${(bill.serviceCharge || 0).toFixed(2)}</span>
+              </div>
+              ` : ''}
+              <div class="summary-row summary-total">
+                <span class="summary-label">Total Amount:</span>
+                <span class="summary-value">₹${bill.totalAmount.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            <!-- Payment Information -->
+            <div class="payment-info">
+              <div class="payment-row">
+                <span class="info-label">Payment Method:</span>
+                <span class="info-value">${bill.paymentMethod.toUpperCase()}</span>
+              </div>
+              <div class="payment-row">
+                <span class="info-label">Payment Status:</span>
+                <span class="info-value">${bill.paymentStatus === 'paid' ? 'PAID' : 'PENDING'}</span>
+              </div>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <!-- Footer -->
+            <div class="footer">
+              <div class="footer-message">Thank you for dining with us!</div>
+              <div class="generated-by">Generated by: ${bill.generatedBy}</div>
+            </div>
+            
+            <!-- Print Button (hidden during print) -->
+            <button class="print-button" onclick="window.print()">Print Bill</button>
           </div>
-          
-          <div class="bill-details">
-            <p><strong>Bill Number:</strong> ${bill.billNumber}</p>
-            <p><strong>Table Number:</strong> ${bill.tableNumber}</p>
-            <p><strong>Customer:</strong> ${bill.customerName}</p>
-            ${bill.customerPhone ? `<p><strong>Phone:</strong> ${bill.customerPhone}</p>` : ''}
-            <p><strong>Date & Time:</strong> ${new Date(bill.generatedAt).toLocaleString()}</p>
-          </div>
-          
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Qty</th>
-                <th>Price</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${bill.items.map(item => {
-                const addOnsText = item.addOns && item.addOns.length > 0 
-                  ? `<br><small style="color: #666;">+ ${item.addOns.map(a => a.name).join(', ')}</small>`
-                  : '';
-                const addOnsTotal = item.addOns?.reduce((sum, addon) => sum + addon.price, 0) || 0;
-                const itemTotal = (item.price + addOnsTotal) * item.quantity;
-                
-                return `
-                  <tr>
-                    <td>${item.name}${addOnsText}</td>
-                    <td>${item.quantity}</td>
-                    <td>₹${(item.price + addOnsTotal).toFixed(2)}</td>
-                    <td>₹${itemTotal.toFixed(2)}</td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
-          
-          <div class="total-section">
-            <p>Subtotal: ₹${bill.subtotal.toFixed(2)}</p>
-            ${bill.discount > 0 ? `<p>Discount: -₹${bill.discount.toFixed(2)}</p>` : ''}
-            <p>Tax (5%): ₹${bill.tax.toFixed(2)}</p>
-            ${(bill.serviceCharge || 0) > 0 ? `<p>Service Charge (10%): ₹${(bill.serviceCharge || 0).toFixed(2)}</p>` : ''}
-            <p class="total-row">Total Amount: ₹${bill.totalAmount.toFixed(2)}</p>
-            <p><strong>Payment Method:</strong> ${bill.paymentMethod.toUpperCase()}</p>
-            <p><strong>Payment Status:</strong> ${bill.paymentStatus === 'paid' ? '✓ PAID' : '⏳ PENDING'}</p>
-          </div>
-          
-          <div style="margin-top: 30px; text-align: center;">
-            <p>Thank you for dining with us!</p>
-            <p>Generated by: ${bill.generatedBy}</p>
-          </div>
-          
-          <button class="no-print" onclick="window.print()" style="margin-top: 20px; padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 5px;">Print Bill</button>
         </body>
       </html>
     `);
@@ -1392,7 +1686,7 @@ const RestaurantManagement: React.FC = () => {
                                   setSelectedOrderForBill(order);
                                   setShowBillModal(true);
                                 }}
-                                className="bg-yellow-600 text-white px-4 py-2 rounded-md text-sm hover:bg-yellow-700 flex items-center"
+                                className="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 flex items-center"
                               >
                                 <Plus className="h-4 w-4 mr-1" />
                                 Generate Bill
@@ -1630,7 +1924,7 @@ const RestaurantManagement: React.FC = () => {
                         <p className="text-center">No table usage data available for this period</p>
                       </div>
                     )}
-                  </div>
+                                   </div>
                 </div>
 
                 {/* Detailed Tables */}
@@ -2342,13 +2636,13 @@ const RestaurantManagement: React.FC = () => {
                       <span className="font-medium">₹{(selectedOrderForBill.totalAmount - billDiscount).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Tax ({billTaxPercent}%):</span>
+                      <span className="text-gray-600">Tax (${billTaxPercent}%):</span>
                       <span className="font-medium">
                         ₹{((selectedOrderForBill.totalAmount - billDiscount) * (billTaxPercent / 100)).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Service Charge ({billServiceChargePercent}%):</span>
+                      <span className="text-gray-600">Service Charge (${billServiceChargePercent}%):</span>
                       <span className="font-medium">
                         ₹{((selectedOrderForBill.totalAmount - billDiscount) * (billServiceChargePercent / 100)).toFixed(2)}
                       </span>
