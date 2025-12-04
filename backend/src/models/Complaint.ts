@@ -1,45 +1,69 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IComplaint extends Document {
-  guest: mongoose.Types.ObjectId;
+  complaintId: string;
+  user: mongoose.Types.ObjectId;
   booking?: mongoose.Types.ObjectId;
-  subject: string;
+  category: string;
+  priority: string;
+  status: string;
+  title: string;
   description: string;
-  category: 'room' | 'service' | 'food' | 'cleanliness' | 'staff' | 'billing' | 'amenities' | 'other';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'open' | 'in-progress' | 'resolved' | 'closed';
-  assignedTo?: mongoose.Types.ObjectId;
-  resolutionNotes?: string;
-  resolvedBy?: mongoose.Types.ObjectId;
-  resolvedAt?: Date;
+  roomNumber?: string;
   images?: string[];
+  assignedTo?: mongoose.Types.ObjectId;
+  timeline: Array<{
+    timestamp: Date;
+    action: string;
+    performedBy: mongoose.Types.ObjectId;
+    remarks?: string;
+  }>;
+  resolution?: {
+    description: string;
+    resolvedBy: mongoose.Types.ObjectId;
+    resolvedAt: Date;
+  };
+  internalNotes?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const complaintSchema = new Schema<IComplaint>({
-  guest: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  complaintId: { type: String, required: true, unique: true },
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   booking: { type: Schema.Types.ObjectId, ref: 'Booking' },
-  subject: { type: String, required: true },
-  description: { type: String, required: true },
-  category: { 
-    type: String, 
-    enum: ['room', 'service', 'food', 'cleanliness', 'staff', 'billing', 'amenities', 'other'],
+  category: {
+    type: String,
+    enum: ['housekeeping', 'restaurant', 'room-service', 'maintenance', 'billing', 'front-desk', 'other'],
     required: true
   },
-  priority: { 
-    type: String, 
-    enum: ['low', 'medium', 'high', 'urgent'],
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'critical'],
     default: 'medium'
   },
-  status: { 
-    type: String, 
-    enum: ['open', 'in-progress', 'resolved', 'closed'],
-    default: 'open'
+  status: {
+    type: String,
+    enum: ['pending', 'in-progress', 'resolved', 'closed'],
+    default: 'pending'
   },
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  roomNumber: { type: String },
+  images: [{ type: String }],
   assignedTo: { type: Schema.Types.ObjectId, ref: 'User' },
-  resolutionNotes: { type: String },
-  resolvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
-  resolvedAt: { type: Date },
-  images: [{ type: String }]
+  timeline: [{
+    timestamp: { type: Date, default: Date.now },
+    action: { type: String, required: true },
+    performedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    remarks: String
+  }],
+  resolution: {
+    description: String,
+    resolvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    resolvedAt: Date
+  },
+  internalNotes: String
 }, { timestamps: true });
 
 export default mongoose.model<IComplaint>('Complaint', complaintSchema);

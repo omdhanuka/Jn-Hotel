@@ -40,6 +40,7 @@ interface Bill {
   subtotal: number;
   discount: number;
   tax: number;
+  service?: number;
   totalAmount: number;
   paymentMethod: string;
   paymentStatus: string;
@@ -546,6 +547,12 @@ const BillManagement: React.FC = () => {
               <div class="summary-row">
                 <span class="summary-label">Discount:</span>
                 <span class="summary-value">-₹${bill.discount.toFixed(2)}</span>
+              </div>
+              ` : ''}
+              ${(bill.service ?? 0) > 0 ? `
+              <div class="summary-row">
+                <span class="summary-label">Service Charge:</span>
+                <span class="summary-value">₹${(bill.service ?? 0).toFixed(2)}</span>
               </div>
               ` : ''}
               <div class="summary-row">

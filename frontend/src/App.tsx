@@ -38,6 +38,7 @@ import CheckInCheckOut from './pages/Manager/CheckInCheckOut';
 import StaffTasks from './pages/Manager/StaffTasks';
 import BanquetManagement from './pages/Manager/BanquetManagement';
 import RestaurantManagement from './pages/Manager/RestaurantManagement';
+import ComplaintManagement from './pages/Manager/ComplaintManagement';
 
 // Configure axios defaults immediately
 const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -113,6 +114,7 @@ function App() {
               <Route path="/manager/banquets" element={<BanquetManagement />} />
               <Route path="/manager/rooms" element={<RoomOperations />} />
               <Route path="/manager/restaurant" element={<RestaurantManagement />} />
+              <Route path="/manager/complaints" element={<ComplaintManagement />} />
               
               {/* Routes WITH Navbar - Public and User Routes */}
               <Route path="*" element={

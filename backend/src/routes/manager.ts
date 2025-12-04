@@ -82,6 +82,16 @@ import {
   performCheckout,
   searchBookings
 } from '../controllers/managerCheckinCheckoutController';
+import {
+  getComplaintDashboard,
+  getAllComplaints,
+  getComplaintById,
+  assignComplaint,
+  updateComplaintStatus,
+  addInternalNote,
+  getComplaintReports,
+  getAvailableStaff
+} from '../controllers/managerComplaintController';
 
 const router = express.Router();
 
@@ -206,5 +216,15 @@ router.get('/checkin-checkout/today-departures', getTodayDepartures);
 router.post('/checkin-checkout/:id/checkin', performCheckin);
 router.post('/checkin-checkout/:id/checkout', performCheckout);
 router.get('/booking/search', searchBookings); // Add search route
+
+// ===== COMPLAINT MANAGEMENT =====
+router.get('/complaints/dashboard', getComplaintDashboard);
+router.get('/complaints/reports', getComplaintReports);
+router.get('/complaints/staff/available', getAvailableStaff);
+router.get('/complaints', getAllComplaints);
+router.get('/complaints/:id', getComplaintById);
+router.post('/complaints/:id/assign', assignComplaint);
+router.put('/complaints/:id/status', updateComplaintStatus);
+router.post('/complaints/:id/notes', addInternalNote);
 
 export default router;
