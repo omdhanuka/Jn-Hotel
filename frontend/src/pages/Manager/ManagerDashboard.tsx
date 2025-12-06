@@ -74,7 +74,7 @@ const ManagerDashboard: React.FC = () => {
 
   const fetchDashboardStats = async () => {
     try {
-      const response = await axios.get('/api/manager/dashboard');
+      const response = await axios.get('/manager/dashboard');
       setStats(response.data);
     } catch (error: any) {
       console.error('Failed to fetch dashboard stats:', error);

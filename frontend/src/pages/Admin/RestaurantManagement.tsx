@@ -114,7 +114,7 @@ const RestaurantManagement: React.FC = () => {
   const fetchMenuItems = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/restaurant/menu?limit=100');
+      const response = await axios.get('/restaurant/menu?limit=100');
       setMenuItems(response.data.menuItems || []);
     } catch (error) {
       console.error('Error fetching menu items:', error);
@@ -126,7 +126,7 @@ const RestaurantManagement: React.FC = () => {
 
   const fetchTables = async () => {
     try {
-      const response = await axios.get('/api/restaurant/tables');
+      const response = await axios.get('/restaurant/tables');
       setTables(response.data.tables || []);
     } catch (error) {
       console.error('Error fetching tables:', error);
@@ -137,10 +137,10 @@ const RestaurantManagement: React.FC = () => {
   const handleMenuSubmit = async () => {
     try {
       if (editingMenuItem) {
-        await axios.put(`/api/restaurant/menu/${editingMenuItem}`, menuForm);
+        await axios.put(`/restaurant/menu/${editingMenuItem}`, menuForm);
         toast.success('Menu item updated successfully');
       } else {
-        await axios.post('/api/restaurant/menu', menuForm);
+        await axios.post('/restaurant/menu', menuForm);
         toast.success('Menu item created successfully');
       }
       resetMenuForm();
@@ -153,10 +153,10 @@ const RestaurantManagement: React.FC = () => {
   const handleTableSubmit = async () => {
     try {
       if (editingTable) {
-        await axios.put(`/api/restaurant/tables/${editingTable}`, tableForm);
+        await axios.put(`/restaurant/tables/${editingTable}`, tableForm);
         toast.success('Table updated successfully');
       } else {
-        await axios.post('/api/restaurant/tables', tableForm);
+        await axios.post('/restaurant/tables', tableForm);
         toast.success('Table created successfully');
       }
       resetTableForm();
@@ -204,7 +204,7 @@ const RestaurantManagement: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this menu item?')) return;
     
     try {
-      await axios.delete(`/api/restaurant/menu/${id}`);
+      await axios.delete(`/restaurant/menu/${id}`);
       toast.success('Menu item deleted successfully');
       fetchMenuItems();
     } catch (error: any) {
@@ -216,7 +216,7 @@ const RestaurantManagement: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this table?')) return;
     
     try {
-      await axios.delete(`/api/restaurant/tables/${id}`);
+      await axios.delete(`/restaurant/tables/${id}`);
       toast.success('Table deleted successfully');
       fetchTables();
     } catch (error: any) {
@@ -309,7 +309,7 @@ const RestaurantManagement: React.FC = () => {
               <div key={item._id} className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="h-48 bg-gray-200">
                   <img
-                    src={item.images?.[0] || '/api/placeholder/300/200'}
+                    src={item.images?.[0] || '/placeholder/300/200'}
                     alt={item.name}
                     className="w-full h-full object-cover"
                   />

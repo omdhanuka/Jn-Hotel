@@ -114,7 +114,7 @@ const BookBanquet: React.FC = () => {
 
   const fetchBanquet = async () => {
     try {
-      const response = await axios.get(`/api/banquets/${banquetId}`);
+      const response = await axios.get(`/banquets/${banquetId}`);
       setBanquet(response.data);
       
       // Set default seating arrangement
@@ -210,7 +210,7 @@ const BookBanquet: React.FC = () => {
 
       console.log('Booking data:', bookingData); // Debug log
 
-      const response = await axios.post('/api/bookings', bookingData);
+      const response = await axios.post('/bookings', bookingData);
       console.log('Booking response:', response.data); // Debug log
       
       toast.success('Banquet booking confirmed successfully!');
@@ -333,7 +333,7 @@ const BookBanquet: React.FC = () => {
               <div className="relative h-96 bg-gray-300 group">
                 {/* Main Image Display */}
                 <img
-                  src={getImageUrl(banquet.images?.[currentImageIndex] || '/api/placeholder/600/300')}
+                  src={getImageUrl(banquet.images?.[currentImageIndex] || '/placeholder/600/300')}
                   alt={`${banquet.name} - Image ${currentImageIndex + 1}`}
                   className="w-full h-full object-cover transition-opacity duration-500"
                 />

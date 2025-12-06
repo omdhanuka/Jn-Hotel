@@ -47,7 +47,7 @@ const CheckInTab: React.FC<CheckInTabProps> = ({ onSuccess }) => {
 
     try {
       setSearching(true);
-      const response = await axios.get(`/api/manager/booking/search?query=${searchQuery}`);
+      const response = await axios.get(`/manager/booking/search?query=${searchQuery}`);
       
       if (response.data.bookings && response.data.bookings.length > 0) {
         const foundBooking = response.data.bookings[0];
@@ -76,7 +76,7 @@ const CheckInTab: React.FC<CheckInTabProps> = ({ onSuccess }) => {
 
   const fetchAvailableRooms = async (booking: Booking) => {
     try {
-      const response = await axios.get('/api/manager/rooms/available', {
+      const response = await axios.get('/manager/rooms/available', {
         params: {
           type: booking.type === 'room' ? 'all' : booking.type,
           checkIn: booking.checkIn,
@@ -93,7 +93,7 @@ const CheckInTab: React.FC<CheckInTabProps> = ({ onSuccess }) => {
     if (!selectedRoom || !booking) return;
 
     try {
-      await axios.patch('/api/manager/booking/assign-room', {
+      await axios.patch('/manager/booking/assign-room', {
         bookingId: booking._id,
         roomId: selectedRoom
       });
@@ -118,7 +118,7 @@ const CheckInTab: React.FC<CheckInTabProps> = ({ onSuccess }) => {
 
     try {
       setProcessing(true);
-      await axios.post('/api/manager/booking/checkin', {
+      await axios.post('/manager/booking/checkin', {
         bookingId: booking._id,
         numberOfGuests: parseInt(checkInData.numberOfGuests),
         notes: checkInData.notes,

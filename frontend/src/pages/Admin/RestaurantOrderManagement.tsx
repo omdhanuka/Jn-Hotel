@@ -59,7 +59,7 @@ const RestaurantOrderManagement: React.FC = () => {
       if (filters.type !== 'all') queryParams.append('type', filters.type);
       if (filters.status !== 'all') queryParams.append('status', filters.status);
       
-      const response = await axios.get(`/api/restaurant/bookings/admin?${queryParams.toString()}`);
+      const response = await axios.get(`/restaurant/bookings/admin?${queryParams.toString()}`);
       setBookings(response.data.bookings || []);
     } catch (error) {
       toast.error('Failed to fetch restaurant bookings');
@@ -70,7 +70,7 @@ const RestaurantOrderManagement: React.FC = () => {
 
   const updateStatus = async (bookingId: string, status: string) => {
     try {
-      await axios.put(`/api/restaurant/bookings/${bookingId}/status`, { status });
+      await axios.put(`/restaurant/bookings/${bookingId}/status`, { status });
       toast.success('Status updated successfully');
       fetchBookings();
       setEditingStatus(null);

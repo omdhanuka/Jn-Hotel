@@ -64,7 +64,7 @@ const CheckInCheckOut: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get('/api/manager/checkin-checkout/stats');
+      const response = await axios.get('/manager/checkin-checkout/stats');
       setStats(response.data);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
@@ -74,7 +74,7 @@ const CheckInCheckOut: React.FC = () => {
 
   const fetchRecentActivities = async () => {
     try {
-      const response = await axios.get('/api/manager/checkin-checkout/recent-activities');
+      const response = await axios.get('/manager/checkin-checkout/recent-activities');
       setRecentCheckins(response.data.recentCheckins || []);
       setRecentCheckouts(response.data.recentCheckouts || []);
     } catch (error) {
@@ -84,7 +84,7 @@ const CheckInCheckOut: React.FC = () => {
 
   const fetchTodayArrivals = async () => {
     try {
-      const response = await axios.get('/api/manager/checkin-checkout/today-arrivals');
+      const response = await axios.get('/manager/checkin-checkout/today-arrivals');
       setTodayArrivals(response.data.arrivals || []);
     } catch (error) {
       console.error('Failed to fetch arrivals:', error);
@@ -93,7 +93,7 @@ const CheckInCheckOut: React.FC = () => {
 
   const fetchTodayDepartures = async () => {
     try {
-      const response = await axios.get('/api/manager/checkin-checkout/today-departures');
+      const response = await axios.get('/manager/checkin-checkout/today-departures');
       setTodayDepartures(response.data.departures || []);
     } catch (error) {
       console.error('Failed to fetch departures:', error);
@@ -104,7 +104,7 @@ const CheckInCheckOut: React.FC = () => {
 
   const handleCheckin = async (bookingId: string) => {
     try {
-      await axios.post(`/api/manager/checkin-checkout/${bookingId}/checkin`);
+      await axios.post(`/manager/checkin-checkout/${bookingId}/checkin`);
       toast.success('Guest checked in successfully');
       fetchStats();
       fetchTodayArrivals();
@@ -116,7 +116,7 @@ const CheckInCheckOut: React.FC = () => {
 
   const handleCheckout = async (bookingId: string) => {
     try {
-      await axios.post(`/api/manager/checkin-checkout/${bookingId}/checkout`);
+      await axios.post(`/manager/checkin-checkout/${bookingId}/checkout`);
       toast.success('Guest checked out successfully');
       fetchStats();
       fetchTodayDepartures();

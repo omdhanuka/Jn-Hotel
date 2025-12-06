@@ -8,6 +8,17 @@ import User from '../models/User';
 
 const router = express.Router();
 
+// @route   GET /api/auth/test
+// @desc    Test auth route
+// @access  Public
+router.get('/test', (req: Request, res: Response) => {
+  res.json({ 
+    message: 'Auth route is working!',
+    timestamp: new Date().toISOString(),
+    route: '/api/auth/test'
+  });
+});
+
 // @route   POST /api/auth/register
 // @desc    Register user
 // @access  Public

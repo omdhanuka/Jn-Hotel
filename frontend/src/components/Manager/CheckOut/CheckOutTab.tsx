@@ -29,7 +29,7 @@ const CheckOutTab: React.FC<CheckOutTabProps> = ({ onSuccess }) => {
 
     try {
       setSearching(true);
-      const response = await axios.get(`/api/manager/active-guests?search=${searchQuery}`);
+      const response = await axios.get(`/manager/active-guests?search=${searchQuery}`);
       
       if (response.data.bookings && response.data.bookings.length > 0) {
         const foundBooking = response.data.bookings[0];
@@ -82,7 +82,7 @@ const CheckOutTab: React.FC<CheckOutTabProps> = ({ onSuccess }) => {
 
     try {
       setProcessing(true);
-      await axios.post('/api/manager/checkout', {
+      await axios.post('/manager/checkout', {
         bookingId: booking._id,
         extraCharges: extraCharges,
         notes: `Extra charges: ${extraCharges.map(c => `${c.name}: ₹${c.amount}`).join(', ')}`
@@ -242,7 +242,7 @@ const CheckOutTab: React.FC<CheckOutTabProps> = ({ onSuccess }) => {
 
             <div className="mt-6 space-y-3">
               <button
-                onClick={() => window.open(`/api/manager/invoice/${booking._id}`, '_blank')}
+                onClick={() => window.open(`/manager/invoice/${booking._id}`, '_blank')}
                 className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 flex items-center justify-center"
               >
                 <FileText className="h-4 w-4 mr-2" />

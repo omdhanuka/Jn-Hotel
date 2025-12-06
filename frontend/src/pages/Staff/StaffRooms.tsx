@@ -106,7 +106,7 @@ const StaffRooms: React.FC = () => {
 
   const checkPermissions = async () => {
     try {
-      const response = await axios.get('/api/auth/me/permissions');
+      const response = await axios.get('/auth/me/permissions');
       setPermissions(response.data.permissions || {});
       
       if (!response.data.permissions.viewRooms) {
@@ -127,7 +127,7 @@ const StaffRooms: React.FC = () => {
       setLoading(true);
       
       // Fetch stats
-      const statsRes = await axios.get('/api/staff/rooms/stats');
+      const statsRes = await axios.get('/staff/rooms/stats');
       setStats(statsRes.data);
       
       // Fetch based on active tab
@@ -136,26 +136,26 @@ const StaffRooms: React.FC = () => {
         if (roomFilter.status !== 'all') params.append('status', roomFilter.status);
         if (roomFilter.floor !== 'all') params.append('floor', roomFilter.floor);
         
-        const roomsRes = await axios.get(`/api/staff/rooms/status?${params.toString()}`);
+        const roomsRes = await axios.get(`/staff/rooms/status?${params.toString()}`);
         setRooms(roomsRes.data.rooms);
       } else if (activeTab === 'cleaning') {
         const params = new URLSearchParams();
         if (taskFilter.status !== 'all') params.append('status', taskFilter.status);
         if (taskFilter.assignedToMe) params.append('assignedToMe', 'true');
         
-        const tasksRes = await axios.get(`/api/staff/rooms/cleaning-tasks?${params.toString()}`);
+        const tasksRes = await axios.get(`/staff/rooms/cleaning-tasks?${params.toString()}`);
         setCleaningTasks(tasksRes.data.tasks);
       } else if (activeTab === 'maintenance') {
         const params = new URLSearchParams();
         if (taskFilter.status !== 'all') params.append('status', taskFilter.status);
         
-        const tasksRes = await axios.get(`/api/staff/rooms/maintenance-tasks?${params.toString()}`);
+        const tasksRes = await axios.get(`/staff/rooms/maintenance-tasks?${params.toString()}`);
         setMaintenanceTasks(tasksRes.data.tasks);
       } else if (activeTab === 'notes') {
-        const notesRes = await axios.get('/api/staff/rooms/notes');
+        const notesRes = await axios.get('/staff/rooms/notes');
         setNotes(notesRes.data.notes);
       } else if (activeTab === 'activity') {
-        const activityRes = await axios.get('/api/staff/rooms/activity-log?limit=100');
+        const activityRes = await axios.get('/staff/rooms/activity-log?limit=100');
         setActivityLog(activityRes.data.activities);
       }
     } catch (error: any) {
@@ -175,7 +175,7 @@ const StaffRooms: React.FC = () => {
     }
 
     try {
-      await axios.put(`/api/staff/rooms/${roomId}/status`, { status: newStatus, notes });
+      await axios.put(`/staff/rooms/${roomId}/status`, { status: newStatus, notes });
       toast.success('Room status updated successfully');
       fetchData();
     } catch (error: any) {
@@ -591,7 +591,7 @@ const StaffRooms: React.FC = () => {
                       <button
                         onClick={async () => {
                           try {
-                            await axios.put(`/api/staff/rooms/cleaning-tasks/${task._id}`, {
+                            await axios.put(`/staff/rooms/cleaning-tasks/${task._id}`, {
                               status: task.status === 'pending' ? 'in-progress' : 'completed'
                             });
                             toast.success('Task updated');
@@ -695,7 +695,7 @@ const StaffRooms: React.FC = () => {
                           <button
                             onClick={async () => {
                               try {
-                                await axios.put(`/api/staff/rooms/maintenance-tasks/${task._id}`, {
+                                await axios.put(`/staff/rooms/maintenance-tasks/${task._id}`, {
                                   status: 'in-progress'
                                 });
                                 toast.success('Task status updated');
@@ -713,7 +713,7 @@ const StaffRooms: React.FC = () => {
                           onClick={async () => {
                             const notes = prompt('Add completion notes (optional):');
                             try {
-                              await axios.put(`/api/staff/rooms/maintenance-tasks/${task._id}`, {
+                              await axios.put(`/staff/rooms/maintenance-tasks/${task._id}`, {
                                 status: 'completed',
                                 notes: notes || task.notes
                               });
@@ -800,7 +800,7 @@ const StaffRooms: React.FC = () => {
                   key={room._id}
                   onClick={async () => {
                     try {
-                      const response = await axios.get(`/api/staff/rooms/${room._id}/inventory`);
+                      const response = await axios.get(`/staff/rooms/${room._id}/inventory`);
                       // Show inventory modal
                       toast.success('Inventory loaded');
                     } catch (error: any) {

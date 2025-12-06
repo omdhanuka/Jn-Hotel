@@ -21,7 +21,7 @@ const ManagerLogin: React.FC = () => {
     setError('');
 
     try {
-      const response = await axios.post('/api/auth/manager/login', {
+      const response = await axios.post('/auth/manager/login', {
         email: formData.email,
         password: formData.password
       });

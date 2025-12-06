@@ -70,11 +70,11 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       
       // Fetch room and banquet bookings
-      const bookingsResponse = await axios.get('/api/bookings');
+      const bookingsResponse = await axios.get('/bookings');
       const roomBanquetBookings = bookingsResponse.data.bookings || [];
       
       // Fetch restaurant bookings
-      const restaurantResponse = await axios.get('/api/restaurant/bookings');
+      const restaurantResponse = await axios.get('/restaurant/bookings');
       const restBookings = restaurantResponse.data.bookings || [];
       
       setBookings(roomBanquetBookings);

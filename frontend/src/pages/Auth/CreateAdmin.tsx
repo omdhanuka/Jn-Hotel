@@ -41,7 +41,7 @@ const CreateAdmin: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await axios.post('/api/auth/create-admin', {
+      await axios.post('/auth/create-admin', {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,

@@ -186,7 +186,7 @@ const StaffTasks: React.FC = () => {
         return;
       }
 
-      const response = await axios.get('/api/manager/staff/stats');
+      const response = await axios.get('/manager/staff/stats');
       setStats(response.data);
     } catch (error: any) {
       console.error('Failed to fetch stats:', error);
@@ -211,7 +211,7 @@ const StaffTasks: React.FC = () => {
         return;
       }
 
-      const response = await axios.get('/api/manager/staff/list');
+      const response = await axios.get('/manager/staff/list');
       setStaffList(response.data.staff || []);
     } catch (error: any) {
       console.error('Failed to fetch staff list:', error);
@@ -236,7 +236,7 @@ const StaffTasks: React.FC = () => {
       if (taskFilters.category !== 'all') params.append('category', taskFilters.category);
       if (taskFilters.staffId) params.append('staffId', taskFilters.staffId);
 
-      const response = await axios.get(`/api/manager/staff/tasks?${params.toString()}`);
+      const response = await axios.get(`/manager/staff/tasks?${params.toString()}`);
       setTasks(response.data.tasks || []);
     } catch (error: any) {
       console.error('Failed to fetch tasks:', error);
@@ -254,7 +254,7 @@ const StaffTasks: React.FC = () => {
   const fetchPerformance = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/manager/staff/performance');
+      const response = await axios.get('/manager/staff/performance');
       setPerformance(response.data.performance || []);
     } catch (error) {
       toast.error('Failed to fetch performance data');
@@ -266,7 +266,7 @@ const StaffTasks: React.FC = () => {
   const fetchAttendance = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/manager/staff/attendance/today');
+      const response = await axios.get('/manager/staff/attendance/today');
       setAttendance(response.data.attendance || []);
     } catch (error) {
       toast.error('Failed to fetch attendance');
@@ -282,7 +282,7 @@ const StaffTasks: React.FC = () => {
       if (requestFilters.status !== 'all') params.append('status', requestFilters.status);
       if (requestFilters.type !== 'all') params.append('type', requestFilters.type);
 
-      const response = await axios.get(`/api/manager/staff/requests?${params.toString()}`);
+      const response = await axios.get(`/manager/staff/requests?${params.toString()}`);
       setRequests(response.data.requests || []);
     } catch (error) {
       toast.error('Failed to fetch requests');
@@ -293,7 +293,7 @@ const StaffTasks: React.FC = () => {
 
   const handleCreateTask = async () => {
     try {
-      await axios.post('/api/manager/staff/tasks', taskForm);
+      await axios.post('/manager/staff/tasks', taskForm);
       toast.success('Task assigned successfully');
       setShowTaskModal(false);
       resetTaskForm();
@@ -308,7 +308,7 @@ const StaffTasks: React.FC = () => {
     if (!editingTask) return;
 
     try {
-      await axios.put(`/api/manager/staff/tasks/${editingTask._id}`, taskForm);
+      await axios.put(`/manager/staff/tasks/${editingTask._id}`, taskForm);
       toast.success('Task updated successfully');
       setShowTaskModal(false);
       setEditingTask(null);
@@ -323,7 +323,7 @@ const StaffTasks: React.FC = () => {
     if (!confirm('Are you sure you want to delete this task?')) return;
 
     try {
-      await axios.delete(`/api/manager/staff/tasks/${taskId}`);
+      await axios.delete(`/manager/staff/tasks/${taskId}`);
       toast.success('Task deleted successfully');
       fetchTasks();
       fetchStats();
@@ -334,7 +334,7 @@ const StaffTasks: React.FC = () => {
 
   const handleUpdateRequest = async (requestId: string, status: string, notes: string = '') => {
     try {
-      await axios.put(`/api/manager/staff/requests/${requestId}`, { status, reviewNotes: notes });
+      await axios.put(`/manager/staff/requests/${requestId}`, { status, reviewNotes: notes });
       toast.success('Request updated successfully');
       setShowRequestModal(false);
       setSelectedRequest(null);

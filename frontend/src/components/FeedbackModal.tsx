@@ -27,7 +27,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ bookingId, bookingType, o
 
     try {
       setSubmitting(true);
-      await axios.post('/api/reviews', {
+      await axios.post('/reviews', {
         bookingId,
         rating,
         title: title.trim(),

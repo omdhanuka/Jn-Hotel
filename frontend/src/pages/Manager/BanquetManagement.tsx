@@ -117,7 +117,7 @@ const BanquetManagement: React.FC = () => {
 
   const fetchHalls = async () => {
     try {
-      const response = await axios.get('/api/manager/banquets');
+      const response = await axios.get('/manager/banquets');
       setHalls(response.data.halls || []);
     } catch (error) {
       console.error('Failed to fetch halls:', error);
@@ -134,7 +134,7 @@ const BanquetManagement: React.FC = () => {
       if (filters.endDate) params.append('endDate', filters.endDate);
       if (filters.search) params.append('search', filters.search);
 
-      const response = await axios.get(`/api/manager/banquets/bookings?${params.toString()}`);
+      const response = await axios.get(`/manager/banquets/bookings?${params.toString()}`);
       setBookings(response.data.bookings || []);
     } catch (error) {
       toast.error('Failed to fetch bookings');
@@ -143,7 +143,7 @@ const BanquetManagement: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get('/api/manager/banquets/stats');
+      const response = await axios.get('/manager/banquets/stats');
       setStats(response.data);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
@@ -152,7 +152,7 @@ const BanquetManagement: React.FC = () => {
 
   const handleViewDetails = async (bookingId: string) => {
     try {
-      const response = await axios.get(`/api/manager/banquets/${bookingId}`);
+      const response = await axios.get(`/manager/banquets/${bookingId}`);
       setSelectedBooking(response.data.booking);
       setShowDetailsModal(true);
     } catch (error) {
@@ -164,7 +164,7 @@ const BanquetManagement: React.FC = () => {
     if (!confirm('Approve this booking?')) return;
 
     try {
-      await axios.patch(`/api/manager/banquets/${bookingId}`, { status: 'confirmed' });
+      await axios.patch(`/manager/banquets/${bookingId}`, { status: 'confirmed' });
       toast.success('Booking approved successfully');
       fetchData();
       setShowDetailsModal(false);
@@ -177,7 +177,7 @@ const BanquetManagement: React.FC = () => {
     if (!confirm('Decline this booking?')) return;
 
     try {
-      await axios.patch(`/api/manager/banquets/${bookingId}`, { status: 'cancelled' });
+      await axios.patch(`/manager/banquets/${bookingId}`, { status: 'cancelled' });
       toast.success('Booking declined');
       fetchData();
       setShowDetailsModal(false);

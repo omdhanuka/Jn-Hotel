@@ -75,7 +75,7 @@ const ComplaintManagement: React.FC = () => {
 
   const fetchDashboard = async () => {
     try {
-      const response = await axios.get('/api/manager/complaints/dashboard');
+      const response = await axios.get('/manager/complaints/dashboard');
       setStats(response.data.stats);
       setTrends(response.data.trends);
       setCategoryBreakdown(response.data.categoryBreakdown);
@@ -93,7 +93,7 @@ const ComplaintManagement: React.FC = () => {
         ...filters
       });
 
-      const response = await axios.get(`/api/manager/complaints?${params.toString()}`);
+      const response = await axios.get(`/manager/complaints?${params.toString()}`);
       setComplaints(response.data.complaints);
       setPagination(prev => ({
         ...prev,

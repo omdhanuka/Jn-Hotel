@@ -52,7 +52,7 @@ const BookingChart: React.FC = () => {
       console.log('Fetching bookings for:', startOfMonth, 'to', endOfMonth); // Debug log
       console.log('Current filter type:', filters.type); // Debug log
       
-      const response = await axios.get('/api/bookings/admin/chart', {
+      const response = await axios.get('/bookings/admin/chart', {
         params: {
           startDate: startOfMonth.toISOString(),
           endDate: endOfMonth.toISOString(),
@@ -75,7 +75,7 @@ const BookingChart: React.FC = () => {
 
   const fetchRooms = async () => {
     try {
-      const response = await axios.get('/api/rooms?limit=100');
+      const response = await axios.get('/rooms?limit=100');
       setRooms(response.data.rooms.map((room: any) => ({
         roomNumber: room.roomNumber,
         type: room.type

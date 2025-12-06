@@ -54,7 +54,7 @@ const RoomOperations: React.FC = () => {
       if (filters.status !== 'all') params.append('status', filters.status);
       if (filters.floor) params.append('floor', filters.floor);
 
-      const response = await axios.get(`/api/manager/rooms?${params.toString()}`);
+      const response = await axios.get(`/manager/rooms?${params.toString()}`);
       
       setRooms(response.data.rooms || []);
       
@@ -87,7 +87,7 @@ const RoomOperations: React.FC = () => {
 
   const handleViewDetails = async (room: any) => {
     try {
-      const response = await axios.get(`/api/manager/rooms/${room._id}`);
+      const response = await axios.get(`/manager/rooms/${room._id}`);
       setSelectedRoom(response.data);
       setShowDetailModal(true);
     } catch (error) {
@@ -97,7 +97,7 @@ const RoomOperations: React.FC = () => {
 
   const handleCompleteTask = async (roomId: string) => {
     try {
-      await axios.patch(`/api/manager/rooms/${roomId}/complete`);
+      await axios.patch(`/manager/rooms/${roomId}/complete`);
       toast.success('Task completed successfully');
       fetchRooms();
     } catch (error: any) {
@@ -112,7 +112,7 @@ const RoomOperations: React.FC = () => {
 
     try {
       setLoading(true);
-      await axios.post(`/api/manager/rooms/${roomId}/release`); // Changed from patch to post
+      await axios.post(`/manager/rooms/${roomId}/release`); // Changed from patch to post
       toast.success('Guest checked out successfully. Room marked for cleaning.');
       fetchRooms();
     } catch (error: any) {
@@ -133,7 +133,7 @@ const RoomOperations: React.FC = () => {
 
     try {
       setUpdatingStatus(true);
-      await axios.patch(`/api/manager/rooms/${selectedRoom._id}/status`, { 
+      await axios.patch(`/manager/rooms/${selectedRoom._id}/status`, { 
         status: newStatus 
       });
       toast.success('Room status updated successfully');
@@ -154,7 +154,7 @@ const RoomOperations: React.FC = () => {
 
     try {
       setMovingGuest(true);
-      await axios.patch(`/api/manager/rooms/${selectedRoom._id}/move-guest`, {
+      await axios.patch(`/manager/rooms/${selectedRoom._id}/move-guest`, {
         newRoomId: selectedNewRoom,
         reason: moveReason
       });
@@ -174,7 +174,7 @@ const RoomOperations: React.FC = () => {
     if (!selectedRoom) return;
     
     try {
-      const response = await axios.get('/api/manager/rooms/available/for-move', {
+      const response = await axios.get('/manager/rooms/available/for-move', {
         params: {
           roomType: selectedRoom.type,
           minGuests: selectedRoom.maxGuests

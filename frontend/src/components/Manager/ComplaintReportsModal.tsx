@@ -19,7 +19,7 @@ const ComplaintReportsModal: React.FC<ComplaintReportsModalProps> = ({ onClose }
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/manager/complaints/reports?period=${period}`);
+      const response = await axios.get(`/manager/complaints/reports?period=${period}`);
       setReports(response.data);
     } catch (error) {
       toast.error('Failed to load reports');

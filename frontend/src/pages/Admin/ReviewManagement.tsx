@@ -39,7 +39,7 @@ const ReviewManagement: React.FC = () => {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/admin/reviews?status=${filter}&limit=50`);
+      const response = await axios.get(`/admin/reviews?status=${filter}&limit=50`);
       setReviews(response.data.reviews || []);
     } catch (error) {
       toast.error('Failed to fetch reviews');
@@ -51,7 +51,7 @@ const ReviewManagement: React.FC = () => {
 
   const handleApprove = async (reviewId: string, isApproved: boolean, isPublished: boolean) => {
     try {
-      await axios.put(`/api/reviews/admin/${reviewId}`, {
+      await axios.put(`/reviews/admin/${reviewId}`, {
         isApproved,
         isPublished,
         adminResponse: adminResponse || undefined
@@ -69,7 +69,7 @@ const ReviewManagement: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this review?')) return;
 
     try {
-      await axios.delete(`/api/reviews/admin/${reviewId}`);
+      await axios.delete(`/reviews/admin/${reviewId}`);
       toast.success('Review deleted successfully');
       fetchReviews();
     } catch (error) {

@@ -156,7 +156,7 @@ const StaffManagement: React.FC = () => {
   const fetchStaff = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/admin/staff');
+      const response = await axios.get('/admin/staff');
       setStaff(response.data.staff || []);
     } catch (error) {
       toast.error('Failed to fetch staff');
@@ -201,11 +201,11 @@ const StaffManagement: React.FC = () => {
       console.log('Submitting data:', { ...staffData, password: '***', activeTab, roleToSubmit }); // Debug log
 
       if (editingStaff) {
-        const response = await axios.put(`/api/admin/staff/${editingStaff._id}`, staffData);
+        const response = await axios.put(`/admin/staff/${editingStaff._id}`, staffData);
         console.log('Update response:', response.data);
         toast.success(`${roleToSubmit === 'manager' ? 'Manager' : 'Staff'} updated successfully`);
       } else {
-        const response = await axios.post('/api/admin/staff', staffData);
+        const response = await axios.post('/admin/staff', staffData);
         console.log('Create response:', response.data);
         toast.success(`${roleToSubmit === 'manager' ? 'Manager' : 'Staff'} registered successfully`);
       }
@@ -285,7 +285,7 @@ const StaffManagement: React.FC = () => {
     }
     
     try {
-      await axios.delete(`/api/admin/staff/${staffId}`);
+      await axios.delete(`/admin/staff/${staffId}`);
       toast.success('Staff deleted successfully');
       fetchStaff();
     } catch (error: any) {
@@ -295,7 +295,7 @@ const StaffManagement: React.FC = () => {
 
   const toggleStaffStatus = async (staffId: string, currentStatus: boolean) => {
     try {
-      await axios.put(`/api/admin/staff/${staffId}/status`, {
+      await axios.put(`/admin/staff/${staffId}/status`, {
         isActive: !currentStatus
       });
       toast.success(`Staff ${!currentStatus ? 'activated' : 'deactivated'} successfully`);

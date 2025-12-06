@@ -130,7 +130,7 @@ const AdminPanel: React.FC = () => {
   const fetchBookingStats = async () => {
     try {
       console.log('Fetching booking stats...');
-      const response = await axios.get('/api/bookings/stats');
+      const response = await axios.get('/bookings/stats');
       console.log('Booking stats response:', response.data);
       
       const { chartData, totalBookings, roomBookings, banquetBookings, todayBookings } = response.data;
@@ -145,7 +145,7 @@ const AdminPanel: React.FC = () => {
       }));
 
       // Fetch dashboard stats for rating
-      const dashboardResponse = await axios.get('/api/admin/dashboard');
+      const dashboardResponse = await axios.get('/admin/dashboard');
       if (dashboardResponse.data.stats) {
         setStats(prev => ({
           ...prev,
@@ -435,7 +435,7 @@ const BillCreator: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        const bookingRes = await axios.get(`/api/bookings/${id}`);
+        const bookingRes = await axios.get(`/bookings/${id}`);
         const b = bookingRes.data;
         setBooking(b);
 
@@ -449,7 +449,7 @@ const BillCreator: React.FC = () => {
         // Fetch resource (room or banquet) to get pricing
         if (b.type === 'room') {
           try {
-            const roomRes = await axios.get(`/api/rooms/${b.resourceId}`);
+            const roomRes = await axios.get(`/rooms/${b.resourceId}`);
             setResource(roomRes.data);
             const nights = Math.max(1, Math.ceil((new Date(b.checkOut).getTime() - new Date(b.checkIn).getTime()) / (1000 * 60 * 60 * 24)));
             
@@ -480,7 +480,7 @@ const BillCreator: React.FC = () => {
           }
         } else if (b.type === 'banquet') {
           try {
-            const banRes = await axios.get(`/api/banquets/${b.resourceId}`);
+            const banRes = await axios.get(`/banquets/${b.resourceId}`);
             setResource(banRes.data);
             const start = new Date(b.checkIn).getTime();
             const end = new Date(b.checkOut).getTime();
@@ -642,7 +642,7 @@ const BillCreator: React.FC = () => {
         notes
       };
       
-      await axios.put(`/api/bookings/${booking._id}`, {
+      await axios.put(`/bookings/${booking._id}`, {
         ...booking,
         bill,
         totalAmount: bill.grandTotal

@@ -56,7 +56,7 @@ const Home: React.FC = () => {
     try {
       setLoadingRooms(true);
       // Fetch 3 rooms for display
-      const response = await axios.get('/api/rooms?limit=3&status=active');
+      const response = await axios.get('/rooms?limit=3&status=active');
       setFeaturedRooms(response.data.rooms || []);
     } catch (error) {
       console.error('Error fetching rooms:', error);
@@ -74,7 +74,7 @@ const Home: React.FC = () => {
   const fetchReviews = async () => {
     try {
       setLoadingReviews(true);
-      const response = await axios.get('/api/reviews?limit=4');
+      const response = await axios.get('/reviews?limit=4');
       const reviews = response.data.reviews || [];
       
       // Calculate average rating from all approved reviews
@@ -89,7 +89,7 @@ const Home: React.FC = () => {
         role: review.experienceType === 'room' ? 'Hotel Guest' : 
               review.experienceType === 'banquet' ? 'Event Organizer' :
               review.experienceType === 'restaurant' ? 'Restaurant Guest' : 'Valued Guest',
-        image: `https://ui-avatars.com/api/?name=${review.user.firstName}+${review.user.lastName}&background=random`,
+        image: `https://ui-avatars.com/?name=${review.user.firstName}+${review.user.lastName}&background=random`,
         rating: review.rating,
         comment: review.comment
       }));

@@ -71,7 +71,7 @@ const Banquets: React.FC = () => {
       
       console.log('Fetching banquets with params:', queryParams.toString()); // Debug log
       
-      const response = await axios.get(`/api/banquets?${queryParams.toString()}`);
+      const response = await axios.get(`/banquets?${queryParams.toString()}`);
       console.log('Banquets response:', response.data); // Debug log
       
       setBanquets(response.data.banquets || []);
@@ -206,12 +206,12 @@ const Banquets: React.FC = () => {
                 >
                   <div className="h-48 bg-gray-300 relative group">
                     <img
-                      src={getImageUrl(banquet.images?.[currentImageIndex] || '/api/placeholder/400/300')}
+                      src={getImageUrl(banquet.images?.[currentImageIndex] || '/placeholder/400/300')}
                       alt={banquet.name}
                       className="w-full h-full object-cover transition-opacity duration-500"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.src = '/api/placeholder/400/300';
+                        target.src = '/placeholder/400/300';
                       }}
                     />
 

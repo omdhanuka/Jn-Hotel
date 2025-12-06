@@ -48,7 +48,7 @@ const StaffDashboard: React.FC = () => {
 
       try {
         // Use the new auth endpoint instead of admin endpoint
-        const response = await axios.get('/api/auth/me/permissions');
+        const response = await axios.get('/auth/me/permissions');
         console.log('User permissions response:', response.data);
         setAccessibleSections(response.data.accessibleSections || ['dashboard']);
       } catch (error: any) {

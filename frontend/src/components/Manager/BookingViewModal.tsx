@@ -33,7 +33,7 @@ const BookingViewModal: React.FC<BookingViewModalProps> = ({ booking, onClose, o
 
   const handleStatusUpdate = async (newStatus: string) => {
     try {
-      await axios.patch(`/api/manager/bookings/${booking._id}/status`, { status: newStatus });
+      await axios.patch(`/manager/bookings/${booking._id}/status`, { status: newStatus });
       toast.success('Booking status updated successfully');
       onRefresh();
       onClose();

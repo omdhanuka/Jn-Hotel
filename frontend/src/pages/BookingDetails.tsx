@@ -62,7 +62,7 @@ const BookingDetails: React.FC = () => {
   const fetchBookingDetails = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/bookings/${bookingId}`);
+      const response = await axios.get(`/bookings/${bookingId}`);
       const bookingData = response.data;
       setBooking(bookingData);
       
@@ -108,13 +108,13 @@ const BookingDetails: React.FC = () => {
       let endpoint = '';
       switch (type) {
         case 'room':
-          endpoint = `/api/rooms/${resourceId}`;
+          endpoint = `/rooms/${resourceId}`;
           break;
         case 'banquet':
-          endpoint = `/api/banquets/${resourceId}`;
+          endpoint = `/banquets/${resourceId}`;
           break;
         case 'table':
-          endpoint = `/api/restaurant/tables/${resourceId}`;
+          endpoint = `/restaurant/tables/${resourceId}`;
           break;
       }
       
@@ -193,7 +193,7 @@ const BookingDetails: React.FC = () => {
     }
 
     try {
-      const response = await axios.delete(`/api/bookings/${bookingId}`);
+      const response = await axios.delete(`/bookings/${bookingId}`);
       
       // Show appropriate success message based on payment status
       if (response.data.paymentAction) {
@@ -220,7 +220,7 @@ const BookingDetails: React.FC = () => {
     }
 
     try {
-      const response = await axios.put(`/api/bookings/${bookingId}`, {
+      const response = await axios.put(`/bookings/${bookingId}`, {
         checkIn: modifyForm.checkIn,
         checkOut: modifyForm.checkOut,
         guests: modifyForm.guests,
@@ -369,7 +369,7 @@ const BookingDetails: React.FC = () => {
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="h-48 bg-gray-300">
                   <img
-                    src={resource.images?.[0] || '/api/placeholder/600/300'}
+                    src={resource.images?.[0] || '/placeholder/600/300'}
                     alt={resource.name || `Room ${resource.roomNumber}`}
                     className="w-full h-full object-cover"
                   />

@@ -199,7 +199,7 @@ const BanquetManagement: React.FC = () => {
   const fetchBanquets = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/banquets?limit=50');
+      const response = await axios.get('/banquets?limit=50');
       setBanquets(response.data.banquets || []);
     } catch (error) {
       toast.error('Failed to fetch banquets');
@@ -237,10 +237,10 @@ const BanquetManagement: React.FC = () => {
   const handleSubmit = async () => {
     try {
       if (editingBanquet) {
-        await axios.put(`/api/banquets/${editingBanquet}`, banquetForm);
+        await axios.put(`/banquets/${editingBanquet}`, banquetForm);
         toast.success('Banquet updated successfully');
       } else {
-        await axios.post('/api/banquets', banquetForm);
+        await axios.post('/banquets', banquetForm);
         toast.success('Banquet created successfully');
       }
       
@@ -290,7 +290,7 @@ const BanquetManagement: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this banquet?')) return;
     
     try {
-      await axios.delete(`/api/banquets/${id}`);
+      await axios.delete(`/banquets/${id}`);
       toast.success('Banquet deleted successfully');
       fetchBanquets();
     } catch (error: any) {
@@ -314,7 +314,7 @@ const BanquetManagement: React.FC = () => {
     formData.append('maxHeight', '1080');
 
     try {
-      const response = await axios.post('/api/banquets/upload-images', formData, {
+      const response = await axios.post('/banquets/upload-images', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -383,7 +383,7 @@ const BanquetManagement: React.FC = () => {
     if (imageUrl.startsWith('/uploads/')) {
       try {
         const filename = imageUrl.split('/').pop();
-        await axios.delete(`/api/banquets/images/${filename}`);
+        await axios.delete(`/banquets/images/${filename}`);
       } catch (error) {
         console.error('Failed to delete image from server:', error);
       }

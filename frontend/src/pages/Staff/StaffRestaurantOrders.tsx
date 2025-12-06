@@ -63,7 +63,7 @@ const StaffRestaurantOrders: React.FC = () => {
 
   const checkPermissions = async () => {
     try {
-      const response = await axios.get('/api/auth/me/permissions');
+      const response = await axios.get('/auth/me/permissions');
       setPermissions(response.data.permissions || {});
       
       if (!response.data.permissions.viewOrders && !response.data.permissions.manageOrders) {
@@ -88,7 +88,7 @@ const StaffRestaurantOrders: React.FC = () => {
       
       if (filters.status !== 'all') params.append('status', filters.status);
       
-      const response = await axios.get(`/api/restaurant/bookings/admin?${params.toString()}`);
+      const response = await axios.get(`/restaurant/bookings/admin?${params.toString()}`);
       
       // Filter by delivery type if needed
       let filteredOrders = response.data.bookings || [];
@@ -118,7 +118,7 @@ const StaffRestaurantOrders: React.FC = () => {
     }
 
     try {
-      await axios.put(`/api/restaurant/bookings/${orderId}/status`, { status: newStatus });
+      await axios.put(`/restaurant/bookings/${orderId}/status`, { status: newStatus });
       toast.success('Order status updated successfully');
       fetchOrders();
       if (selectedOrder && selectedOrder._id === orderId) {

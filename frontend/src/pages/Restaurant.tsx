@@ -132,7 +132,7 @@ const Restaurant: React.FC = () => {
   const fetchMenuItems = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/restaurant/menu?limit=100');
+      const response = await axios.get('/restaurant/menu?limit=100');
       setMenuItems(response.data.menuItems || []);
     } catch (error) {
       toast.error('Failed to fetch menu items');
@@ -143,7 +143,7 @@ const Restaurant: React.FC = () => {
 
   const fetchTables = async () => {
     try {
-      const response = await axios.get('/api/restaurant/tables');
+      const response = await axios.get('/restaurant/tables');
       setTables(response.data.tables || []);
     } catch (error) {
       toast.error('Failed to fetch tables');
@@ -153,7 +153,7 @@ const Restaurant: React.FC = () => {
   const fetchTodaySpecials = async () => {
     try {
       // Use the public endpoint for today's specials
-      const response = await axios.get('/api/manager/restaurant/specials/today/public');
+      const response = await axios.get('/manager/restaurant/specials/today/public');
       setTodaySpecials(response.data.specials || []);
       console.log('Today specials loaded:', response.data.specials?.length || 0);
     } catch (error: any) {
@@ -257,7 +257,7 @@ const Restaurant: React.FC = () => {
         totalAmount: calculateTotal()
       };
 
-      const response = await axios.post('/api/restaurant/bookings', bookingData);
+      const response = await axios.post('/restaurant/bookings', bookingData);
       toast.success(`${bookingForm.bookingType === 'table' ? 'Table reserved' : 'Order placed'} successfully!`, {
         icon: '✅',
         duration: 4000,

@@ -35,7 +35,7 @@ const ComplaintDetailsModal: React.FC<ComplaintDetailsModalProps> = ({
   const fetchComplaintDetails = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/manager/complaints/${complaintId}`);
+      const response = await axios.get(`/manager/complaints/${complaintId}`);
       setComplaint(response.data.complaint);
       setStatusUpdate(prev => ({ ...prev, status: response.data.complaint.status }));
     } catch (error) {
@@ -47,7 +47,7 @@ const ComplaintDetailsModal: React.FC<ComplaintDetailsModalProps> = ({
 
   const fetchAvailableStaff = async () => {
     try {
-      const response = await axios.get('/api/manager/complaints/staff/available');
+      const response = await axios.get('/manager/complaints/staff/available');
       setAvailableStaff(response.data.staff);
     } catch (error) {
       console.error('Failed to fetch staff:', error);
@@ -61,7 +61,7 @@ const ComplaintDetailsModal: React.FC<ComplaintDetailsModalProps> = ({
     }
 
     try {
-      await axios.post(`/api/manager/complaints/${complaintId}/assign`, {
+      await axios.post(`/manager/complaints/${complaintId}/assign`, {
         staffId: selectedStaff,
         remarks: assignRemarks
       });
@@ -81,7 +81,7 @@ const ComplaintDetailsModal: React.FC<ComplaintDetailsModalProps> = ({
     }
 
     try {
-      await axios.put(`/api/manager/complaints/${complaintId}/status`, statusUpdate);
+      await axios.put(`/manager/complaints/${complaintId}/status`, statusUpdate);
       toast.success('Status updated successfully');
       fetchComplaintDetails();
       onRefresh();
@@ -97,7 +97,7 @@ const ComplaintDetailsModal: React.FC<ComplaintDetailsModalProps> = ({
     }
 
     try {
-      await axios.post(`/api/manager/complaints/${complaintId}/notes`, {
+      await axios.post(`/manager/complaints/${complaintId}/notes`, {
         note: internalNote
       });
       toast.success('Note added successfully');

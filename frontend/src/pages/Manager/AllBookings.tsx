@@ -91,7 +91,7 @@ const AllBookings: React.FC = () => {
       if (filters.startDate) params.append('startDate', filters.startDate);
       if (filters.endDate) params.append('endDate', filters.endDate);
 
-      const response = await axios.get(`/api/manager/bookings?${params.toString()}`);
+      const response = await axios.get(`/manager/bookings?${params.toString()}`);
       
       setBookings(response.data.bookings);
       setPagination(prev => ({
@@ -115,7 +115,7 @@ const AllBookings: React.FC = () => {
 
   const handleStatusUpdate = async (bookingId: string, status: string) => {
     try {
-      await axios.put(`/api/manager/bookings/${bookingId}/status`, { status });
+      await axios.put(`/manager/bookings/${bookingId}/status`, { status });
       toast.success(`Booking status updated to ${status}`);
       fetchBookings(); // Refresh the list
     } catch (error: any) {
@@ -126,7 +126,7 @@ const AllBookings: React.FC = () => {
 
   const handlePaymentStatusUpdate = async (bookingId: string, paymentStatus: string) => {
     try {
-      await axios.put(`/api/manager/bookings/${bookingId}/status`, { paymentStatus });
+      await axios.put(`/manager/bookings/${bookingId}/status`, { paymentStatus });
       toast.success(`Payment status updated to ${paymentStatus}`);
       fetchBookings(); // Refresh the list
     } catch (error: any) {

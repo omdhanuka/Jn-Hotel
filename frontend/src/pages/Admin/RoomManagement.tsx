@@ -99,7 +99,7 @@ const RoomManagement: React.FC = () => {
   const fetchRooms = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/rooms?limit=100');
+      const response = await axios.get('/rooms?limit=100');
       setRooms(response.data.rooms || []);
     } catch (error) {
       toast.error('Failed to fetch rooms');
@@ -125,10 +125,10 @@ const RoomManagement: React.FC = () => {
       };
 
       if (editingRoom) {
-        await axios.put(`/api/rooms/${editingRoom._id}`, roomData);
+        await axios.put(`/rooms/${editingRoom._id}`, roomData);
         toast.success('Room updated successfully');
       } else {
-        await axios.post('/api/rooms', roomData);
+        await axios.post('/rooms', roomData);
         toast.success('Room created successfully');
       }
       
@@ -227,7 +227,7 @@ const RoomManagement: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this room?')) return;
     
     try {
-      await axios.delete(`/api/rooms/${roomId}`);
+      await axios.delete(`/rooms/${roomId}`);
       toast.success('Room deleted successfully');
       fetchRooms();
     } catch (error) {
@@ -284,7 +284,7 @@ const RoomManagement: React.FC = () => {
       // Add compression quality to form data
       formData.append('quality', compressionQuality.toString());
 
-      const response = await axios.post('/api/rooms/upload-images', formData, {
+      const response = await axios.post('/rooms/upload-images', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

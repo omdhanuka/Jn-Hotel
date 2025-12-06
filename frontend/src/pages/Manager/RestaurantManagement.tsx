@@ -183,22 +183,22 @@ const RestaurantManagement: React.FC = () => {
       setLoading(true);
       
       // Fetch all data sequentially to better handle errors
-      const statsRes = await axios.get('/api/manager/restaurant/dashboard');
+      const statsRes = await axios.get('/manager/restaurant/dashboard');
       setStats(statsRes.data);
 
-      const tablesRes = await axios.get('/api/manager/restaurant/tables');
+      const tablesRes = await axios.get('/manager/restaurant/tables');
       setTables(tablesRes.data.tables);
 
-      const ordersRes = await axios.get('/api/manager/restaurant/orders');
+      const ordersRes = await axios.get('/manager/restaurant/orders');
       setOrders(ordersRes.data.orders);
 
-      const kitchenRes = await axios.get('/api/manager/restaurant/kitchen');
+      const kitchenRes = await axios.get('/manager/restaurant/kitchen');
       setKitchenOrders(kitchenRes.data.orders);
 
-      const waitersRes = await axios.get('/api/manager/restaurant/waiters');
+      const waitersRes = await axios.get('/manager/restaurant/waiters');
       setWaiters(waitersRes.data.waiters);
 
-      const billsRes = await axios.get('/api/manager/restaurant/bills');
+      const billsRes = await axios.get('/manager/restaurant/bills');
       setBills(billsRes.data.bills || []);
     } catch (error: any) {
       console.error('Fetch data error:', error);
@@ -218,7 +218,7 @@ const RestaurantManagement: React.FC = () => {
 
   const fetchReports = async (period: string) => {
     try {
-      const response = await axios.get(`/api/manager/restaurant/reports?period=${period}`);
+      const response = await axios.get(`/manager/restaurant/reports?period=${period}`);
       setReports(response.data);
       setReportPeriod(period);
     } catch (error) {
@@ -232,7 +232,7 @@ const RestaurantManagement: React.FC = () => {
       if (menuFilter === 'available') params.append('available', 'true');
       if (menuFilter === 'out-of-stock') params.append('available', 'false');
       
-      const response = await axios.get(`/api/manager/restaurant/menu?${params.toString()}`);
+      const response = await axios.get(`/manager/restaurant/menu?${params.toString()}`);
       setMenuItems(response.data.menuItems || []);
     } catch (error) {
       console.error('Failed to fetch menu items:', error);
@@ -242,7 +242,7 @@ const RestaurantManagement: React.FC = () => {
 
   const fetchTodaySpecials = async () => {
     try {
-      const response = await axios.get('/api/manager/restaurant/specials/today');
+      const response = await axios.get('/manager/restaurant/specials/today');
       setTodaySpecials(response.data.specials || []);
     } catch (error) {
       console.error('Failed to fetch today specials:', error);
@@ -604,7 +604,7 @@ const RestaurantManagement: React.FC = () => {
 
   const handleTableStatusChange = async (tableId: string, status: string) => {
     try {
-      await axios.put(`/api/manager/restaurant/tables/${tableId}/status`, { status });
+      await axios.put(`/manager/restaurant/tables/${tableId}/status`, { status });
       toast.success('Table status updated');
       fetchDashboardData();
     } catch (error) {
@@ -616,7 +616,7 @@ const RestaurantManagement: React.FC = () => {
     if (!selectedTable) return;
 
     try {
-      await axios.post(`/api/manager/restaurant/tables/${selectedTable._id}/assign-waiter`, {
+      await axios.post(`/manager/restaurant/tables/${selectedTable._id}/assign-waiter`, {
         waiterId
       });
       toast.success('Waiter assigned successfully');
@@ -632,7 +632,7 @@ const RestaurantManagement: React.FC = () => {
     if (!confirm('Remove waiter from this table?')) return;
 
     try {
-      await axios.delete(`/api/manager/restaurant/tables/${tableId}/waiter`);
+      await axios.delete(`/manager/restaurant/tables/${tableId}/waiter`);
       toast.success('Waiter removed');
       fetchDashboardData();
     } catch (error) {
@@ -642,7 +642,7 @@ const RestaurantManagement: React.FC = () => {
 
   const handleUpdateOrderStatus = async (orderId: string, status: string) => {
     try {
-      await axios.put(`/api/manager/restaurant/orders/${orderId}/status`, { status });
+      await axios.put(`/manager/restaurant/orders/${orderId}/status`, { status });
       toast.success('Order status updated');
       fetchDashboardData();
     } catch (error) {
@@ -652,7 +652,7 @@ const RestaurantManagement: React.FC = () => {
 
   const handleGenerateBillForTable = async (table: Table) => {
     try {
-      const response = await axios.post('/api/manager/restaurant/bills/generate-for-table', {
+      const response = await axios.post('/manager/restaurant/bills/generate-for-table', {
         tableNumber: table.tableName,
         discount: billDiscount,
         notes: billNotes
@@ -687,7 +687,7 @@ const RestaurantManagement: React.FC = () => {
 
   const handleGenerateBillFromOrder = async (order: Order) => {
     try {
-      const response = await axios.post('/api/manager/restaurant/bills', {
+      const response = await axios.post('/manager/restaurant/bills', {
         orderId: order._id,
         discount: billDiscount,
         taxPercent: billTaxPercent, // Add this
@@ -1100,7 +1100,7 @@ const RestaurantManagement: React.FC = () => {
 
   const handleMarkBillAsPaid = async (billId: string, paymentMethod: string = 'cash') => {
     try {
-      await axios.put(`/api/manager/restaurant/bills/${billId}/paid`, {
+      await axios.put(`/manager/restaurant/bills/${billId}/paid`, {
         paymentMethod
       });
       
@@ -1113,7 +1113,7 @@ const RestaurantManagement: React.FC = () => {
 
   const handleUpdateStock = async (menuItemId: string, newStock: number) => {
     try {
-      await axios.put(`/api/manager/restaurant/menu/${menuItemId}/stock`, {
+      await axios.put(`/manager/restaurant/menu/${menuItemId}/stock`, {
         stockQuantity: newStock
       });
       toast.success('Stock updated successfully');
@@ -1125,7 +1125,7 @@ const RestaurantManagement: React.FC = () => {
 
   const handleToggleItemAvailability = async (menuItemId: string, currentStatus: boolean) => {
     try {
-      await axios.put(`/api/manager/restaurant/menu/${menuItemId}/availability`, {
+      await axios.put(`/manager/restaurant/menu/${menuItemId}/availability`, {
         isAvailable: !currentStatus
       });
       toast.success(`Item marked as ${!currentStatus ? 'available' : 'out of stock'}`);
@@ -1137,7 +1137,7 @@ const RestaurantManagement: React.FC = () => {
 
   const handleToggleTodaySpecial = async (itemId: string, currentStatus: boolean) => {
     try {
-      await axios.put(`/api/manager/restaurant/menu/${itemId}/today-special`, {
+      await axios.put(`/manager/restaurant/menu/${itemId}/today-special`, {
         isTodaySpecial: !currentStatus
       });
       
@@ -1157,10 +1157,10 @@ const RestaurantManagement: React.FC = () => {
 
     try {
       if (editingSpecial) {
-        await axios.put(`/api/manager/restaurant/specials/today/${editingSpecial._id}`, specialForm);
+        await axios.put(`/manager/restaurant/specials/today/${editingSpecial._id}`, specialForm);
         toast.success('Special updated successfully');
       } else {
-        await axios.post('/api/manager/restaurant/specials/today', specialForm);
+        await axios.post('/manager/restaurant/specials/today', specialForm);
         toast.success('Today\'s special created successfully');
       }
       
@@ -1194,7 +1194,7 @@ const RestaurantManagement: React.FC = () => {
     if (!window.confirm('Remove this item from today\'s specials?')) return;
 
     try {
-      await axios.delete(`/api/manager/restaurant/specials/today/${specialId}`);
+      await axios.delete(`/manager/restaurant/specials/today/${specialId}`);
       toast.success('Special removed successfully');
       fetchTodaySpecials();
     } catch (error: any) {
@@ -1226,7 +1226,7 @@ const RestaurantManagement: React.FC = () => {
     }
 
     try {
-      await axios.post('/api/manager/restaurant/menu/specials/bulk', {
+      await axios.post('/manager/restaurant/menu/specials/bulk', {
         itemIds: selectedSpecialItems
       });
       
@@ -1244,7 +1244,7 @@ const RestaurantManagement: React.FC = () => {
     if (!window.confirm('Clear all today\'s specials?')) return;
 
     try {
-      await axios.delete('/api/manager/restaurant/menu/specials/clear');
+      await axios.delete('/manager/restaurant/menu/specials/clear');
       toast.success('All today\'s specials cleared');
       fetchMenuItems();
       fetchTodaySpecials();
@@ -1905,7 +1905,11 @@ const RestaurantManagement: React.FC = () => {
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            label={({ _id, orders, percent }) => `${_id}: ${orders} (${(percent * 100).toFixed(0)}%)`}
+                            label={(entry: any) => {
+                              const data = entry.payload || entry;
+                              const percent = entry.percent !== undefined ? entry.percent : 0;
+                              return `${data._id}: ${data.orders} (${(percent * 100).toFixed(0)}%)`;
+                            }}
                             outerRadius={80}
                             fill="#8884d8"
                             dataKey="orders"
@@ -1921,10 +1925,11 @@ const RestaurantManagement: React.FC = () => {
                     ) : (
                       <div className="flex flex-col items-center justify-center h-64 text-gray-500">
                         <AlertCircle className="h-16 w-16 mb-4" />
+
                         <p className="text-center">No table usage data available for this period</p>
                       </div>
                     )}
-                                   </div>
+                  </div>
                 </div>
 
                 {/* Detailed Tables */}

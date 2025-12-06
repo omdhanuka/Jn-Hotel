@@ -62,7 +62,7 @@ const Rooms: React.FC = () => {
       if (filters.type) queryParams.append('type', filters.type);
       if (filters.capacity) queryParams.append('capacity', filters.capacity);
       
-      const response = await axios.get(`/api/rooms?${queryParams.toString()}`);
+      const response = await axios.get(`/rooms?${queryParams.toString()}`);
       setRooms(response.data.rooms || []);
     } catch (error: any) {
       console.error('Error fetching rooms:', error);
@@ -101,7 +101,7 @@ const Rooms: React.FC = () => {
         roomType: filters.type || undefined
       };
 
-      const response = await axios.post('/api/rooms/availability', searchData);
+      const response = await axios.post('/rooms/availability', searchData);
       setRooms(response.data.availableRooms || []);
       
       if (response.data.availableRooms.length === 0) {

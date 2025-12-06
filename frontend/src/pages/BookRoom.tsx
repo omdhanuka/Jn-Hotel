@@ -92,7 +92,7 @@ const BookRoom: React.FC = () => {
 
   const fetchRoom = async () => {
     try {
-      const response = await axios.get(`/api/rooms/${roomId}`);
+      const response = await axios.get(`/rooms/${roomId}`);
       setRoom(response.data);
     } catch (error) {
       toast.error('Room not found');
@@ -162,7 +162,7 @@ const BookRoom: React.FC = () => {
         services: bookingForm.services
       };
 
-      const response = await axios.post('/api/bookings', bookingData);
+      const response = await axios.post('/bookings', bookingData);
       toast.success('Booking confirmed successfully!');
       navigate('/dashboard', { state: { newBooking: response.data } });
     } catch (error: any) {

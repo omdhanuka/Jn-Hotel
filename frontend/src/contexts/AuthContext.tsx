@@ -29,7 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Configure axios defaults globally
-    const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+    const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
     axios.defaults.baseURL = baseURL;
     
     console.log('Setting axios baseURL to:', baseURL);
@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(parsedUser);
         
         // Verify token in background
-        axios.get('/api/auth/verify')
+        axios.get('/auth/verify')
           .then(() => {
             console.log('Token verified successfully');
           })
@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const verifyToken = async () => {
     try {
-      const response = await axios.get('/api/auth/profile');
+      const response = await axios.get('/auth/profile');
       setUser(response.data);
     } catch (error) {
       console.error('Token verification failed:', error);
@@ -92,13 +92,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string, expectedRole?: string) => {
     try {
       // Determine login endpoint based on expected role
-      let loginEndpoint = '/api/auth/login';
+      let loginEndpoint = '/auth/login';
       if (expectedRole === 'staff') {
-        loginEndpoint = '/api/auth/login/staff';
+        loginEndpoint = '/auth/login/staff';
       } else if (expectedRole === 'reception') {
-        loginEndpoint = '/api/auth/login/reception';
+        loginEndpoint = '/auth/login/reception';
       } else if (expectedRole === 'manager') {
-        loginEndpoint = '/api/auth/login/manager';
+        loginEndpoint = '/auth/login/manager';
       }
 
       const response = await axios.post(loginEndpoint, { email, password });
@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (userData: any) => {
     try {
-      const response = await axios.post('/api/auth/register', userData);
+      const response = await axios.post('/auth/register', userData);
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);

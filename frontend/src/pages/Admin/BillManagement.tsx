@@ -83,7 +83,7 @@ const BillManagement: React.FC = () => {
   const fetchAllOrders = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/restaurant/bookings/admin');
+      const response = await axios.get('/restaurant/bookings/admin');
       const allOrders = response.data.bookings.filter((booking: any) => 
         booking.status !== 'cancelled' && booking.paymentStatus !== 'paid'
       );
@@ -101,7 +101,7 @@ const BillManagement: React.FC = () => {
 
   const fetchBills = async () => {
     try {
-      const response = await axios.get('/api/bills?billType=restaurant');
+      const response = await axios.get('/bills?billType=restaurant');
       setBills(response.data.bills || []);
     } catch (error) {
       console.error('Failed to fetch bills');
@@ -157,10 +157,10 @@ const BillManagement: React.FC = () => {
         notes: billForm.notes
       };
       
-      await axios.post('/api/bills/restaurant', billData);
+      await axios.post('/bills/restaurant', billData);
       
       // Update order payment status
-      await axios.put(`/api/restaurant/bookings/${selectedOrder._id}/status`, { 
+      await axios.put(`/restaurant/bookings/${selectedOrder._id}/status`, { 
         status: 'completed',
         paymentStatus: 'paid'
       });
@@ -177,7 +177,7 @@ const BillManagement: React.FC = () => {
 
   const printBill = async (bill: Bill) => {
     try {
-      await axios.post(`/api/bills/${bill._id}/print`);
+      await axios.post(`/bills/${bill._id}/print`);
     } catch (error) {
       console.error('Failed to update print count');
     }

@@ -78,7 +78,7 @@ const StaffRestaurant: React.FC = () => {
 
   const checkPermissions = async () => {
     try {
-      const response = await axios.get('/api/auth/me/permissions');
+      const response = await axios.get('/auth/me/permissions');
       setPermissions(response.data.permissions || {});
       
       if (!response.data.permissions.viewRestaurant && !response.data.permissions.manageRestaurant) {
@@ -102,7 +102,7 @@ const StaffRestaurant: React.FC = () => {
       if (filters.type !== 'all') params.append('type', filters.type);
       if (filters.status !== 'all') params.append('status', filters.status);
       
-      const response = await axios.get(`/api/restaurant/bookings/admin?${params.toString()}`);
+      const response = await axios.get(`/restaurant/bookings/admin?${params.toString()}`);
       setBookings(response.data.bookings || []);
     } catch (error: any) {
       if (error.response?.status === 403) {
@@ -124,7 +124,7 @@ const StaffRestaurant: React.FC = () => {
       if (menuFilters.category !== 'all') params.append('category', menuFilters.category);
       if (menuFilters.dishType !== 'all') params.append('dishType', menuFilters.dishType);
       
-      const response = await axios.get(`/api/restaurant/menu?${params.toString()}`);
+      const response = await axios.get(`/restaurant/menu?${params.toString()}`);
       setMenuItems(response.data.menuItems || []);
     } catch (error) {
       toast.error('Failed to fetch menu items');
@@ -140,7 +140,7 @@ const StaffRestaurant: React.FC = () => {
     }
 
     try {
-      await axios.put(`/api/restaurant/bookings/${bookingId}/status`, { status: newStatus });
+      await axios.put(`/restaurant/bookings/${bookingId}/status`, { status: newStatus });
       toast.success('Booking status updated successfully');
       fetchBookings();
     } catch (error: any) {
@@ -155,7 +155,7 @@ const StaffRestaurant: React.FC = () => {
     }
 
     try {
-      await axios.put(`/api/restaurant/menu/${itemId}`, updates);
+      await axios.put(`/restaurant/menu/${itemId}`, updates);
       toast.success('Menu item updated successfully');
       fetchMenuItems();
       setShowEditModal(false);
@@ -172,7 +172,7 @@ const StaffRestaurant: React.FC = () => {
     }
 
     try {
-      await axios.put(`/api/restaurant/menu/${itemId}`, { isAvailable: !currentStatus });
+      await axios.put(`/restaurant/menu/${itemId}`, { isAvailable: !currentStatus });
       toast.success(`Menu item ${!currentStatus ? 'enabled' : 'disabled'} successfully`);
       fetchMenuItems();
     } catch (error: any) {
@@ -544,7 +544,7 @@ const StaffRestaurant: React.FC = () => {
                 <div key={item._id} className="bg-white rounded-lg shadow-md overflow-hidden">
                   <div className="h-48 bg-gray-200">
                     <img
-                      src={item.images?.[0] || '/api/placeholder/300/200'}
+                      src={item.images?.[0] || '/placeholder/300/200'}
                       alt={item.name}
                       className="w-full h-full object-cover"
                     />

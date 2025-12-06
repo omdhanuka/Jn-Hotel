@@ -19,7 +19,7 @@ const ReceptionLogin: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('/api/auth/login', formData);
+      const response = await axios.post('/auth/login', formData);
       
       // Check if user has reception role
       if (response.data.user.role !== 'reception') {

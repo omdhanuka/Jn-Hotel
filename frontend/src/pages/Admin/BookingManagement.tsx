@@ -63,7 +63,7 @@ const BookingManagement: React.FC = () => {
       if (filters.status !== 'all') queryParams.append('status', filters.status);
       if (filters.paymentStatus !== 'all') queryParams.append('paymentStatus', filters.paymentStatus);
       
-      const response = await axios.get(`/api/bookings/admin?${queryParams.toString()}`);
+      const response = await axios.get(`/bookings/admin?${queryParams.toString()}`);
       setBookings(response.data.bookings || []);
     } catch (error) {
       toast.error('Failed to fetch bookings');
@@ -74,7 +74,7 @@ const BookingManagement: React.FC = () => {
 
   const updatePaymentStatus = async (bookingId: string, paymentStatus: string) => {
     try {
-      await axios.put(`/api/bookings/${bookingId}/payment-status`, {
+      await axios.put(`/bookings/${bookingId}/payment-status`, {
         paymentStatus
       });
       
@@ -95,7 +95,7 @@ const BookingManagement: React.FC = () => {
     try {
       console.log('Updating booking status:', bookingId, status); // Debug log
       
-      const response = await axios.put(`/api/bookings/${bookingId}/status`, {
+      const response = await axios.put(`/bookings/${bookingId}/status`, {
         status
       });
       
@@ -125,7 +125,7 @@ const BookingManagement: React.FC = () => {
     }
 
     try {
-      await axios.put(`/api/bookings/${bookingId}/cancel`);
+      await axios.put(`/bookings/${bookingId}/cancel`);
       
       setBookings(prev => prev.map(booking => 
         booking._id === bookingId 
@@ -155,7 +155,7 @@ const BookingManagement: React.FC = () => {
 
   const updateBooking = async (bookingId: string) => {
     try {
-      await axios.put(`/api/bookings/${bookingId}`, editForm);
+      await axios.put(`/bookings/${bookingId}`, editForm);
       
       setBookings(prev => prev.map(booking => 
         booking._id === bookingId 

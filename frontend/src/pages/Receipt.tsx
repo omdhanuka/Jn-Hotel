@@ -50,7 +50,7 @@ const Receipt: React.FC = () => {
   const fetchBookingData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/bookings/${bookingId}`);
+      const response = await axios.get(`/bookings/${bookingId}`);
       const bookingData = response.data;
       setBooking(bookingData);
       
@@ -69,13 +69,13 @@ const Receipt: React.FC = () => {
       let endpoint = '';
       switch (type) {
         case 'room':
-          endpoint = `/api/rooms/${resourceId}`;
+          endpoint = `/rooms/${resourceId}`;
           break;
         case 'banquet':
-          endpoint = `/api/banquets/${resourceId}`;
+          endpoint = `/banquets/${resourceId}`;
           break;
         case 'table':
-          endpoint = `/api/restaurant/tables/${resourceId}`;
+          endpoint = `/restaurant/tables/${resourceId}`;
           break;
       }
       

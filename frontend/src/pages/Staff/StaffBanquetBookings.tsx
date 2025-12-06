@@ -56,7 +56,7 @@ const StaffBanquetBookings: React.FC = () => {
 
   const checkPermissions = async () => {
     try {
-      const response = await axios.get('/api/auth/me/permissions');
+      const response = await axios.get('/auth/me/permissions');
       setPermissions(response.data.permissions || {});
       
       if (!response.data.permissions.viewBanquets && !response.data.permissions.manageBanquets) {
@@ -83,7 +83,7 @@ const StaffBanquetBookings: React.FC = () => {
       if (filters.status !== 'all') params.append('status', filters.status);
       if (filters.paymentStatus !== 'all') params.append('paymentStatus', filters.paymentStatus);
       
-      const response = await axios.get(`/api/staff/bookings?${params.toString()}`);
+      const response = await axios.get(`/staff/bookings?${params.toString()}`);
       
       setBookings(response.data.bookings || []);
       setPagination(prev => ({
@@ -111,7 +111,7 @@ const StaffBanquetBookings: React.FC = () => {
     }
 
     try {
-      await axios.put(`/api/staff/bookings/${bookingId}/status`, { status: newStatus });
+      await axios.put(`/staff/bookings/${bookingId}/status`, { status: newStatus });
       toast.success('Booking status updated successfully');
       fetchBanquetBookings();
     } catch (error: any) {
