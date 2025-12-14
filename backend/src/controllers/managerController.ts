@@ -55,6 +55,146 @@ export const getManagerDashboard = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getCalendarBookings = async (req: AuthRequest, res: Response) => {
+  try {
+    const { startDate, endDate, type = 'all' } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'Start date and end date are required' });
+    }
+
+    const start = new Date(startDate as string);
+    const end = new Date(endDate as string);
+
+    console.log('=== CALENDAR BOOKINGS QUERY ===');
+    console.log('Date Range:', start, 'to', end);
+    console.log('Filter Type:', type);
+
+    // Fetch room bookings
+    let roomBookings: any[] = [];
+    if (type === 'all' || type === 'room') {
+      const bookings = await Booking.find({
+        type: 'room',
+        $or: [
+          { checkIn: { $gte: start, $lte: end } },
+          { checkOut: { $gte: start, $lte: end } },
+          { checkIn: { $lte: start }, checkOut: { $gte: end } }
+        ]
+      })
+        .populate('user', 'firstName lastName email phone')
+        .sort({ checkIn: 1 })
+        .lean();
+
+      console.log(`✓ Found ${bookings.length} room bookings`);
+
+      // Manually populate room data
+      for (const booking of bookings) {
+        const room = await Room.findById(booking.resourceId).select('roomNumber type').lean();
+        if (room) {
+          roomBookings.push({ ...booking, resourceId: room });
+        } else {
+          console.log(`⚠ Room not found for booking ${booking._id}`);
+        }
+      }
+    }
+
+    // Fetch banquet bookings
+    let banquetBookings: any[] = [];
+    if (type === 'all' || type === 'banquet') {
+      // First check total banquet bookings in DB
+      const totalBanquetBookings = await Booking.countDocuments({ type: 'banquet' });
+      console.log(`📊 Total banquet bookings in database: ${totalBanquetBookings}`);
+
+      const bookings = await Booking.find({
+        type: 'banquet',
+        $or: [
+          { checkIn: { $gte: start, $lte: end } },
+          { checkOut: { $gte: start, $lte: end } },
+          { checkIn: { $lte: start }, checkOut: { $gte: end } }
+        ]
+      })
+        .populate('user', 'firstName lastName email phone')
+        .sort({ checkIn: 1 })
+        .lean();
+
+      console.log(`✓ Found ${bookings.length} banquet bookings in date range`);
+      
+      if (bookings.length > 0) {
+        console.log('Sample banquet booking:', JSON.stringify(bookings[0], null, 2));
+      }
+
+      // Manually populate banquet data
+      for (const booking of bookings) {
+        const banquet = await Banquet.findById(booking.resourceId).select('name capacity').lean();
+        if (banquet) {
+          console.log(`✓ Banquet found: ${banquet.name} for booking ${booking._id}`);
+          banquetBookings.push({ ...booking, resourceId: banquet });
+        } else {
+          console.log(`⚠ Banquet NOT found for booking ${booking._id}, resourceId: ${booking.resourceId}`);
+        }
+      }
+    }
+
+    // Format bookings for calendar
+    const formattedRoomBookings = roomBookings.map(booking => ({
+      id: booking._id,
+      title: `Room ${(booking.resourceId as any)?.roomNumber || 'N/A'} - ${(booking.user as any)?.firstName || ''} ${(booking.user as any)?.lastName || ''}`,
+      start: booking.checkIn,
+      end: booking.checkOut,
+      type: 'room',
+      status: booking.status,
+      resourceName: `Room ${(booking.resourceId as any)?.roomNumber || 'N/A'}`,
+      resourceType: (booking.resourceId as any)?.type || 'N/A',
+      guestName: `${(booking.user as any)?.firstName || ''} ${(booking.user as any)?.lastName || ''}`,
+      guestPhone: (booking.user as any)?.phone || '',
+      guests: booking.guests,
+      totalAmount: booking.totalAmount,
+      paymentStatus: booking.paymentStatus,
+      isCheckedIn: booking.isCheckedIn,
+      isCheckedOut: booking.isCheckedOut
+    }));
+
+    const formattedBanquetBookings = banquetBookings.map(booking => ({
+      id: booking._id,
+      title: `${(booking.resourceId as any)?.name || 'Banquet'} - ${(booking.user as any)?.firstName || ''} ${(booking.user as any)?.lastName || ''}`,
+      start: booking.checkIn,
+      end: booking.checkOut,
+      type: 'banquet',
+      status: booking.status,
+      resourceName: (booking.resourceId as any)?.name || 'N/A',
+      resourceCapacity: (booking.resourceId as any)?.capacity || 0,
+      guestName: `${(booking.user as any)?.firstName || ''} ${(booking.user as any)?.lastName || ''}`,
+      guestPhone: (booking.user as any)?.phone || '',
+      guests: booking.guests,
+      totalAmount: booking.totalAmount,
+      paymentStatus: booking.paymentStatus,
+      eventType: booking.eventDetails?.eventType || 'N/A'
+    }));
+
+    const allBookings = [...formattedRoomBookings, ...formattedBanquetBookings].sort(
+      (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
+    );
+
+    console.log('Calendar Bookings - Room:', formattedRoomBookings.length, 'Banquet:', formattedBanquetBookings.length);
+    console.log('Sample room booking:', formattedRoomBookings[0]);
+    console.log('Sample banquet booking:', formattedBanquetBookings[0]);
+
+    res.json({
+      bookings: allBookings,
+      roomBookings: formattedRoomBookings,
+      banquetBookings: formattedBanquetBookings,
+      stats: {
+        totalBookings: allBookings.length,
+        roomBookings: formattedRoomBookings.length,
+        banquetBookings: formattedBanquetBookings.length
+      }
+    });
+  } catch (error) {
+    console.error('Get calendar bookings error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const getAllBookingsForManager = async (req: AuthRequest, res: Response) => {
   try {
     const { 

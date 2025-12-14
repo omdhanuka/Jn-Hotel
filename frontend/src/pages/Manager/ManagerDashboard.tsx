@@ -105,6 +105,15 @@ const ManagerDashboard: React.FC = () => {
 
   const managerSections = [
     {
+      id: 'calendar',
+      icon: Calendar,
+      title: 'Booking Calendar',
+      description: 'View bookings in calendar format',
+      color: 'indigo',
+      link: '/manager/booking-calendar',
+      stat: `${stats.totalBookings} total`
+    },
+    {
       id: 'bookings',
       icon: Calendar,
       title: 'All Bookings',
@@ -178,6 +187,7 @@ const ManagerDashboard: React.FC = () => {
 
   const getColorClasses = (color: string) => {
     const colors: { [key: string]: string } = {
+      indigo: 'text-indigo-600 bg-indigo-50',
       blue: 'text-blue-600 bg-blue-50',
       green: 'text-green-600 bg-green-50',
       purple: 'text-purple-600 bg-purple-50',
@@ -185,7 +195,8 @@ const ManagerDashboard: React.FC = () => {
       red: 'text-red-600 bg-red-50',
       pink: 'text-pink-600 bg-pink-50',
       yellow: 'text-yellow-600 bg-yellow-50',
-      cyan: 'text-cyan-600 bg-cyan-50'
+      cyan: 'text-cyan-600 bg-cyan-50',
+      teal: 'text-teal-600 bg-teal-50'
     };
     return colors[color] || 'text-gray-600 bg-gray-50';
   };

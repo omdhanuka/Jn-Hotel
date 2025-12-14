@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Eye, Check, X, Building, Users, DollarSign, Upload, Link2, Trash } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+// import ComingSoonOverlay from '../../components/ComingSoonOverlay';
 
 interface Banquet {
   _id: string;
@@ -425,7 +426,17 @@ const BanquetManagement: React.FC = () => {
   }
 
   return (
-    <div>
+    <div className="relative">
+      {/* Optional: Uncomment to enable Coming Soon overlay
+      {showComingSoon && (
+        <ComingSoonOverlay 
+          title="Banquet Management"
+          message="Advanced banquet management features are being enhanced. Full functionality coming soon!"
+          icon="lock"
+        />
+      )}
+      */}
+      
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Banquet Management</h1>
         <button

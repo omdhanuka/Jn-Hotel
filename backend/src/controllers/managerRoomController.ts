@@ -370,3 +370,119 @@ export const getAvailableRoomsForMove = async (req: AuthRequest, res: Response) 
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const createManualBooking = async (req: AuthRequest, res: Response) => {
+  try {
+    const { 
+      roomId, 
+      customerDetails, 
+      checkIn, 
+      checkOut, 
+      guests, 
+      specialRequests,
+      paymentMethod,
+      advanceAmount
+    } = req.body;
+
+    // Validate required fields
+    if (!roomId || !customerDetails || !checkIn || !checkOut || !guests) {
+      return res.status(400).json({ message: 'All required fields must be provided' });
+    }
+
+    // Validate customer details
+    if (!customerDetails.firstName || !customerDetails.lastName || !customerDetails.phone) {
+      return res.status(400).json({ 
+        message: 'Customer first name, last name, and phone are required' 
+      });
+    }
+
+    // Validate room exists and is available
+    const room = await Room.findById(roomId);
+    if (!room) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+
+    if (room.isBooked) {
+      return res.status(400).json({ message: 'Room is already occupied' });
+    }
+
+    if (room.status !== 'active') {
+      return res.status(400).json({ 
+        message: `Room is currently under ${room.status}` 
+      });
+    }
+
+    // Validate dates
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+    const now = new Date();
+
+    if (checkInDate >= checkOutDate) {
+      return res.status(400).json({ message: 'Check-out date must be after check-in date' });
+    }
+
+    // Calculate total amount
+    const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+    const totalAmount = room.price * nights;
+
+    // Import User model at the top if not already imported
+    const User = (await import('../models/User')).default;
+
+    // Create or find guest user
+    let guestUser;
+    const existingUser = await User.findOne({ phone: customerDetails.phone });
+
+    if (existingUser) {
+      // Use existing user
+      guestUser = existingUser;
+    } else {
+      // Create new guest user for offline booking
+      guestUser = await User.create({
+        firstName: customerDetails.firstName,
+        lastName: customerDetails.lastName,
+        email: customerDetails.email || `guest_${Date.now()}@offline.booking`,
+        phone: customerDetails.phone,
+        password: Math.random().toString(36).slice(-8), // Random password
+        role: 'guest',
+        isVerified: false,
+        isActive: true
+      });
+    }
+
+    // Create booking
+    const booking = await Booking.create({
+      user: guestUser._id,
+      type: 'room',
+      resourceId: room._id,
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
+      guests,
+      totalAmount,
+      status: 'confirmed',
+      paymentStatus: advanceAmount >= totalAmount ? 'paid' : 'pending',
+      paymentMethod: paymentMethod || 'cash',
+      specialRequests: specialRequests ? 
+        `${specialRequests}\n\nManual booking by manager: ${req.user?.firstName} ${req.user?.lastName}` :
+        `Manual booking by manager: ${req.user?.firstName} ${req.user?.lastName}`,
+      isCheckedIn: true,
+      isCheckedOut: false
+    });
+
+    // Update room status
+    room.isBooked = true;
+    await room.save();
+
+    // Populate booking with user details
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate('user', 'firstName lastName email phone');
+
+    res.status(201).json({ 
+      message: 'Manual booking created successfully',
+      booking: populatedBooking,
+      room: room.toObject()
+    });
+  } catch (error) {
+    console.error('Create manual booking error:', error);
+    res.status(500).json({ message: 'Server error creating manual booking' });
+  }
+};

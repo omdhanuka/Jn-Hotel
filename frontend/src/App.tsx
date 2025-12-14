@@ -39,6 +39,8 @@ import StaffTasks from './pages/Manager/StaffTasks';
 import BanquetManagement from './pages/Manager/BanquetManagement';
 import RestaurantManagement from './pages/Manager/RestaurantManagement';
 import ComplaintManagement from './pages/Manager/ComplaintManagement';
+import ManualBooking from './pages/Manager/ManualBooking';
+import BookingCalendar from './pages/Manager/BookingCalendar';
 
 // Configure axios defaults immediately
 const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -107,7 +109,9 @@ function App() {
               {/* Manager Routes */}
               <Route path="/manager/login" element={<ManagerLogin />} />
               <Route path="/manager/dashboard" element={<ManagerDashboard />} />
+              <Route path="/manager/manual-booking" element={<ManualBooking />} />
               <Route path="/manager/bookings" element={<AllBookings />} />
+              <Route path="/manager/booking-calendar" element={<BookingCalendar />} />
               <Route path="/manager/room-operations" element={<RoomOperations />} />
               <Route path="/manager/checkin-checkout" element={<CheckInCheckOut />} />
               <Route path="/manager/staff-tasks" element={<StaffTasks />} />

@@ -17,6 +17,7 @@ const RoomOperations: React.FC = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showManualBookingModal, setShowManualBookingModal] = useState(false);
 
   const [filters, setFilters] = useState({
     search: '',
@@ -39,6 +40,23 @@ const RoomOperations: React.FC = () => {
   const [selectedNewRoom, setSelectedNewRoom] = useState('');
   const [moveReason, setMoveReason] = useState('');
   const [movingGuest, setMovingGuest] = useState(false);
+
+  // Manual booking states
+  const [manualBookingForm, setManualBookingForm] = useState({
+    roomId: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    checkIn: '',
+    checkOut: '',
+    guests: 1,
+    specialRequests: '',
+    paymentMethod: 'cash',
+    advanceAmount: 0
+  });
+  const [submittingBooking, setSubmittingBooking] = useState(false);
+  const [availableRoomsForBooking, setAvailableRoomsForBooking] = useState<any[]>([]);
 
   useEffect(() => {
     fetchRooms();
@@ -192,6 +210,81 @@ const RoomOperations: React.FC = () => {
     }
   }, [showMoveModal, selectedRoom]);
 
+  const handleOpenManualBooking = () => {
+    // Get available rooms for booking
+    const available = rooms.filter(r => !r.isBooked && r.status === 'active');
+    setAvailableRoomsForBooking(available);
+    setShowManualBookingModal(true);
+  };
+
+  const handleManualBookingSubmit = async () => {
+    // Validate form
+    if (!manualBookingForm.roomId || !manualBookingForm.firstName || !manualBookingForm.lastName || 
+        !manualBookingForm.phone || !manualBookingForm.checkIn || !manualBookingForm.checkOut) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    // Validate phone number
+    if (!/^\d{10}$/.test(manualBookingForm.phone)) {
+      toast.error('Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    // Validate dates
+    const checkIn = new Date(manualBookingForm.checkIn);
+    const checkOut = new Date(manualBookingForm.checkOut);
+    if (checkIn >= checkOut) {
+      toast.error('Check-out date must be after check-in date');
+      return;
+    }
+
+    try {
+      setSubmittingBooking(true);
+      const response = await axios.post('/manager/rooms/manual-booking', {
+        roomId: manualBookingForm.roomId,
+        customerDetails: {
+          firstName: manualBookingForm.firstName,
+          lastName: manualBookingForm.lastName,
+          email: manualBookingForm.email,
+          phone: manualBookingForm.phone
+        },
+        checkIn: manualBookingForm.checkIn,
+        checkOut: manualBookingForm.checkOut,
+        guests: manualBookingForm.guests,
+        specialRequests: manualBookingForm.specialRequests,
+        paymentMethod: manualBookingForm.paymentMethod,
+        advanceAmount: manualBookingForm.advanceAmount
+      });
+
+      toast.success('Manual booking created successfully!');
+      setShowManualBookingModal(false);
+      
+      // Reset form
+      setManualBookingForm({
+        roomId: '',
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        checkIn: '',
+        checkOut: '',
+        guests: 1,
+        specialRequests: '',
+        paymentMethod: 'cash',
+        advanceAmount: 0
+      });
+
+      // Refresh rooms
+      fetchRooms();
+    } catch (error: any) {
+      console.error('Manual booking error:', error);
+      toast.error(error.response?.data?.message || 'Failed to create manual booking');
+    } finally {
+      setSubmittingBooking(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -222,6 +315,13 @@ const RoomOperations: React.FC = () => {
             </div>
             
             <div className="flex gap-3">
+              <button
+                onClick={handleOpenManualBooking}
+                className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Manual Booking
+              </button>
               <button
                 onClick={handleRefresh}
                 className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
@@ -308,7 +408,7 @@ const RoomOperations: React.FC = () => {
                   <h2 className="text-2xl font-bold">Room {selectedRoom.room?.roomNumber || 'Details'}</h2>
                   <p className="text-gray-600">Complete room information</p>
                 </div>
-                <button onClick={() => setShowDetailModal(false)} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => setShowDetailModal(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close modal">
                   <X className="h-6 w-6" />
                 </button>
               </div>
@@ -413,7 +513,7 @@ const RoomOperations: React.FC = () => {
             <div className="bg-white rounded-lg max-w-md w-full">
               <div className="flex justify-between items-start p-6 border-b">
                 <h2 className="text-xl font-bold">Update Room Status</h2>
-                <button onClick={() => setShowStatusModal(false)} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => setShowStatusModal(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close modal">
                   <X className="h-6 w-6" />
                 </button>
               </div>
@@ -470,7 +570,7 @@ const RoomOperations: React.FC = () => {
                   <h2 className="text-xl font-bold">Move Guest to Another Room</h2>
                   <p className="text-sm text-gray-600">Current Room: {selectedRoom.roomNumber}</p>
                 </div>
-                <button onClick={() => setShowMoveModal(false)} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => setShowMoveModal(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close modal">
                   <X className="h-6 w-6" />
                 </button>
               </div>
@@ -540,6 +640,241 @@ const RoomOperations: React.FC = () => {
                       <>
                         <ArrowRight className="h-4 w-4 mr-2" />
                         Move Guest
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Manual Booking Modal */}
+        {showManualBookingModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-start p-6 border-b bg-indigo-50">
+                <div>
+                  <h2 className="text-2xl font-bold text-indigo-900 flex items-center">
+                    <User className="h-6 w-6 mr-2" />
+                    Manual Booking - Offline Guest
+                  </h2>
+                  <p className="text-sm text-indigo-700 mt-1">Enter customer details for walk-in booking</p>
+                </div>
+                <button onClick={() => setShowManualBookingModal(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close modal">
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <form className="space-y-6">
+                  {/* Customer Information */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <User className="h-5 w-5 mr-2 text-indigo-600" />
+                      Customer Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          First Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={manualBookingForm.firstName}
+                          onChange={(e) => setManualBookingForm({...manualBookingForm, firstName: e.target.value})}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          placeholder="John"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Last Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={manualBookingForm.lastName}
+                          onChange={(e) => setManualBookingForm({...manualBookingForm, lastName: e.target.value})}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          placeholder="Doe"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                          <Phone className="h-4 w-4 mr-1" />
+                          Phone Number <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          value={manualBookingForm.phone}
+                          onChange={(e) => setManualBookingForm({...manualBookingForm, phone: e.target.value})}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          placeholder="9876543210"
+                          maxLength={10}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                          <Mail className="h-4 w-4 mr-1" />
+                          Email (Optional)
+                        </label>
+                        <input
+                          type="email"
+                          value={manualBookingForm.email}
+                          onChange={(e) => setManualBookingForm({...manualBookingForm, email: e.target.value})}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          placeholder="john.doe@example.com"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Booking Details */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Calendar className="h-5 w-5 mr-2 text-indigo-600" />
+                      Booking Details
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Select Room <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={manualBookingForm.roomId}
+                          onChange={(e) => setManualBookingForm({...manualBookingForm, roomId: e.target.value})}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          required
+                        >
+                          <option value="">Choose an available room...</option>
+                          {availableRoomsForBooking.map((room) => (
+                            <option key={room._id} value={room._id}>
+                              Room {room.roomNumber} - {room.type} (Floor {room.floor}) - ₹{room.price}/night - Max {room.maxGuests} guests
+                            </option>
+                          ))}
+                        </select>
+                        {availableRoomsForBooking.length === 0 && (
+                          <p className="text-sm text-red-500 mt-1">No available rooms found</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Check-in Date <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={manualBookingForm.checkIn}
+                          onChange={(e) => setManualBookingForm({...manualBookingForm, checkIn: e.target.value})}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          min={new Date().toISOString().split('T')[0]}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Check-out Date <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={manualBookingForm.checkOut}
+                          onChange={(e) => setManualBookingForm({...manualBookingForm, checkOut: e.target.value})}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          min={manualBookingForm.checkIn || new Date().toISOString().split('T')[0]}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                          <UsersIcon className="h-4 w-4 mr-1" />
+                          Number of Guests <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          value={manualBookingForm.guests}
+                          onChange={(e) => setManualBookingForm({...manualBookingForm, guests: parseInt(e.target.value)})}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          min="1"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Payment Method
+                        </label>
+                        <select
+                          value={manualBookingForm.paymentMethod}
+                          onChange={(e) => setManualBookingForm({...manualBookingForm, paymentMethod: e.target.value})}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option value="cash">Cash</option>
+                          <option value="card">Card</option>
+                          <option value="upi">UPI</option>
+                          <option value="bank_transfer">Bank Transfer</option>
+                        </select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                          <DollarSign className="h-4 w-4 mr-1" />
+                          Advance Amount (₹)
+                        </label>
+                        <input
+                          type="number"
+                          value={manualBookingForm.advanceAmount}
+                          onChange={(e) => setManualBookingForm({...manualBookingForm, advanceAmount: parseFloat(e.target.value)})}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          min="0"
+                          placeholder="Enter advance amount paid"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                          <FileText className="h-4 w-4 mr-1" />
+                          Special Requests (Optional)
+                        </label>
+                        <textarea
+                          value={manualBookingForm.specialRequests}
+                          onChange={(e) => setManualBookingForm({...manualBookingForm, specialRequests: e.target.value})}
+                          rows={3}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          placeholder="Any special requirements or notes..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              <div className="flex justify-between items-center p-6 border-t bg-gray-50">
+                <p className="text-sm text-gray-600">
+                  <span className="text-red-500">*</span> Required fields
+                </p>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setShowManualBookingModal(false)}
+                    className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
+                    disabled={submittingBooking}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleManualBookingSubmit}
+                    disabled={submittingBooking || !manualBookingForm.roomId || !manualBookingForm.firstName || 
+                             !manualBookingForm.lastName || !manualBookingForm.phone || !manualBookingForm.checkIn || 
+                             !manualBookingForm.checkOut}
+                    className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 flex items-center"
+                  >
+                    {submittingBooking ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Creating Booking...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Create Booking
                       </>
                     )}
                   </button>

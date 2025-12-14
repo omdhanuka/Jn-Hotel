@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ComingSoonOverlay from '../components/ComingSoonOverlay';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   Utensils, Users, Clock, MapPin, Star, Plus, Minus, 
@@ -289,7 +290,14 @@ const Restaurant: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gray-50 relative">
+      {/* Coming Soon Overlay */}
+      <ComingSoonOverlay 
+        title="Restaurant Coming Soon"
+        message="Our restaurant booking and dining services are currently under development. We'll be serving you delicious meals very soon!"
+        icon="clock"
+      />
+      
       {/* Premium Header */}
       <div className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white overflow-hidden">
         <div className="absolute inset-0 bg-black opacity-20"></div>

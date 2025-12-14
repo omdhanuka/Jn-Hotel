@@ -7,7 +7,8 @@ import {
   getBookingDetailsForManager,
   updateBookingByManager,
   updateBookingStatus,
-  assignResource
+  assignResource,
+  getCalendarBookings
 } from '../controllers/managerController';
 import {
   getAllBanquetHalls,
@@ -26,7 +27,8 @@ import {
   releaseRoom,
   moveGuestToAnotherRoom,
   completeCleaningOrMaintenance,
-  getAvailableRoomsForMove
+  getAvailableRoomsForMove,
+  createManualBooking
 } from '../controllers/managerRoomController';
 import {
   getAllTasks,
@@ -108,6 +110,7 @@ router.use(managerOnly);
 router.get('/dashboard', getManagerDashboard);
 
 // ===== BOOKINGS =====
+router.get('/bookings/calendar', getCalendarBookings);
 router.get('/bookings', getAllBookingsForManager);
 router.get('/bookings/:id', getBookingDetailsForManager);
 router.put('/bookings/:id', updateBookingByManager);
@@ -132,6 +135,7 @@ router.post('/rooms/:id/release', releaseRoom); // This is correct - should be P
 router.post('/rooms/:id/move', moveGuestToAnotherRoom);
 router.patch('/rooms/:id/complete', completeCleaningOrMaintenance);
 router.get('/rooms/available/move', getAvailableRoomsForMove);
+router.post('/rooms/manual-booking', createManualBooking); // Manual offline booking
 
 // ===== STAFF & TASK MANAGEMENT =====
 router.get('/staff/stats', getStaffManagementStats);

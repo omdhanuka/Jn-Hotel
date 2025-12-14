@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, Users, MapPin, Clock, Star, Wifi, Car, Music, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import ComingSoonOverlay from '../components/ComingSoonOverlay';
 
 interface Banquet {
   _id: string;
@@ -106,7 +107,14 @@ const Banquets: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gray-50 relative">
+      {/* Coming Soon Overlay */}
+      <ComingSoonOverlay 
+        title="Banquet Halls Coming Soon"
+        message="Our banquet hall booking system is currently under development. Perfect venues for your special events will be available soon!"
+        icon="clock"
+      />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
