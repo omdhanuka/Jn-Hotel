@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, Users, CreditCard, Edit, Check, X, Trash2, Eye, Filter, Receipt } from 'lucide-react';
+import { Calendar, Users, CreditCard, Edit, Check, X, Trash2, Eye, Filter, Receipt, Download, Search, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -48,6 +48,7 @@ const BookingManagement: React.FC = () => {
   });
   const [viewingDetails, setViewingDetails] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -186,6 +187,73 @@ const BookingManagement: React.FC = () => {
     setSelectedBooking(null);
   };
 
+  const exportToCSV = () => {
+    try {
+      // Prepare CSV headers
+      const headers = [
+        'Booking ID',
+        'Guest Name',
+        'Email',
+        'Type',
+        'Check-in',
+        'Check-out',
+        'Guests',
+        'Amount',
+        'Status',
+        'Payment Status',
+        'Created Date'
+      ];
+
+      // Prepare CSV rows
+      const rows = bookings.map(booking => [
+        booking._id.slice(-8),
+        `${booking.user.firstName} ${booking.user.lastName}`,
+        booking.user.email,
+        booking.type,
+        new Date(booking.checkIn).toLocaleDateString(),
+        new Date(booking.checkOut).toLocaleDateString(),
+        booking.guests,
+        booking.totalAmount,
+        booking.status,
+        booking.paymentStatus,
+        new Date(booking.createdAt).toLocaleDateString()
+      ]);
+
+      // Combine headers and rows
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `bookings_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Bookings exported successfully');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export bookings');
+    }
+  };
+
+  // Filter bookings by search term
+  const filteredBookingsBySearch = bookings.filter(booking => 
+    searchTerm === '' ||
+    booking.user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking.user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking._id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -231,44 +299,110 @@ const BookingManagement: React.FC = () => {
     }
   };
 
+  const stats = {
+    total: bookings.length,
+    confirmed: bookings.filter(b => b.status === 'confirmed').length,
+    pending: bookings.filter(b => b.status === 'pending').length,
+    revenue: bookings.reduce((sum, b) => sum + (b.paymentStatus === 'paid' ? b.totalAmount : 0), 0)
+  };
+
   const handleCreateBill = (bookingId: string) => {
     navigate(`/admin/bookings/${bookingId}/bill`);
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Booking Management</h1>
-        
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Filter className="h-5 w-5 text-gray-500" />
+    <div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Booking Management</h1>
+        <p className="text-gray-600">Manage and track all hotel bookings</p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-100 text-sm font-medium">Total Bookings</p>
+              <p className="text-3xl font-bold">{stats.total}</p>
+            </div>
+            <Calendar className="h-12 w-12 text-blue-200" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-100 text-sm font-medium">Confirmed</p>
+              <p className="text-3xl font-bold">{stats.confirmed}</p>
+            </div>
+            <Check className="h-12 w-12 text-green-200" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-yellow-100 text-sm font-medium">Pending</p>
+              <p className="text-3xl font-bold">{stats.pending}</p>
+            </div>
+            <Users className="h-12 w-12 text-yellow-200" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-100 text-sm font-medium">Revenue</p>
+              <p className="text-3xl font-bold">₹{stats.revenue.toLocaleString()}</p>
+            </div>
+            <CreditCard className="h-12 w-12 text-purple-200" />
+          </div>
+        </div>
+      </div>
+
+      {/* Filters and Actions Bar */}
+      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search Bar */}
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="text"
+                placeholder="Search by name, email, or booking ID..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* Filter Dropdowns */}
+          <div className="flex flex-wrap gap-3">
             <select
               value={filters.type}
               onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              title="Filter by booking type"
-              aria-label="Filter by booking type"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="all">All Types</option>
-              <option value="room">Room Bookings</option>
-              <option value="banquet">Banquet Bookings</option>
-              <option value="table">Table Bookings</option>
+              <option value="room">Room</option>
+              <option value="banquet">Banquet</option>
+              <option value="table">Table</option>
             </select>
+
             <select
               value={filters.status}
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              title="Filter by booking status"
-              aria-label="Filter by booking status"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
@@ -276,341 +410,359 @@ const BookingManagement: React.FC = () => {
               <option value="cancelled">Cancelled</option>
               <option value="completed">Completed</option>
             </select>
+
             <select
               value={filters.paymentStatus}
               onChange={(e) => setFilters({ ...filters, paymentStatus: e.target.value })}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              title="Filter by payment status"
-              aria-label="Filter by payment status"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="all">All Payments</option>
-              <option value="pending">Payment Pending</option>
+              <option value="pending">Pending</option>
               <option value="paid">Paid</option>
               <option value="refunded">Refunded</option>
-              <option value="cancelled">Payment Cancelled</option>
-              <option value="failed">Payment Failed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="failed">Failed</option>
             </select>
           </div>
 
-          <button 
-            onClick={fetchBookings}
-            disabled={loading}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
-          >
-            {loading ? 'Loading...' : 'Refresh'}
-          </button>
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={exportToCSV}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+              title="Export to CSV"
+            >
+              <Download className="h-5 w-5" />
+              <span className="hidden md:inline">Export CSV</span>
+            </button>
+
+            <button
+              onClick={fetchBookings}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+              title="Refresh bookings"
+            >
+              <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden md:inline">Refresh</span>
+            </button>
+          </div>
         </div>
+
+        {/* Active Filters Display */}
+        {(filters.type !== 'all' || filters.status !== 'all' || filters.paymentStatus !== 'all' || searchTerm) && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">Active Filters:</span>
+              {searchTerm && (
+                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium flex items-center gap-1">
+                  Search: "{searchTerm}"
+                  <button onClick={() => setSearchTerm('')} className="hover:text-blue-900">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+              {filters.type !== 'all' && (
+                <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
+                  Type: {filters.type}
+                </span>
+              )}
+              {filters.status !== 'all' && (
+                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                  Status: {filters.status}
+                </span>
+              )}
+              {filters.paymentStatus !== 'all' && (
+                <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+                  Payment: {filters.paymentStatus}
+                </span>
+              )}
+              <button
+                onClick={() => {
+                  setFilters({ type: 'all', status: 'all', paymentStatus: 'all' });
+                  setSearchTerm('');
+                }}
+                className="text-xs text-red-600 hover:text-red-800 font-medium"
+              >
+                Clear All
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              Showing {filteredBookingsBySearch.length} of {bookings.length} bookings
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Filter Summary */}
-      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-        <div className="flex flex-wrap gap-4 text-sm">
-          <div className="flex items-center">
-            <span className="font-medium mr-2">Active Filters:</span>
-            <span className={`px-2 py-1 rounded-full text-xs ${filters.type !== 'all' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
-              Type: {filters.type === 'all' ? 'All' : filters.type}
-            </span>
-          </div>
-          <span className={`px-2 py-1 rounded-full text-xs ${filters.status !== 'all' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-            Status: {filters.status === 'all' ? 'All' : filters.status}
-          </span>
-          <span className={`px-2 py-1 rounded-full text-xs ${filters.paymentStatus !== 'all' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'}`}>
-            Payment: {filters.paymentStatus === 'all' ? 'All' : filters.paymentStatus}
-          </span>
-          <div className="ml-auto">
-            <span className="font-medium">Total: {bookings.length} bookings</span>
-          </div>
-        </div>
-      </div>
-      
       {/* Bookings Table */}
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                   Guest
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Booking Details
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  Type & Details
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                   Dates
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                   Amount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                   Payment
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {bookings.map((booking) => (
-                <tr key={booking._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {booking.user.firstName} {booking.user.lastName}
-                      </div>
-                      <div className="text-sm text-gray-500">{booking.user.email}</div>
+              {filteredBookingsBySearch.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center justify-center text-gray-500">
+                      <Calendar className="h-12 w-12 mb-4 text-gray-400" />
+                      <p className="text-lg font-medium">No bookings found</p>
+                      <p className="text-sm">Try adjusting your filters or search criteria</p>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {editingBooking === booking._id ? (
-                      <div className="space-y-2">
-                        <div className="text-sm font-medium text-gray-900 capitalize">
-                          {booking.type} Booking
-                        </div>
-                        <label htmlFor={`guests-${booking._id}`} className="sr-only">Number of guests</label>
-                        <input
-                          id={`guests-${booking._id}`}
-                          type="number"
-                          value={editForm.guests}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, guests: parseInt(e.target.value) }))
-                          }
-                          className="w-20 text-xs border border-gray-300 rounded px-2 py-1"
-                          min="1"
-                          title="Number of guests"
-                          placeholder="Guests"
-                          aria-label="Number of guests"
-                        />
-                        <span className="text-xs"> guests</span>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 capitalize">
-                          {booking.type} Booking
-                        </div>
-                        <div className="text-sm text-gray-500 flex items-center">
-                          <Users className="h-4 w-4 mr-1" />
-                          {booking.guests} guests
-                        </div>
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded-full ${getBookingTypeColor(booking.type)}`}>
-                      {booking.type}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {editingBooking === booking._id ? (
-                      <div className="space-y-2">
-                        <input
-                          type="date"
-                          value={editForm.checkIn}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, checkIn: e.target.value }))
-                          }
-                          className="w-full text-xs border border-gray-300 rounded px-2 py-1"
-                          title="Check-in date"
-                          aria-label="Check-in date"
-                          placeholder="Check-in date"
-                        />
-                        <input
-                          type="date"
-                          value={editForm.checkOut}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, checkOut: e.target.value }))
-                          }
-                          className="w-full text-xs border border-gray-300 rounded px-2 py-1"
-                          title="Check-out date"
-                          aria-label="Check-out date"
-                          placeholder="Check-out date"
-                        />
-                      </div>
-                    ) : (
+                </tr>
+              ) : (
+                filteredBookingsBySearch.map((booking) => (
+                  <tr key={booking._id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-1 text-gray-400" />
-                        <div>
-                          <div>{new Date(booking.checkIn).toLocaleDateString()}</div>
-                          <div>{new Date(booking.checkOut).toLocaleDateString()}</div>
+                        <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                          {booking.user.firstName[0]}{booking.user.lastName[0]}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {booking.user.firstName} {booking.user.lastName}
+                          </div>
+                          <div className="text-sm text-gray-500">{booking.user.email}</div>
+                          <div className="text-xs text-gray-400">ID: {booking._id.slice(-8)}</div>
                         </div>
                       </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ₹{booking.totalAmount}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(booking.status)}`}>
-                      {booking.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {editingPayment === booking._id ? (
-                      <div className="flex items-center space-x-2">
-                        <select
-                          value={newPaymentStatus}
-                          onChange={(e) => setNewPaymentStatus(e.target.value)}
-                          aria-label="Payment status"
-                          title="Payment status"
-                          className="text-xs border border-gray-300 rounded px-2 py-1"
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="paid">Paid</option>
-                          <option value="refunded">Refunded</option>
-                          <option value="cancelled">Cancelled</option>
-                          <option value="failed">Failed</option>
-                        </select>
-                        <button
-                          onClick={() => updatePaymentStatus(booking._id, newPaymentStatus)}
-                          className="text-green-600 hover:text-green-800"
-                          title="Save Payment"
-                        >
-                          <Check className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => setEditingPayment(null)}
-                          className="text-red-600 hover:text-red-800"
-                          title="Cancel Payment"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <span className={`px-2 py-1 text-xs rounded-full ${getPaymentStatusColor(booking.paymentStatus)}`}>
-                        {booking.paymentStatus}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {editingStatus === booking._id ? (
-                      <div className="flex items-center space-x-2">
-                        <select
-                          value={newBookingStatus}
-                          onChange={(e) => setNewBookingStatus(e.target.value)}
-                          aria-label="Booking status"
-                          title="Booking status"
-                          className="text-xs border border-gray-300 rounded px-2 py-1"
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="confirmed">Confirmed</option>
-                          <option value="cancelled">Cancelled</option>
-                          <option value="completed">Completed</option>
-                        </select>
-                        <button
-                          onClick={() => {
-                            console.log('Button clicked, updating to:', newBookingStatus); // Debug log
-                            updateBookingStatus(booking._id, newBookingStatus);
-                          }}
-                          className="text-green-600 hover:text-green-800"
-                          title="Save Status"
-                        >
-                          <Check className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => setEditingStatus(null)}
-                          className="text-red-600 hover:text-red-800"
-                          title="Cancel"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(booking.status)}`}>
-                        {booking.status}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex space-x-2">
+                    </td>
+                    <td className="px-6 py-4">
                       {editingBooking === booking._id ? (
-                        <>
+                        <div className="space-y-2">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getBookingTypeColor(booking.type)}`}>
+                            {booking.type}
+                          </span>
+                          <input
+                            type="number"
+                            value={editForm.guests}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, guests: parseInt(e.target.value) }))}
+                            className="w-20 text-xs border border-gray-300 rounded px-2 py-1"
+                            min="1"
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getBookingTypeColor(booking.type)}`}>
+                            {booking.type.toUpperCase()}
+                          </span>
+                          <div className="text-sm text-gray-600 mt-1 flex items-center">
+                            <Users className="h-4 w-4 mr-1" />
+                            {booking.guests} guests
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      {editingBooking === booking._id ? (
+                        <div className="space-y-2">
+                          <input
+                            type="date"
+                            value={editForm.checkIn}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, checkIn: e.target.value }))}
+                            className="w-full text-xs border border-gray-300 rounded px-2 py-1"
+                          />
+                          <input
+                            type="date"
+                            value={editForm.checkOut}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, checkOut: e.target.value }))}
+                            className="w-full text-xs border border-gray-300 rounded px-2 py-1"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="flex items-center text-gray-900">
+                            <Calendar className="h-4 w-4 mr-1 text-gray-400" />
+                            {new Date(booking.checkIn).toLocaleDateString()}
+                          </div>
+                          <div className="flex items-center text-gray-600">
+                            <span className="mr-1">→</span>
+                            {new Date(booking.checkOut).toLocaleDateString()}
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-lg font-bold text-gray-900">₹{booking.totalAmount.toLocaleString()}</div>
+                      {booking.bill && (
+                        <div className="text-xs text-green-600 flex items-center mt-1">
+                          <Receipt className="h-3 w-3 mr-1" />
+                          Bill Generated
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {editingStatus === booking._id ? (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={newBookingStatus}
+                            onChange={(e) => setNewBookingStatus(e.target.value)}
+                            className="text-xs border border-gray-300 rounded px-2 py-1"
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="completed">Completed</option>
+                          </select>
                           <button
-                            onClick={() => updateBooking(booking._id)}
-                            className="text-green-600 hover:text-green-800"
-                            title="Save Changes"
+                            onClick={() => updateBookingStatus(booking._id, newBookingStatus)}
+                            className="p-1 text-green-600 hover:bg-green-50 rounded"
                           >
                             <Check className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => setEditingBooking(null)}
-                            className="text-red-600 hover:text-red-800"
-                            title="Cancel Edit"
+                            onClick={() => setEditingStatus(null)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded"
                           >
                             <X className="h-4 w-4" />
                           </button>
-                        </>
+                        </div>
                       ) : (
-                        <>
-                          <button
-                            onClick={() => viewBookingDetails(booking)}
-                            className="text-indigo-600 hover:text-indigo-800"
-                            title="View Details"
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
+                          {booking.status.toUpperCase()}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {editingPayment === booking._id ? (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={newPaymentStatus}
+                            onChange={(e) => setNewPaymentStatus(e.target.value)}
+                            className="text-xs border border-gray-300 rounded px-2 py-1"
                           >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                            <option value="refunded">Refunded</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="failed">Failed</option>
+                          </select>
                           <button
-                            onClick={() => startEditBooking(booking)}
-                            className="text-blue-600 hover:text-blue-800"
-                            title="Edit Booking"
-                            disabled={booking.status === 'cancelled' || booking.status === 'completed'}
+                            onClick={() => updatePaymentStatus(booking._id, newPaymentStatus)}
+                            className="p-1 text-green-600 hover:bg-green-50 rounded"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Check className="h-4 w-4" />
                           </button>
-                          
-                          {editingStatus !== booking._id && editingPayment !== booking._id && (
+                          <button
+                            onClick={() => setEditingPayment(null)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(booking.paymentStatus)}`}>
+                          {booking.paymentStatus.toUpperCase()}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {editingBooking === booking._id ? (
+                          <>
                             <button
-                              onClick={() => {
-                                console.log('Edit status clicked for booking:', booking._id); // Debug log
-                                setEditingStatus(booking._id);
-                                setNewBookingStatus(booking.status);
-                              }}
-                              className="text-green-600 hover:text-green-800"
-                              title="Edit Status"
+                              onClick={() => updateBooking(booking._id)}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              title="Save Changes"
                             >
                               <Check className="h-4 w-4" />
                             </button>
-                          )}
-                          
-                          {editingPayment !== booking._id && (
                             <button
-                              onClick={() => {
-                                setEditingPayment(booking._id);
-                                setNewPaymentStatus(booking.paymentStatus);
-                              }}
-                              className="text-purple-600 hover:text-purple-800"
-                              title="Edit Payment Status"
+                              onClick={() => setEditingBooking(null)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Cancel"
                             >
-                              <CreditCard className="h-4 w-4" />
+                              <X className="h-4 w-4" />
                             </button>
-                          )}
-                          
-                          <button
-                            onClick={() => cancelBooking(booking._id)}
-                            className="text-red-600 hover:text-red-800"
-                            title="Cancel Booking"
-                            disabled={booking.status === 'cancelled' || booking.status === 'completed'}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                          
-                          {(booking.type === 'room' || booking.type === 'banquet') && (
+                          </>
+                        ) : (
+                          <>
                             <button
-                              onClick={() => handleCreateBill(booking._id)}
-                              className="text-green-600 hover:text-green-800"
-                              title={booking.bill ? "Edit Bill" : "Create Bill"}
+                              onClick={() => viewBookingDetails(booking)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="View Details"
                             >
-                              <Receipt className="h-4 w-4" />
+                              <Eye className="h-4 w-4" />
                             </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                            <button
+                              onClick={() => startEditBooking(booking)}
+                              className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                              title="Edit Booking"
+                              disabled={booking.status === 'cancelled' || booking.status === 'completed'}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            {editingStatus !== booking._id && (
+                              <button
+                                onClick={() => {
+                                  setEditingStatus(booking._id);
+                                  setNewBookingStatus(booking.status);
+                                }}
+                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                title="Update Status"
+                              >
+                                <Check className="h-4 w-4" />
+                              </button>
+                            )}
+                            {editingPayment !== booking._id && (
+                              <button
+                                onClick={() => {
+                                  setEditingPayment(booking._id);
+                                  setNewPaymentStatus(booking.paymentStatus);
+                                }}
+                                className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                title="Update Payment"
+                              >
+                                <CreditCard className="h-4 w-4" />
+                              </button>
+                            )}
+                            {(booking.type === 'room' || booking.type === 'banquet') && (
+                              <button
+                                onClick={() => handleCreateBill(booking._id)}
+                                className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                                title={booking.bill ? "Edit Bill" : "Create Bill"}
+                              >
+                                <Receipt className="h-4 w-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => cancelBooking(booking._id)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Cancel Booking"
+                              disabled={booking.status === 'cancelled' || booking.status === 'completed'}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -813,7 +965,7 @@ const BookingManagement: React.FC = () => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
