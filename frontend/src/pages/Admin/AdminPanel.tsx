@@ -360,13 +360,13 @@ const AdminPanel: React.FC = () => {
                             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                             <XAxis 
                               dataKey="date" 
-                              tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              tickFormatter={(value: any) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               stroke="#6b7280"
                             />
                             <YAxis stroke="#6b7280" />
                             <Tooltip 
-                              labelFormatter={(value) => new Date(value).toLocaleDateString()}
-                              formatter={(value, name) => [
+                              labelFormatter={(value: any) => new Date(value).toLocaleDateString()}
+                              formatter={(value: any, name: any) => [
                                 value, 
                                 name === 'room' ? 'Room Bookings' : 
                                 name === 'banquet' ? 'Banquet Bookings' : 'Total Bookings'

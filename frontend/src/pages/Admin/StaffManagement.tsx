@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, EyeOff, User, Mail, Phone, Shield, Users, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, User, Mail, Phone, Shield, Users } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -14,24 +14,6 @@ interface Staff {
   position?: string;
   isActive: boolean;
   createdAt: string;
-  permissions?: {
-    viewBookings?: boolean;
-    manageBookings?: boolean;
-    viewRooms?: boolean;
-    manageRooms?: boolean;
-    viewBanquets?: boolean;
-    manageBanquets?: boolean;
-    viewRestaurant?: boolean;
-    manageRestaurant?: boolean;
-    viewOrders?: boolean;
-    manageOrders?: boolean;
-    viewReviews?: boolean;
-    manageReviews?: boolean;
-    viewUsers?: boolean;
-    manageUsers?: boolean;
-    viewReports?: boolean;
-    manageBills?: boolean;
-  };
 }
 
 const StaffManagement: React.FC = () => {
@@ -42,26 +24,6 @@ const StaffManagement: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState<'staff' | 'managers'>('staff');
   
-  // Helper function to get default permissions
-  const getDefaultPermissions = () => ({
-    viewBookings: false,
-    manageBookings: false,
-    viewRooms: false,
-    manageRooms: false,
-    viewBanquets: false,
-    manageBanquets: false,
-    viewRestaurant: false,
-    manageRestaurant: false,
-    viewOrders: false,
-    manageOrders: false,
-    viewReviews: false,
-    manageReviews: false,
-    viewUsers: false,
-    manageUsers: false,
-    viewReports: false,
-    manageBills: false
-  });
-
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -71,82 +33,15 @@ const StaffManagement: React.FC = () => {
     role: 'staff' as 'staff' | 'reception' | 'admin' | 'manager',
     department: '',
     position: '',
-    isActive: true,
-    permissions: getDefaultPermissions()
+    isActive: true
   });
 
   const departments = [
-    'Front Desk',
     'Housekeeping',
-    'Food & Beverage',
-    'Kitchen',
-    'Waiter',
-    'Chef',
     'Maintenance',
-    'Security',
-    'Management',
-    'Accounting',
-    'Human Resources',
-    'Marketing'
-  ];
-
-  const permissionSections = [
-    { 
-      title: 'Bookings', 
-      permissions: [
-        { key: 'viewBookings', label: 'View Bookings', description: 'Can view all bookings' },
-        { key: 'manageBookings', label: 'Manage Bookings', description: 'Can create, edit, and cancel bookings' }
-      ]
-    },
-    { 
-      title: 'Rooms', 
-      permissions: [
-        { key: 'viewRooms', label: 'View Rooms', description: 'Can view room details' },
-        { key: 'manageRooms', label: 'Manage Rooms', description: 'Can add, edit, and delete rooms' }
-      ]
-    },
-    { 
-      title: 'Banquets', 
-      permissions: [
-        { key: 'viewBanquets', label: 'View Banquets', description: 'Can view banquet halls' },
-        { key: 'manageBanquets', label: 'Manage Banquets', description: 'Can add, edit, and delete banquet halls' }
-      ]
-    },
-    { 
-      title: 'Restaurant', 
-      permissions: [
-        { key: 'viewRestaurant', label: 'View Restaurant', description: 'Can view menu and tables' },
-        { key: 'manageRestaurant', label: 'Manage Restaurant', description: 'Can manage menu items and tables' }
-      ]
-    },
-    { 
-      title: 'Orders', 
-      permissions: [
-        { key: 'viewOrders', label: 'View Orders', description: 'Can view restaurant orders' },
-        { key: 'manageOrders', label: 'Manage Orders', description: 'Can update order status' }
-      ]
-    },
-    { 
-      title: 'Reviews', 
-      permissions: [
-        { key: 'viewReviews', label: 'View Reviews', description: 'Can view guest reviews' },
-        { key: 'manageReviews', label: 'Manage Reviews', description: 'Can approve/reject reviews' }
-      ]
-    },
-    { 
-      title: 'Users', 
-      permissions: [
-        { key: 'viewUsers', label: 'View Users', description: 'Can view user list' },
-        { key: 'manageUsers', label: 'Manage Users', description: 'Can edit user information' }
-      ]
-    },
-    { 
-      title: 'Reports & Bills', 
-      permissions: [
-        { key: 'viewReports', label: 'View Reports', description: 'Can access analytics and reports' },
-        { key: 'manageBills', label: 'Manage Bills', description: 'Can create and edit bills' }
-      ]
-    }
+    'Front Desk',
+    'Restaurant',
+    'Banquet'
   ];
 
   useEffect(() => {
@@ -169,27 +64,19 @@ const StaffManagement: React.FC = () => {
     e.preventDefault();
     
     try {
-      // IMPORTANT: Ensure role is set correctly based on active tab
       const roleToSubmit = activeTab === 'managers' ? 'manager' : formData.role;
       
-      // Prepare data based on role
       const staffData: any = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
-        role: roleToSubmit, // Use the determined role
+        role: roleToSubmit,
         department: formData.department,
         position: formData.position,
         isActive: formData.isActive
       };
 
-      // Add permissions for non-admin roles
-      if (roleToSubmit !== 'admin') {
-        staffData.permissions = formData.permissions;
-      }
-
-      // Add password if creating new or if password field is filled
       if (!editingStaff || formData.password) {
         if (!formData.password && !editingStaff) {
           toast.error('Password is required for new staff/manager');
@@ -198,19 +85,15 @@ const StaffManagement: React.FC = () => {
         staffData.password = formData.password;
       }
 
-      console.log('Submitting data:', { ...staffData, password: '***', activeTab, roleToSubmit }); // Debug log
-
       if (editingStaff) {
-        const response = await axios.put(`/admin/staff/${editingStaff._id}`, staffData);
-        console.log('Update response:', response.data);
+        await axios.put(`/admin/staff/${editingStaff._id}`, staffData);
         toast.success(`${roleToSubmit === 'manager' ? 'Manager' : 'Staff'} updated successfully`);
       } else {
-        const response = await axios.post('/admin/staff', staffData);
-        console.log('Create response:', response.data);
+        await axios.post('/admin/staff', staffData);
         toast.success(`${roleToSubmit === 'manager' ? 'Manager' : 'Staff'} registered successfully`);
       }
       
-      await fetchStaff(); // Wait for fetch to complete
+      await fetchStaff();
       resetForm();
     } catch (error: any) {
       console.error('Submit error:', error.response?.data);
@@ -228,8 +111,7 @@ const StaffManagement: React.FC = () => {
       role: 'staff',
       department: '',
       position: '',
-      isActive: true,
-      permissions: getDefaultPermissions()
+      isActive: true
     });
     setShowAddForm(false);
     setEditingStaff(null);
@@ -237,32 +119,6 @@ const StaffManagement: React.FC = () => {
   };
 
   const handleEdit = (staffMember: Staff) => {
-    // Create default permissions object with all false values
-    const defaultPermissions = {
-      viewBookings: false,
-      manageBookings: false,
-      viewRooms: false,
-      manageRooms: false,
-      viewBanquets: false,
-      manageBanquets: false,
-      viewRestaurant: false,
-      manageRestaurant: false,
-      viewOrders: false,
-      manageOrders: false,
-      viewReviews: false,
-      manageReviews: false,
-      viewUsers: false,
-      manageUsers: false,
-      viewReports: false,
-      manageBills: false
-    };
-
-    // Merge staff permissions with defaults to ensure all keys exist
-    const mergedPermissions = {
-      ...defaultPermissions,
-      ...(staffMember.permissions || {})
-    };
-
     setFormData({
       firstName: staffMember.firstName,
       lastName: staffMember.lastName,
@@ -272,8 +128,7 @@ const StaffManagement: React.FC = () => {
       role: staffMember.role,
       department: staffMember.department || '',
       position: staffMember.position || '',
-      isActive: staffMember.isActive,
-      permissions: mergedPermissions
+      isActive: staffMember.isActive
     });
     setEditingStaff(staffMember);
     setShowAddForm(true);
@@ -320,44 +175,6 @@ const StaffManagement: React.FC = () => {
     }
   };
 
-  const handlePermissionToggle = (permission: string) => {
-    setFormData(prev => ({
-      ...prev,
-      permissions: {
-        ...prev.permissions,
-        [permission]: !(prev.permissions as any)[permission]
-      }
-    }));
-  };
-
-  const selectAllPermissions = (section: typeof permissionSections[0]) => {
-    const updates: any = {};
-    section.permissions.forEach(perm => {
-      updates[perm.key] = true;
-    });
-    setFormData(prev => ({
-      ...prev,
-      permissions: {
-        ...prev.permissions,
-        ...updates
-      }
-    }));
-  };
-
-  const clearAllPermissions = (section: typeof permissionSections[0]) => {
-    const updates: any = {};
-    section.permissions.forEach(perm => {
-      updates[perm.key] = false;
-    });
-    setFormData(prev => ({
-      ...prev,
-      permissions: {
-        ...prev.permissions,
-        ...updates
-      }
-    }));
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -393,7 +210,14 @@ const StaffManagement: React.FC = () => {
             Manager Login Page
           </a>
           <button
-            onClick={() => setShowAddForm(true)}
+            onClick={() => {
+              setShowAddForm(true);
+              // Set default role based on active tab
+              setFormData(prev => ({
+                ...prev,
+                role: activeTab === 'managers' ? 'manager' : 'staff'
+              }));
+            }}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
           >
             <Plus className="h-5 w-5 mr-2" />
@@ -558,8 +382,7 @@ const StaffManagement: React.FC = () => {
                     const newRole = e.target.value as any;
                     setFormData({ 
                       ...formData, 
-                      role: newRole,
-                      permissions: getDefaultPermissions()
+                      role: newRole
                     });
                   }}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -578,7 +401,7 @@ const StaffManagement: React.FC = () => {
                   )}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  {formData.role === 'staff' && 'General staff with custom permissions'}
+                  {formData.role === 'staff' && 'General hotel staff member'}
                   {formData.role === 'reception' && 'Front desk operations manager'}
                   {formData.role === 'manager' && 'Hotel manager with supervisory access'}
                   {formData.role === 'admin' && 'Full system access - no restrictions'}
@@ -627,152 +450,6 @@ const StaffManagement: React.FC = () => {
                 Active (Staff can login when active)
               </label>
             </div>
-
-            {/* Permissions Section - Show for staff, reception, and manager roles */}
-            {formData.role !== 'admin' && (
-              <div className="border-t pt-6">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {formData.role === 'manager' ? 'Manager Permissions' : 'Access Permissions'}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {formData.role === 'manager' 
-                      ? 'Managers have elevated permissions to supervise operations but cannot modify system settings'
-                      : `Select which sections and features this ${formData.role === 'reception' ? 'reception manager' : 'staff member'} can access`
-                    }
-                  </p>
-                </div>
-
-                {formData.role === 'manager' && (
-                  <div className="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                    <h4 className="font-semibold text-indigo-900 mb-3">✨ Manager Capabilities</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-indigo-800">
-                      <div className="flex items-start">
-                        <span className="mr-2">✓</span>
-                        <span>View and manage all bookings (rooms, banquets, restaurant)</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="mr-2">✓</span>
-                        <span>Supervise room operations and staff tasks</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="mr-2">✓</span>
-                        <span>Handle guest check-ins and check-outs</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="mr-2">✓</span>
-                        <span>Approve/reject bookings and tasks</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="mr-2">✓</span>
-                        <span>Manage complaints and issues</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="mr-2">✓</span>
-                        <span>View reports and analytics</span>
-                      </div>
-                      <div className="flex items-start text-red-700">
-                        <span className="mr-2">✗</span>
-                        <span>Cannot add/delete rooms or staff</span>
-                      </div>
-                      <div className="flex items-start text-red-700">
-                        <span className="mr-2">✗</span>
-                        <span>Cannot access admin-only settings</span>
-                      </div>
-                    </div>
-                    <div className="mt-3 p-3 bg-white rounded border border-indigo-100">
-                      <p className="text-xs text-indigo-900 font-medium">
-                        💡 <strong>Manager Login:</strong> Managers use the dedicated manager portal at{' '}
-                        <a href="/manager/login" target="_blank" className="underline hover:text-indigo-700">
-                          /manager/login
-                        </a>
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Permission Sections */}
-                <div className="space-y-6">
-                  {permissionSections.map((section) => (
-                    <div key={section.title} className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex justify-between items-center mb-3">
-                        <h4 className="font-semibold text-gray-900">{section.title}</h4>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => selectAllPermissions(section)}
-                            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                          >
-                            Select All
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => clearAllPermissions(section)}
-                            className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                          >
-                            Clear All
-                          </button>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        {section.permissions.map((perm) => (
-                          <label key={perm.key} className="flex items-start space-x-3 cursor-pointer hover:bg-white p-2 rounded">
-                            <input
-                              type="checkbox"
-                              checked={(formData.permissions as any)[perm.key]}
-                              onChange={() => handlePermissionToggle(perm.key)}
-                              className="mt-1 h-4 w-4 text-blue-600 rounded"
-                            />
-                            <div className="flex-1">
-                              <div className="font-medium text-sm text-gray-900">{perm.label}</div>
-                              <div className="text-xs text-gray-500">{perm.description}</div>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-4 p-3 bg-blue-50 rounded-md">
-                  <p className="text-sm text-blue-800">
-                    <strong>Note:</strong> {formData.role === 'manager' 
-                      ? 'Managers typically need most permissions enabled. They supervise operations but cannot modify system structure.'
-                      : formData.role === 'reception'
-                      ? 'Reception managers usually need booking, room, and bill management permissions.'
-                      : 'Select only the permissions required for this staff member\'s job role.'
-                    }
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Admin Role Notice */}
-            {formData.role === 'admin' && (
-              <div className="border-t pt-6">
-                <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-                  <div className="flex items-start">
-                    <AlertTriangle className="h-6 w-6 text-red-600 mr-3 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-semibold text-red-900 mb-2">⚠️ Admin Role - Full System Access</h4>
-                      <p className="text-sm text-red-800 mb-2">
-                        Admin users have unrestricted access to all system features including:
-                      </p>
-                      <ul className="text-sm text-red-800 list-disc list-inside space-y-1">
-                        <li>Add/Edit/Delete rooms, banquet halls, and menu items</li>
-                        <li>Create and manage all staff members and managers</li>
-                        <li>Access all bookings, bills, and financial reports</li>
-                        <li>Modify system settings and configurations</li>
-                        <li>View and manage all guest data</li>
-                      </ul>
-                      <p className="text-sm text-red-900 font-medium mt-3">
-                        Only assign admin role to trusted personnel with full operational responsibility.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Form Actions */}
             <div className="flex space-x-4 pt-4 border-t">
@@ -843,9 +520,6 @@ const StaffManagement: React.FC = () => {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Permissions
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -910,27 +584,6 @@ const StaffManagement: React.FC = () => {
                         >
                           {staffMember.isActive ? 'Active' : 'Inactive'}
                         </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {staffMember.role === 'admin' ? (
-                          <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
-                            Full Access
-                          </span>
-                        ) : (
-                          <div className="text-xs">
-                            {Object.entries(staffMember.permissions || {})
-                              .filter(([_, value]) => value)
-                              .length > 0 ? (
-                              <span className="text-green-600 font-medium">
-                                {Object.entries(staffMember.permissions || {})
-                                  .filter(([_, value]) => value)
-                                  .length} permissions
-                              </span>
-                            ) : (
-                              <span className="text-red-600">No permissions</span>
-                            )}
-                          </div>
-                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex space-x-2">

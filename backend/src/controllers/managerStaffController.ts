@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
 import Task from '../models/Task';
+import StaffTask from '../models/StaffTask';
+import StaffNotification from '../models/StaffNotification';
+import StaffProfile from '../models/StaffProfile';
 import Attendance from '../models/Attendance';
 import StaffRequest from '../models/StaffRequest';
 import User, { IUser } from '../models/User';
@@ -17,15 +20,38 @@ export const getAllTasks = async (req: AuthRequest, res: Response) => {
     const filter: any = {};
     if (status && status !== 'all') filter.status = status;
     if (priority && priority !== 'all') filter.priority = priority;
-    if (category && category !== 'all') filter.category = category;
-    if (staffId) filter.staffId = staffId;
+    if (category && category !== 'all') filter.taskType = category;
+    if (staffId) filter.assignedTo = staffId;
 
-    const tasks = await Task.find(filter)
-      .populate('staffId', 'firstName lastName department position')
+    const tasks = await StaffTask.find(filter)
+      .populate('assignedTo', 'firstName lastName department position')
       .populate('assignedBy', 'firstName lastName')
-      .sort({ deadline: 1, priority: -1 });
+      .populate('room', 'roomNumber')
+      .sort({ dueTime: 1, priority: -1 });
 
-    res.json({ tasks });
+    // Transform tasks to match frontend format for backward compatibility
+    const transformedTasks = tasks.map(task => ({
+      _id: task._id,
+      taskId: task._id, // For backward compatibility
+      staffId: task.assignedTo, // This is already populated
+      category: task.taskType,
+      roomNumber: (task.room as any)?.roomNumber,
+      priority: task.priority,
+      status: task.status,
+      deadline: task.dueTime,
+      notes: task.description,
+      createdAt: task.createdAt,
+      // Include new fields too
+      taskType: task.taskType,
+      title: task.title,
+      description: task.description,
+      assignedTo: task.assignedTo,
+      assignedBy: task.assignedBy,
+      room: task.room,
+      dueTime: task.dueTime
+    }));
+
+    res.json({ tasks: transformedTasks });
   } catch (error) {
     console.error('Get tasks error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -34,32 +60,85 @@ export const getAllTasks = async (req: AuthRequest, res: Response) => {
 
 export const createTask = async (req: AuthRequest, res: Response) => {
   try {
-    const { staffId, category, roomNumber, priority, deadline, notes } = req.body;
+    // Support both old and new formats for backward compatibility
+    const { 
+      // New format
+      staffId, taskType, title, description, roomId, priority, dueTime,
+      // Old format (backward compatibility)
+      category, roomNumber, deadline, notes 
+    } = req.body;
 
-    // Validate staff exists
-    const staff = await User.findById(staffId);
-    if (!staff || (staff.role !== 'staff' && staff.role !== 'reception')) {
+    const finalStaffId = staffId;
+    if (!finalStaffId) {
+      return res.status(400).json({ message: 'Staff ID is required' });
+    }
+
+    // Validate staff exists and is active
+    const staff = await User.findById(finalStaffId);
+    if (!staff || staff.role !== 'staff') {
       return res.status(404).json({ message: 'Staff member not found' });
     }
 
-    const task = new Task({
-      staffId,
+    if (!staff.isActive) {
+      return res.status(400).json({ message: 'Cannot assign tasks to inactive staff' });
+    }
+
+    // Validate StaffProfile exists
+    const staffProfile = await StaffProfile.findOne({ user: finalStaffId });
+    if (!staffProfile) {
+      return res.status(400).json({ message: 'Staff profile not found. Please sync staff profiles first.' });
+    }
+
+    // Map old category to new taskType
+    const taskTypeMap: any = {
+      'room-cleaning': 'cleaning',
+      'cleaning': 'cleaning',
+      'maintenance': 'maintenance',
+      'room-service': 'service',
+      'service': 'service',
+      'banquet': 'banquet_setup',
+      'banquet_setup': 'banquet_setup',
+      'restaurant': 'restaurant_service',
+      'restaurant_service': 'restaurant_service'
+    };
+
+    const finalTaskType = taskType || taskTypeMap[category] || 'service';
+    const finalTitle = title || `${category || taskType} - Room ${roomNumber || 'N/A'}`;
+    const finalDescription = description || notes || `${category || taskType} task${roomNumber ? ` for room ${roomNumber}` : ''}`;
+    const finalPriority = priority || 'medium';
+    const finalDueTime = dueTime || deadline || new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    const task = new StaffTask({
+      taskType: finalTaskType,
+      title: finalTitle,
+      description: finalDescription,
+      assignedTo: finalStaffId,
       assignedBy: req.user!._id,
-      category,
-      roomNumber,
-      priority,
-      deadline: new Date(deadline),
-      notes
+      room: roomId,
+      priority: finalPriority,
+      dueTime: new Date(finalDueTime),
+      status: 'pending'
     });
 
     await task.save();
 
-    const populatedTask = await Task.findById(task._id)
-      .populate('staffId', 'firstName lastName department')
-      .populate('assignedBy', 'firstName lastName');
+    // Create notification for staff
+    await StaffNotification.create({
+      recipient: finalStaffId,
+      type: 'task_assigned',
+      title: `New Task: ${finalTitle}`,
+      message: finalDescription,
+      relatedTask: task._id,
+      priority: finalPriority
+    });
+
+    const populatedTask = await StaffTask.findById(task._id)
+      .populate('assignedTo', 'firstName lastName department')
+      .populate('assignedBy', 'firstName lastName')
+      .populate('room', 'roomNumber');
 
     res.status(201).json({ 
-      message: 'Task assigned successfully',
+      message: 'Task assigned successfully and notification sent',
       task: populatedTask 
     });
   } catch (error) {
@@ -70,25 +149,32 @@ export const createTask = async (req: AuthRequest, res: Response) => {
 
 export const updateTask = async (req: AuthRequest, res: Response) => {
   try {
-    const { staffId, priority, deadline, notes, status } = req.body;
+    const { assignedTo, priority, dueTime, description, status } = req.body;
 
-    const task = await Task.findById(req.params.id);
+    const task = await StaffTask.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
 
     // Update allowed fields
-    if (staffId) task.staffId = staffId;
+    if (assignedTo) {
+      const staff = await User.findById(assignedTo);
+      if (!staff || staff.role !== 'staff') {
+        return res.status(404).json({ message: 'Invalid staff member' });
+      }
+      task.assignedTo = assignedTo;
+    }
     if (priority) task.priority = priority;
-    if (deadline) task.deadline = new Date(deadline);
-    if (notes !== undefined) task.notes = notes;
+    if (dueTime) task.dueTime = new Date(dueTime);
+    if (description !== undefined) task.description = description;
     if (status) task.status = status;
 
     await task.save();
 
-    const updatedTask = await Task.findById(task._id)
-      .populate('staffId', 'firstName lastName department')
-      .populate('assignedBy', 'firstName lastName');
+    const updatedTask = await StaffTask.findById(task._id)
+      .populate('assignedTo', 'firstName lastName department')
+      .populate('assignedBy', 'firstName lastName')
+      .populate('room', 'roomNumber');
 
     res.json({ 
       message: 'Task updated successfully',
@@ -102,11 +188,14 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
 
 export const deleteTask = async (req: AuthRequest, res: Response) => {
   try {
-    const task = await Task.findByIdAndDelete(req.params.id);
+    const task = await StaffTask.findByIdAndDelete(req.params.id);
     
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
+
+    // Delete related notifications
+    await StaffNotification.deleteMany({ relatedTask: req.params.id });
 
     res.json({ message: 'Task deleted successfully' });
   } catch (error) {

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import Booking from '../models/Booking';
 import Room from '../models/Room';
 import { IUser } from '../models/User';
-
+import { createCheckoutCleaningTask } from './staffTaskController';
 interface AuthRequest extends Request {
   user?: IUser;
 }
@@ -170,6 +170,8 @@ export const performCheckin = async (req: AuthRequest, res: Response) => {
 
 export const performCheckout = async (req: AuthRequest, res: Response) => {
   try {
+    console.log('🔍 Starting checkout for booking:', req.params.id);
+    
     const booking = await Booking.findById(req.params.id)
       .populate('resourceId', 'roomNumber');
 
@@ -192,19 +194,34 @@ export const performCheckout = async (req: AuthRequest, res: Response) => {
     booking.isCheckedOut = true;
     booking.status = 'completed';
     await booking.save();
+    console.log('✅ Booking marked as checked out');
 
     // Update room status to cleaning
     await Room.findByIdAndUpdate(booking.resourceId, { 
       isBooked: false,
       status: 'cleaning'
     });
+    console.log('✅ Room status updated to cleaning');
+
+    // Automatically create cleaning task for housekeeping staff
+    try {
+      const task = await createCheckoutCleaningTask(booking._id.toString(), booking.resourceId.toString());
+      if (task) {
+        console.log('✅ Cleaning task created successfully');
+      } else {
+        console.error('⚠️ Failed to create cleaning task - no task returned');
+      }
+    } catch (taskError) {
+      console.error('❌ Failed to create cleaning task:', taskError);
+      // Continue with checkout even if task creation fails
+    }
 
     res.json({ 
-      message: 'Check-out successful',
+      message: 'Check-out successful. Cleaning task assigned to housekeeping.',
       booking 
     });
   } catch (error) {
-    console.error('Checkout error:', error);
+    console.error('❌ Checkout error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

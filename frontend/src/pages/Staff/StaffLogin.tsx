@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Hotel, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Briefcase, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
@@ -17,33 +17,58 @@ const StaffLogin: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
+    setError('');
 
     try {
-      // Use the staff-specific login endpoint
-      const result = await login(formData.email, formData.password, 'staff');
-      
-      if (result.success) {
-        toast.success(`Welcome ${result.user.firstName}!`);
-        navigate(result.redirectUrl);
+      const response = await axios.post('/auth/login', {
+        email: formData.email,
+        password: formData.password
+      });
+
+      // Store token and user data
+      const token = response.data.token;
+      const user = response.data.user;
+
+      if (!token) {
+        throw new Error('No token received from server');
       }
+
+      // Verify user is staff
+      if (user.role !== 'staff') {
+        setError('This portal is for staff members only');
+        toast.error('Access denied. Staff members only.');
+        return;
+      }
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      console.log('✅ Staff login successful:', {
+        token: token ? 'Token stored' : 'No token',
+        tokenLength: token ? token.length : 0,
+        user: `${user.firstName} ${user.lastName}`,
+        role: user.role
+      });
+
+      toast.success('Welcome back!');
+      navigate('/staff/dashboard');
     } catch (error: any) {
-      console.error('Staff login error:', error);
-      setError(error.message || 'Login failed. Please try again.');
-      toast.error(error.message || 'Login failed');
+      console.error('❌ Staff login error:', error.response?.data);
+      setError(error.response?.data?.message || 'Invalid email or password');
+      toast.error(error.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-full mb-4">
-            <Hotel className="h-8 w-8 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full mb-4">
+            <Briefcase className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">JN Palace Hotel</h1>
           <p className="text-gray-600">Staff Portal</p>
@@ -73,7 +98,7 @@ const StaffLogin: React.FC = () => {
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="staff@jnpalace.com"
                 />
               </div>
@@ -91,7 +116,7 @@ const StaffLogin: React.FC = () => {
                   required
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter your password"
                 />
               </div>
@@ -100,18 +125,18 @@ const StaffLogin: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-green-600 text-white py-3 rounded-md hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-md hover:from-blue-700 hover:to-cyan-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              {loading ? 'Logging in...' : 'Login as Staff'}
+              {loading ? 'Logging in...' : 'Login to Staff Portal'}
             </button>
           </form>
 
           <div className="mt-6 text-center space-y-2">
-            <Link to="/" className="block text-sm text-green-600 hover:text-green-800">
+            <Link to="/" className="block text-sm text-blue-600 hover:text-blue-800">
               ← Back to Main Website
             </Link>
             <div className="text-xs text-gray-500">
-              <p>Need access? Contact your administrator</p>
+              <p>Forgot your password? Contact your manager</p>
             </div>
           </div>
         </div>
@@ -119,7 +144,27 @@ const StaffLogin: React.FC = () => {
         {/* Footer Info */}
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>Staff Access Only</p>
-          <p className="mt-1">For reception desk, use <Link to="/reception/login" className="text-green-600 hover:underline">Reception Portal</Link></p>
+          <div className="mt-2 flex justify-center space-x-4">
+            <Link to="/manager/login" className="text-blue-600 hover:underline">
+              Manager Portal
+            </Link>
+            <span className="text-gray-400">•</span>
+            <Link to="/admin/login" className="text-blue-600 hover:underline">
+              Admin Portal
+            </Link>
+          </div>
+        </div>
+
+        {/* Quick Access Info */}
+        <div className="mt-6 bg-blue-50 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-blue-900 mb-2">Staff Portal Features</h3>
+          <ul className="text-xs text-blue-800 space-y-1">
+            <li>• View and manage your assigned tasks</li>
+            <li>• Upload work completion photos</li>
+            <li>• Apply for leave and check balance</li>
+            <li>• Track your performance metrics</li>
+            <li>• Receive real-time notifications</li>
+          </ul>
         </div>
       </div>
     </div>

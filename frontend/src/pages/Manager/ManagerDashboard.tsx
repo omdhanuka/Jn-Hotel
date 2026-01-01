@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Calendar, Users, Building, Utensils, BarChart3, Shield, AlertTriangle, BedDouble, ClipboardCheck } from 'lucide-react';
-import axios from 'axios';
+import { LogOut, Calendar, Users, Building, Utensils, BarChart3, Shield, AlertTriangle, BedDouble, ClipboardCheck, CheckCircle } from 'lucide-react';
+import axios from '../../config/axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -148,6 +148,15 @@ const ManagerDashboard: React.FC = () => {
       color: 'teal',
       link: '/manager/staff-tasks',
       stat: `${stats.pendingTasks} pending`
+    },
+    {
+      id: 'task-verification',
+      icon: CheckCircle,
+      title: 'Task Verification',
+      description: 'Verify completed staff tasks',
+      color: 'orange',
+      link: '/manager/task-verification',
+      stat: 'Review tasks'
     },
     {
       id: 'banquets',

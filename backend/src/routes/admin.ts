@@ -12,7 +12,8 @@ import {
   updateStaff,
   deleteStaff,
   updateStaffStatus,
-  getUserPermissions
+  getUserPermissions,
+  syncStaffProfiles
 } from '../controllers/adminController';
 import { auth } from '../middleware/auth';
 import { adminAuth } from '../middleware/adminAuth';
@@ -45,6 +46,7 @@ router.post('/staff', createStaff);
 router.put('/staff/:id', updateStaff);
 router.delete('/staff/:id', deleteStaff);
 router.put('/staff/:id/status', updateStaffStatus);
+router.post('/staff/sync-profiles', syncStaffProfiles);
 
 // Debug endpoint to check staff in database
 router.get('/debug/staff-count', async (req, res) => {

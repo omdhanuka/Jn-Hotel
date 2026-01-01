@@ -231,4 +231,22 @@ router.post('/complaints/:id/assign', assignComplaint);
 router.put('/complaints/:id/status', updateComplaintStatus);
 router.post('/complaints/:id/notes', addInternalNote);
 
+// Staff Task Management (imported from managerTaskController)
+import * as managerTaskController from '../controllers/managerTaskController';
+import * as staffLeaveController from '../controllers/staffLeaveController';
+
+router.get('/staff-tasks', managerTaskController.getAllTasks);
+router.get('/staff-tasks/pending-verification', managerTaskController.getPendingVerificationTasks);
+router.get('/staff-tasks/statistics', managerTaskController.getTaskStatistics);
+router.post('/staff-tasks', managerTaskController.createManualTask);
+router.patch('/staff-tasks/:taskId/verify', managerTaskController.verifyTask);
+router.patch('/staff-tasks/:taskId/reject', managerTaskController.rejectTask);
+router.patch('/staff-tasks/:taskId/reassign', managerTaskController.reassignTask);
+
+// Staff Leave Management
+router.get('/staff-leaves', staffLeaveController.getAllLeaveApplications);
+router.get('/staff-leaves/statistics', staffLeaveController.getLeaveStatistics);
+router.patch('/staff-leaves/:leaveId/approve', staffLeaveController.approveLeave);
+router.patch('/staff-leaves/:leaveId/reject', staffLeaveController.rejectLeave);
+
 export default router;

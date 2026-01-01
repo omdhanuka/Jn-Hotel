@@ -3,7 +3,7 @@ import { validationResult } from 'express-validator';
 import MenuItem from '../models/MenuItem';
 import Order from '../models/Order';
 import { IUser } from '../models/User';
-import { sendOrderConfirmation } from '../utils/emailService';
+// import { sendOrderConfirmation } from '../utils/emailService';
 
 interface AuthRequest extends Request {
   user?: IUser;
@@ -116,11 +116,11 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
       .populate('user', 'firstName lastName email');
 
     // Send order confirmation email
-    await sendOrderConfirmation(req.user!.email, {
-      id: order.orderNumber,
-      totalAmount: order.totalAmount,
-      estimatedTime: order.estimatedTime
-    });
+    // await sendOrderConfirmation(req.user!.email, {
+    //   id: order.orderNumber,
+    //   totalAmount: order.totalAmount,
+    //   estimatedTime: order.estimatedTime
+    // });
 
     res.status(201).json(populatedOrder);
   } catch (error) {

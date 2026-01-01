@@ -4,6 +4,7 @@ import User from '../models/User';
 import Room from '../models/Room';
 import Order from '../models/Order';
 import Review from '../models/Review';
+import StaffProfile from '../models/StaffProfile';
 
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
@@ -441,6 +442,54 @@ export const createStaff = async (req: Request, res: Response) => {
 
     await staff.save();
 
+    // Auto-create StaffProfile if role is 'staff'
+    if (role === 'staff' && department) {
+      try {
+        // Map department to staffType
+        const staffTypeMap: { [key: string]: 'housekeeping' | 'maintenance' | 'frontdesk' | 'restaurant' | 'banquet' } = {
+          'housekeeping': 'housekeeping',
+          'maintenance': 'maintenance',
+          'front desk': 'frontdesk',
+          'restaurant': 'restaurant',
+          'banquet': 'banquet'
+        };
+
+        const staffType = staffTypeMap[department.toLowerCase()];
+        
+        if (staffType) {
+          // Generate unique staffId
+          const staffCount = await StaffProfile.countDocuments();
+          const staffId = `STAFF-${String(staffCount + 1).padStart(4, '0')}`;
+
+          const staffProfile = new StaffProfile({
+            user: staff._id,
+            staffId: staffId,
+            staffType: staffType,
+            department: department,
+            joiningDate: new Date(),
+            isActive: isActive !== undefined ? isActive : true,
+            performanceMetrics: {
+              tasksCompleted: 0,
+              tasksRejected: 0,
+              averageCompletionTime: 0,
+              rating: 5.0
+            },
+            leaveBalance: {
+              sick: 10,
+              casual: 12,
+              annual: 15
+            }
+          });
+
+          await staffProfile.save();
+          console.log(`✅ StaffProfile created for ${staffType} staff: ${staffId}`);
+        }
+      } catch (profileError) {
+        console.error('Failed to create StaffProfile:', profileError);
+        // Don't fail the whole request if profile creation fails
+      }
+    }
+
     // Verify the saved staff member
     const savedStaff = await User.findById(staff._id).select('-password');
     
@@ -563,6 +612,86 @@ export const updateStaffStatus = async (req: Request, res: Response) => {
     res.json(staff);
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Sync staff profiles - creates missing StaffProfile records for existing staff
+export const syncStaffProfiles = async (req: Request, res: Response) => {
+  try {
+    const staffUsers = await User.find({ role: 'staff', isActive: true });
+    let created = 0;
+    let skipped = 0;
+
+    for (const user of staffUsers) {
+      // Check if profile already exists
+      const existingProfile = await StaffProfile.findOne({ user: user._id });
+      
+      if (existingProfile) {
+        skipped++;
+        continue;
+      }
+
+      if (!user.department) {
+        console.log(`⚠️ Skipping user ${user.email} - no department`);
+        skipped++;
+        continue;
+      }
+
+      // Map department to staffType
+      const staffTypeMap: { [key: string]: 'housekeeping' | 'maintenance' | 'frontdesk' | 'restaurant' | 'banquet' } = {
+        'housekeeping': 'housekeeping',
+        'maintenance': 'maintenance',
+        'front desk': 'frontdesk',
+        'restaurant': 'restaurant',
+        'banquet': 'banquet'
+      };
+
+      const staffType = staffTypeMap[user.department.toLowerCase()];
+      
+      if (!staffType) {
+        console.log(`⚠️ Skipping user ${user.email} - unknown department: ${user.department}`);
+        skipped++;
+        continue;
+      }
+
+      // Generate unique staffId
+      const staffCount = await StaffProfile.countDocuments();
+      const staffId = `STAFF-${String(staffCount + created + 1).padStart(4, '0')}`;
+
+      const staffProfile = new StaffProfile({
+        user: user._id,
+        staffId: staffId,
+        staffType: staffType,
+        department: user.department,
+        joiningDate: new Date(),
+        isActive: user.isActive,
+        performanceMetrics: {
+          tasksCompleted: 0,
+          tasksRejected: 0,
+          averageCompletionTime: 0,
+          rating: 5.0
+        },
+        leaveBalance: {
+          sick: 10,
+          casual: 12,
+          annual: 15
+        }
+      });
+
+      await staffProfile.save();
+      created++;
+      console.log(`✅ Created StaffProfile for ${user.email} (${staffType})`);
+    }
+
+    res.json({ 
+      message: 'Staff profiles synced successfully',
+      created,
+      skipped,
+      total: staffUsers.length
+    });
+  } catch (error) {
+    console.error('Sync staff profiles error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

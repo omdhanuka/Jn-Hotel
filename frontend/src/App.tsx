@@ -22,13 +22,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import axios from 'axios';
 import './index.css';
 import BookBanquet from './pages/BookBanquet';
-import StaffLogin from './pages/Staff/StaffLogin';
-import StaffDashboard from './pages/Staff/StaffDashboard';
-import StaffBookingManagement from './pages/Staff/StaffBookingManagement';
-import StaffBanquetBookings from './pages/Staff/StaffBanquetBookings';
-import StaffRestaurant from './pages/Staff/StaffRestaurant';
-import StaffRestaurantOrders from './pages/Staff/StaffRestaurantOrders';
-import StaffRooms from './pages/Staff/StaffRooms';
 import { AdminGuard, ReceptionGuard, StaffGuard } from './utils/roleGuard';
 import ManagerLogin from './pages/Manager/ManagerLogin';
 import ManagerDashboard from './pages/Manager/ManagerDashboard';
@@ -41,6 +34,13 @@ import RestaurantManagement from './pages/Manager/RestaurantManagement';
 import ComplaintManagement from './pages/Manager/ComplaintManagement';
 import ManualBooking from './pages/Manager/ManualBooking';
 import BookingCalendar from './pages/Manager/BookingCalendar';
+import StaffDashboard from './pages/Staff/StaffDashboard';
+import StaffTasksList from './pages/Staff/StaffTasksList';
+import StaffTaskDetails from './pages/Staff/StaffTaskDetails';
+import StaffLogin from './pages/Staff/StaffLogin';
+import StaffLeaveManagement from './pages/Staff/StaffLeaveManagement';
+import StaffProfile from './pages/Staff/StaffProfile';
+import TaskVerification from './pages/Manager/TaskVerification';
 
 // Configure axios defaults immediately
 const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -56,43 +56,6 @@ function App() {
         <Router>
           <div className="min-h-screen bg-gray-50">
             <Routes>
-              {/* Routes WITHOUT Navbar - Staff Portal */}
-              <Route path="/staff/*" element={
-                <Routes>
-                  <Route path="login" element={<StaffLogin />} />
-                  <Route path="dashboard" element={
-                    <StaffGuard>
-                      <StaffDashboard />
-                    </StaffGuard>
-                  } />
-                  <Route path="bookings" element={
-                    <StaffGuard>
-                      <StaffBookingManagement />
-                    </StaffGuard>
-                  } />
-                  <Route path="rooms" element={
-                    <StaffGuard>
-                      <StaffRooms />
-                    </StaffGuard>
-                  } />
-                  <Route path="banquets" element={
-                    <StaffGuard>
-                      <StaffBanquetBookings />
-                    </StaffGuard>
-                  } />
-                  <Route path="restaurant" element={
-                    <StaffGuard>
-                      <StaffRestaurant />
-                    </StaffGuard>
-                  } />
-                  <Route path="orders" element={
-                    <StaffGuard>
-                      <StaffRestaurantOrders />
-                    </StaffGuard>
-                  } />
-                </Routes>
-              } />
-              
               {/* Routes WITHOUT Navbar - Admin Portal */}
               <Route path="/admin/*" element={
                 <Routes>
@@ -115,10 +78,19 @@ function App() {
               <Route path="/manager/room-operations" element={<RoomOperations />} />
               <Route path="/manager/checkin-checkout" element={<CheckInCheckOut />} />
               <Route path="/manager/staff-tasks" element={<StaffTasks />} />
+              <Route path="/manager/task-verification" element={<TaskVerification />} />
               <Route path="/manager/banquets" element={<BanquetManagement />} />
               <Route path="/manager/rooms" element={<RoomOperations />} />
               <Route path="/manager/restaurant" element={<RestaurantManagement />} />
               <Route path="/manager/complaints" element={<ComplaintManagement />} />
+
+              {/* Staff Routes */}
+              <Route path="/staff/login" element={<StaffLogin />} />
+              <Route path="/staff/dashboard" element={<StaffDashboard />} />
+              <Route path="/staff/tasks" element={<StaffTasksList />} />
+              <Route path="/staff/tasks/:taskId" element={<StaffTaskDetails />} />
+              <Route path="/staff/leaves" element={<StaffLeaveManagement />} />
+              <Route path="/staff/profile" element={<StaffProfile />} />
               
               {/* Routes WITH Navbar - Public and User Routes */}
               <Route path="*" element={
