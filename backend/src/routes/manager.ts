@@ -109,7 +109,6 @@ router.get('/restaurant/specials/today/public', getTodaySpecials);
 
 // All manager routes require authentication, manager role, and active status
 router.use(verifyToken);
-router.use(checkActiveStatus);
 router.use(managerOnly);
 
 // ===== DASHBOARD =====

@@ -57,7 +57,11 @@ export const getPendingVerificationTasks = async (req: AuthRequest, res: Respons
 export const verifyTask = async (req: AuthRequest, res: Response) => {
   try {
     const { taskId } = req.params;
-    const { verificationNotes } = req.body;
+
+    // Validate user
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
 
     const task = await StaffTask.findById(taskId)
       .populate('room')
@@ -68,7 +72,10 @@ export const verifyTask = async (req: AuthRequest, res: Response) => {
     }
 
     if (task.status !== 'completed') {
-      return res.status(400).json({ message: 'Task not ready for verification' });
+      return res.status(400).json({ 
+        message: 'Task must be completed before verification',
+        currentStatus: task.status 
+      });
     }
 
     task.status = 'verified';
@@ -79,25 +86,31 @@ export const verifyTask = async (req: AuthRequest, res: Response) => {
     // Update room status to ready if it's a cleaning/maintenance task
     if (task.room && (task.taskType === 'cleaning' || task.taskType === 'maintenance')) {
       const room: any = task.room;
-      room.status = 'available';
+      room.status = 'active';
+      room.isAvailable = true;
       await room.save();
     }
 
     // Notify staff member
-    const assignedTo: any = task.assignedTo;
-    await StaffNotification.create({
-      recipient: assignedTo._id,
-      type: 'task_approved',
-      title: 'Task Approved ✅',
-      message: `Your task "${task.title}" has been verified and approved by the manager.`,
-      relatedTask: task._id,
-      priority: 'medium'
-    });
+    if (task.assignedTo) {
+      const assignedTo: any = task.assignedTo;
+      await StaffNotification.create({
+        recipient: assignedTo._id,
+        type: 'task_approved',
+        title: 'Task Approved ✅',
+        message: `Your task "${task.title}" has been verified and approved by the manager.`,
+        relatedTask: task._id,
+        priority: 'medium'
+      });
+    }
 
     res.json({ message: 'Task verified successfully', task });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Verify task error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'Failed to verify task',
+      error: error.message 
+    });
   }
 };
 
