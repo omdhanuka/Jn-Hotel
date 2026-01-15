@@ -29,7 +29,8 @@ import {
 import {
   getTodayAttendance,
   markAttendance,
-  getAttendanceHistory
+  getAttendanceHistory,
+  getAttendanceReport
 } from '../controllers/managerStaffController';
 
 const router = express.Router();
@@ -74,6 +75,7 @@ router.put('/staff/leaves/:leaveId/reject', rejectLeave);
 // Attendance Management
 router.get('/staff/attendance/today', getTodayAttendance);
 router.get('/staff/attendance/history', getAttendanceHistory);
+router.get('/staff/attendance/report', getAttendanceReport);
 router.post('/staff/attendance', markAttendance);
 
 // Debug endpoint to check staff in database

@@ -399,6 +399,112 @@ export const getAttendanceHistory = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getAttendanceReport = async (req: AuthRequest, res: Response) => {
+  try {
+    const { startDate, endDate, staffId } = req.query;
+
+    // Default to current month if no dates provided
+    let start = startDate ? new Date(startDate as string) : new Date();
+    let end = endDate ? new Date(endDate as string) : new Date();
+
+    if (!startDate) {
+      start = new Date(start.getFullYear(), start.getMonth(), 1);
+    }
+    if (!endDate) {
+      end = new Date(end.getFullYear(), end.getMonth() + 1, 0);
+    }
+
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+
+    // Get all active staff or specific staff
+    const staffFilter: any = { 
+      role: { $in: ['staff', 'reception'] },
+      isActive: true 
+    };
+    if (staffId) {
+      staffFilter._id = staffId;
+    }
+
+    const allStaff = await User.find(staffFilter)
+      .select('firstName lastName department position')
+      .sort({ firstName: 1 });
+
+    // Get attendance records for the date range
+    const attendanceRecords = await Attendance.find({
+      staffId: { $in: allStaff.map(s => s._id) },
+      date: { $gte: start, $lte: end }
+    }).populate('staffId', 'firstName lastName department');
+
+    // Group attendance by staff
+    const attendanceByStaff = new Map();
+    attendanceRecords.forEach(record => {
+      const staffId = (record.staffId as any)._id.toString();
+      if (!attendanceByStaff.has(staffId)) {
+        attendanceByStaff.set(staffId, []);
+      }
+      attendanceByStaff.get(staffId).push(record);
+    });
+
+    // Calculate statistics for each staff member
+    const report = allStaff.map(staff => {
+      const records = attendanceByStaff.get(staff._id.toString()) || [];
+      
+      const stats = {
+        present: records.filter((r: any) => r.status === 'present').length,
+        absent: records.filter((r: any) => r.status === 'absent').length,
+        late: records.filter((r: any) => r.status === 'late').length,
+        onLeave: records.filter((r: any) => r.status === 'on-leave').length,
+        halfDay: records.filter((r: any) => r.status === 'half-day').length
+      };
+
+      // Calculate total working days (excluding leaves)
+      const totalMarked = records.length;
+      const totalWorkingDays = stats.present + stats.late + stats.halfDay;
+      
+      // Calculate attendance percentage
+      const attendancePercentage = totalMarked > 0 
+        ? ((totalWorkingDays / totalMarked) * 100).toFixed(2)
+        : '0.00';
+
+      return {
+        staffId: staff._id,
+        staffName: `${staff.firstName} ${staff.lastName}`,
+        department: staff.department,
+        position: staff.position,
+        statistics: {
+          ...stats,
+          totalPresent: totalWorkingDays,
+          totalMarked,
+          attendancePercentage
+        },
+        records: records.map((r: any) => ({
+          date: r.date,
+          status: r.status,
+          checkIn: r.checkIn,
+          checkOut: r.checkOut,
+          notes: r.notes
+        }))
+      };
+    });
+
+    res.json({ 
+      report,
+      dateRange: {
+        startDate: start,
+        endDate: end
+      },
+      summary: {
+        totalStaff: allStaff.length,
+        totalRecords: attendanceRecords.length
+      }
+    });
+  } catch (error) {
+    console.error('Get attendance report error:', error);
+    res.status(500).json({ message: 'Failed to generate attendance report' });
+  }
+};
+
 // ===== STAFF REQUESTS =====
 
 export const getStaffRequests = async (req: AuthRequest, res: Response) => {

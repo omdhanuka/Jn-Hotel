@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, EyeOff, User, Mail, Phone, Shield, Users, Calendar, UserCheck } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, User, Mail, Phone, Shield, Users, Calendar, UserCheck, FileText } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import StaffLeaveRequests from '../Manager/StaffLeaveRequests';
 import StaffAttendance from '../Manager/StaffAttendance';
+import StaffAttendanceReport from '../Manager/StaffAttendanceReport';
 
 interface Staff {
   _id: string;
@@ -24,7 +25,7 @@ const StaffManagement: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [activeTab, setActiveTab] = useState<'staff' | 'managers' | 'leaves' | 'attendance'>('staff');
+  const [activeTab, setActiveTab] = useState<'staff' | 'managers' | 'leaves' | 'attendance' | 'attendance-report'>('staff');
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -292,7 +293,21 @@ const StaffManagement: React.FC = () => {
               }`}
             >
               <UserCheck className="inline h-5 w-5 mr-2" />
-              Attendance
+              Mark Attendance
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('attendance-report');
+                setShowAddForm(false);
+              }}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'attendance-report'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <FileText className="inline h-5 w-5 mr-2" />
+              Attendance Report
             </button>
           </nav>
         </div>
@@ -509,6 +524,8 @@ const StaffManagement: React.FC = () => {
         <StaffLeaveRequests userRole="admin" />
       ) : activeTab === 'attendance' ? (
         <StaffAttendance userRole="admin" />
+      ) : activeTab === 'attendance-report' ? (
+        <StaffAttendanceReport userRole="admin" />
       ) : (
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
           {staff.filter(s => 

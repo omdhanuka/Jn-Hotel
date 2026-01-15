@@ -39,6 +39,7 @@ import {
   getTodayAttendance,
   markAttendance,
   getAttendanceHistory,
+  getAttendanceReport,
   getStaffRequests,
   updateRequestStatus,
   getStaffManagementStats
@@ -187,6 +188,7 @@ router.post('/staff/attendance', markAttendance); // Add this line
 router.post('/attendance', markAttendance);
 router.get('/staff/attendance/history', getAttendanceHistory); // Add this line
 router.get('/attendance/history', getAttendanceHistory);
+router.get('/staff/attendance/report', getAttendanceReport);
 router.get('/staff/requests', getStaffRequests);
 router.put('/staff/requests/:id', updateRequestStatus);
 

@@ -15,14 +15,16 @@ import {
   MessageSquare,
   X,
   Edit,
-  Trash2
+  Trash2,
+  FileText
 } from 'lucide-react';
 import axios from '../../utils/axios'; // Make sure to use the configured axios instance
 import toast from 'react-hot-toast';
 import StaffLeaveRequests from './StaffLeaveRequests';
 import StaffAttendance from './StaffAttendance';
+import StaffAttendanceReport from './StaffAttendanceReport';
 
-type TabType = 'tasks' | 'assign' | 'performance' | 'attendance' | 'requests' | 'leaves';
+type TabType = 'tasks' | 'assign' | 'performance' | 'attendance' | 'attendance-report' | 'requests' | 'leaves';
 
 interface Task {
   _id: string;
@@ -451,7 +453,8 @@ const StaffTasks: React.FC = () => {
                 { id: 'tasks', label: 'All Tasks', icon: ClipboardList },
                 { id: 'assign', label: 'Assign Task', icon: Plus },
                 { id: 'performance', label: 'Staff Performance', icon: BarChart3 },
-                { id: 'attendance', label: 'Attendance', icon: UserCheck },
+                { id: 'attendance', label: 'Mark Attendance', icon: UserCheck },
+                { id: 'attendance-report', label: 'Attendance Report', icon: FileText },
                 { id: 'requests', label: 'Staff Requests', icon: MessageSquare },
                 { id: 'leaves', label: 'Leave Requests', icon: Calendar }
               ].map((tab) => {
@@ -783,6 +786,11 @@ const StaffTasks: React.FC = () => {
           {/* Attendance Tab */}
           {activeTab === 'attendance' && (
             <StaffAttendance userRole="manager" />
+          )}
+
+          {/* Attendance Report Tab */}
+          {activeTab === 'attendance-report' && (
+            <StaffAttendanceReport userRole="manager" />
           )}
 
           {/* Requests Tab */}
