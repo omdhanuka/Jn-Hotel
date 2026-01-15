@@ -34,12 +34,23 @@ const complaintSchema = new Schema<IComplaint>({
   booking: { type: Schema.Types.ObjectId, ref: 'Booking' },
   category: {
     type: String,
-    enum: ['housekeeping', 'restaurant', 'room-service', 'maintenance', 'billing', 'front-desk', 'other'],
+    enum: [
+      'room-cleanliness',
+      'room-amenities', 
+      'room-maintenance',
+      'noise-disturbance',
+      'staff-behavior',
+      'food-beverage',
+      'facilities',
+      'billing-issue',
+      'safety-security',
+      'other'
+    ],
     required: true
   },
   priority: {
     type: String,
-    enum: ['low', 'medium', 'high', 'critical'],
+    enum: ['low', 'medium', 'high', 'urgent'],
     default: 'medium'
   },
   status: {

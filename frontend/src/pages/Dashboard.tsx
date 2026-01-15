@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Calendar, Clock, Users, MapPin, Star, CreditCard, Utensils, Filter, BedDouble, Building, Search, MessageSquare } from 'lucide-react';
+import { Calendar, Clock, Users, MapPin, Star, CreditCard, Utensils, Filter, BedDouble, Building, Search, MessageSquare, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import FeedbackModal from '../components/FeedbackModal';
+import ComplaintModal from '../components/ComplaintModal';
 
 interface Booking {
   _id: string;
@@ -44,6 +45,8 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [selectedBookingForFeedback, setSelectedBookingForFeedback] = useState<ExtendedBooking | null>(null);
+  const [showComplaintModal, setShowComplaintModal] = useState(false);
+  const [selectedBookingForComplaint, setSelectedBookingForComplaint] = useState<ExtendedBooking | null>(null);
   
   // Filter states
   const [filters, setFilters] = useState({
@@ -273,6 +276,24 @@ const Dashboard: React.FC = () => {
     setShowFeedbackModal(false);
     setSelectedBookingForFeedback(null);
     fetchAllBookings(); // Refresh bookings
+  };
+
+  const handleOpenComplaint = (booking: ExtendedBooking) => {
+    setSelectedBookingForComplaint(booking);
+    setShowComplaintModal(true);
+  };
+
+  const handleComplaintSuccess = () => {
+    setShowComplaintModal(false);
+    setSelectedBookingForComplaint(null);
+  };
+
+  // Check if booking is in active period (between check-in and check-out)
+  const isBookingActive = (booking: ExtendedBooking) => {
+    const now = new Date();
+    const checkInDate = new Date(booking.checkIn);
+    const checkOutDate = new Date(booking.checkOut);
+    return now >= checkInDate && now <= checkOutDate && booking.status === 'confirmed';
   };
 
   return (
@@ -624,7 +645,17 @@ const Dashboard: React.FC = () => {
                               Download Receipt
                             </Link>
                           )}
-                          {/* NEW: Add feedback button for completed bookings */}
+                          {/* Complaint button - only show for active bookings (during stay) */}
+                          {isBookingActive(booking) && booking.source === 'hotel' && (
+                            <button
+                              onClick={() => handleOpenComplaint(booking)}
+                              className="border border-red-600 text-red-600 px-4 py-2 rounded-md text-sm hover:bg-red-50 flex items-center"
+                            >
+                              <AlertCircle className="h-4 w-4 mr-1" />
+                              File Complaint
+                            </button>
+                          )}
+                          {/* Feedback button for completed bookings */}
                           {booking.status === 'completed' && booking.source === 'hotel' && (
                             <button
                               onClick={() => handleOpenFeedback(booking)}
@@ -717,6 +748,20 @@ const Dashboard: React.FC = () => {
             setSelectedBookingForFeedback(null);
           }}
           onSuccess={handleFeedbackSuccess}
+        />
+      )}
+
+      {/* Complaint Modal */}
+      {showComplaintModal && selectedBookingForComplaint && (
+        <ComplaintModal
+          bookingId={selectedBookingForComplaint._id}
+          roomNumber={(selectedBookingForComplaint as any).roomNumber}
+          isOpen={showComplaintModal}
+          onClose={() => {
+            setShowComplaintModal(false);
+            setSelectedBookingForComplaint(null);
+          }}
+          onSuccess={handleComplaintSuccess}
         />
       )}
     </div>

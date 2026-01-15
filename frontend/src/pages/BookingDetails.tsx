@@ -463,7 +463,7 @@ const BookingDetails: React.FC = () => {
                   </div>
                 )}
 
-                {booking.services.length > 0 && (
+                {booking.services && booking.services.length > 0 && (
                   <div className="mt-6">
                     <h4 className="font-medium mb-2">Additional Services</h4>
                     <div className="flex flex-wrap gap-2">

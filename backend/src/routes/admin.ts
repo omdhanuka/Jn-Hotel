@@ -13,11 +13,19 @@ import {
   deleteStaff,
   updateStaffStatus,
   getUserPermissions,
-  syncStaffProfiles
+  syncStaffProfiles,
+  getAllComplaintsForAdmin,
+  getComplaintDashboardForAdmin
 } from '../controllers/adminController';
 import { auth } from '../middleware/auth';
 import { adminAuth } from '../middleware/adminAuth';
 import User from '../models/User'; // Add this import
+import {
+  getAllLeaveApplications,
+  approveLeave,
+  rejectLeave,
+  getLeaveStatistics
+} from '../controllers/staffLeaveController';
 
 const router = express.Router();
 
@@ -47,6 +55,16 @@ router.put('/staff/:id', updateStaff);
 router.delete('/staff/:id', deleteStaff);
 router.put('/staff/:id/status', updateStaffStatus);
 router.post('/staff/sync-profiles', syncStaffProfiles);
+
+// Complaint Management
+router.get('/complaints/dashboard', getComplaintDashboardForAdmin);
+router.get('/complaints', getAllComplaintsForAdmin);
+
+// Leave Management
+router.get('/staff/leaves', getAllLeaveApplications);
+router.get('/staff/leaves/statistics', getLeaveStatistics);
+router.put('/staff/leaves/:leaveId/approve', approveLeave);
+router.put('/staff/leaves/:leaveId/reject', rejectLeave);
 
 // Debug endpoint to check staff in database
 router.get('/debug/staff-count', async (req, res) => {

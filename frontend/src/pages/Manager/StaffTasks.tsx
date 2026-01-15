@@ -19,8 +19,9 @@ import {
 } from 'lucide-react';
 import axios from '../../utils/axios'; // Make sure to use the configured axios instance
 import toast from 'react-hot-toast';
+import StaffLeaveRequests from './StaffLeaveRequests';
 
-type TabType = 'tasks' | 'assign' | 'performance' | 'attendance' | 'requests';
+type TabType = 'tasks' | 'assign' | 'performance' | 'attendance' | 'requests' | 'leaves';
 
 interface Task {
   _id: string;
@@ -450,7 +451,8 @@ const StaffTasks: React.FC = () => {
                 { id: 'assign', label: 'Assign Task', icon: Plus },
                 { id: 'performance', label: 'Staff Performance', icon: BarChart3 },
                 { id: 'attendance', label: 'Attendance', icon: UserCheck },
-                { id: 'requests', label: 'Staff Requests', icon: MessageSquare }
+                { id: 'requests', label: 'Staff Requests', icon: MessageSquare },
+                { id: 'leaves', label: 'Leave Requests', icon: Calendar }
               ].map((tab) => {
                 const Icon = tab.icon;
                 return (
@@ -909,6 +911,11 @@ const StaffTasks: React.FC = () => {
                 )}
               </div>
             </div>
+          )}
+
+          {/* Leaves Tab */}
+          {activeTab === 'leaves' && (
+            <StaffLeaveRequests userRole="manager" />
           )}
         </div>
 

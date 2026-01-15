@@ -6,6 +6,7 @@ import Room from '../models/Room';
 import Banquet from '../models/Banquet';
 import Table from '../models/Table';
 import User, { IUser } from '../models/User';
+import Complaint from '../models/Complaint';
 import { sendBookingConfirmation, sendBookingStatusUpdate, sendPaymentStatusUpdate, sendBanquetBookingConfirmation } from '../utils/emailService';
 
 interface AuthRequest extends Request {
@@ -882,6 +883,80 @@ export const updateBookingStatus = async (req: AuthRequest, res: Response) => {
     res.json({ message: 'Booking status updated successfully', booking: populatedBooking });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Create complaint for booking
+// @route   POST /api/bookings/:id/complaint
+// @access  Private
+export const createBookingComplaint = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { category, priority, title, description, roomNumber } = req.body;
+
+    if (!req.user) {
+      return res.status(401).json({ message: 'Not authorized' });
+    }
+
+    // Find the booking
+    const booking = await Booking.findById(id);
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Verify user owns the booking
+    if (booking.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to create complaint for this booking' });
+    }
+
+    // Check if booking is within the valid complaint period (check-in to check-out)
+    const now = new Date();
+    const checkInDate = new Date(booking.checkIn);
+    const checkOutDate = new Date(booking.checkOut);
+
+    if (now < checkInDate) {
+      return res.status(400).json({ message: 'Cannot create complaint before check-in date' });
+    }
+
+    if (now > checkOutDate) {
+      return res.status(400).json({ message: 'Cannot create complaint after check-out date' });
+    }
+
+    // Generate unique complaint ID
+    const complaintCount = await Complaint.countDocuments();
+    const complaintId = `CMP${String(complaintCount + 1).padStart(6, '0')}`;
+
+    // Create the complaint
+    const complaint = new Complaint({
+      complaintId,
+      user: req.user._id,
+      booking: booking._id,
+      category,
+      priority: priority || 'medium',
+      status: 'pending',
+      title,
+      description,
+      roomNumber,
+      timeline: [{
+        timestamp: new Date(),
+        action: 'Complaint created',
+        performedBy: req.user._id
+      }]
+    });
+
+    await complaint.save();
+
+    const populatedComplaint = await Complaint.findById(complaint._id)
+      .populate('user', 'firstName lastName email')
+      .populate('booking');
+
+    res.status(201).json({ 
+      message: 'Complaint created successfully', 
+      complaint: populatedComplaint 
+    });
+  } catch (error) {
+    console.error('Create complaint error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

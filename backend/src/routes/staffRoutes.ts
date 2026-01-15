@@ -8,6 +8,11 @@ import * as staffNotificationController from '../controllers/staffNotificationCo
 
 const router = express.Router();
 
+// Test route to verify staff routes are working
+router.get('/test', (req, res) => {
+  res.json({ message: 'Staff routes are working!' });
+});
+
 // Configure multer for task photo uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -46,9 +51,9 @@ router.get('/profile/performance', staffAuth, staffProfileController.getMyPerfor
 router.get('/profile/activity', staffAuth, staffProfileController.getMyActivityLog);
 
 // Leave routes
+router.get('/leaves/balance', staffAuth, staffLeaveController.getLeaveBalance);
 router.post('/leaves', staffAuth, staffLeaveController.applyLeave);
 router.get('/leaves', staffAuth, staffLeaveController.getMyLeaves);
-router.get('/leaves/balance', staffAuth, staffLeaveController.getLeaveBalance);
 router.delete('/leaves/:leaveId', staffAuth, staffLeaveController.cancelLeave);
 
 // Notification routes
@@ -56,5 +61,7 @@ router.get('/notifications', staffAuth, staffNotificationController.getMyNotific
 router.get('/notifications/unread-count', staffAuth, staffNotificationController.getUnreadCount);
 router.patch('/notifications/:notificationId/read', staffAuth, staffNotificationController.markAsRead);
 router.patch('/notifications/read-all', staffAuth, staffNotificationController.markAllAsRead);
+
+console.log('✅ Staff routes configured successfully');
 
 export default router;

@@ -44,6 +44,12 @@ import {
   getStaffManagementStats
 } from '../controllers/managerStaffController';
 import {
+  getAllLeaveApplications,
+  approveLeave,
+  rejectLeave,
+  getLeaveStatistics
+} from '../controllers/staffLeaveController';
+import {
   getRestaurantDashboard,
   getAllRestaurantTables,
   updateTableStatus,
@@ -170,6 +176,12 @@ router.get('/staff/attendance/history', getAttendanceHistory); // Add this line
 router.get('/attendance/history', getAttendanceHistory);
 router.get('/staff/requests', getStaffRequests);
 router.put('/staff/requests/:id', updateRequestStatus);
+
+// Leave Management
+router.get('/staff/leaves', getAllLeaveApplications);
+router.get('/staff/leaves/statistics', getLeaveStatistics);
+router.put('/staff/leaves/:leaveId/approve', approveLeave);
+router.put('/staff/leaves/:leaveId/reject', rejectLeave);
 
 // TEST ROUTE - Remove after debugging
 router.post('/restaurant/tables/test', (req, res) => {

@@ -5,6 +5,7 @@ import Room from '../models/Room';
 import Order from '../models/Order';
 import Review from '../models/Review';
 import StaffProfile from '../models/StaffProfile';
+import Complaint from '../models/Complaint';
 
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
@@ -735,6 +736,122 @@ export const getUserPermissions = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ===== COMPLAINT MANAGEMENT (FOR ADMIN) =====
+
+export const getAllComplaintsForAdmin = async (req: Request, res: Response) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      priority,
+      category,
+      startDate,
+      endDate,
+      search
+    } = req.query;
+
+    const filter: any = {};
+
+    if (status && status !== 'all') filter.status = status;
+    if (priority && priority !== 'all') filter.priority = priority;
+    if (category && category !== 'all') filter.category = category;
+
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(startDate as string);
+      if (endDate) filter.createdAt.$lte = new Date(endDate as string);
+    }
+
+    let complaints = await Complaint.find(filter)
+      .populate('user', 'firstName lastName email phone')
+      .populate('assignedTo', 'firstName lastName')
+      .populate('booking', 'resourceId type')
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit as string))
+      .skip((parseInt(page as string) - 1) * parseInt(limit as string));
+
+    // Apply search
+    if (search) {
+      const searchLower = (search as string).toLowerCase();
+      complaints = complaints.filter(c => {
+        const userName = `${(c.user as any)?.firstName} ${(c.user as any)?.lastName}`.toLowerCase();
+        const title = c.title?.toLowerCase() || '';
+        const complaintId = c.complaintId?.toLowerCase() || '';
+        return userName.includes(searchLower) || title.includes(searchLower) || complaintId.includes(searchLower);
+      });
+    }
+
+    const total = await Complaint.countDocuments(filter);
+
+    res.json({
+      complaints,
+      pagination: {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        total,
+        pages: Math.ceil(total / parseInt(limit as string))
+      }
+    });
+  } catch (error) {
+    console.error('Get all complaints for admin error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getComplaintDashboardForAdmin = async (req: Request, res: Response) => {
+  try {
+    const totalComplaints = await Complaint.countDocuments();
+    const pendingComplaints = await Complaint.countDocuments({ status: 'pending' });
+    const inProgressComplaints = await Complaint.countDocuments({ status: 'in-progress' });
+    const resolvedComplaints = await Complaint.countDocuments({ status: 'resolved' });
+    const highPriorityComplaints = await Complaint.countDocuments({ 
+      priority: { $in: ['high', 'urgent'] },
+      status: { $in: ['pending', 'in-progress'] }
+    });
+
+    // Get complaint trends (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const trendData = await Complaint.aggregate([
+      { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Category breakdown
+    const categoryBreakdown = await Complaint.aggregate([
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    res.json({
+      stats: {
+        totalComplaints,
+        pendingComplaints,
+        inProgressComplaints,
+        resolvedComplaints,
+        highPriorityComplaints
+      },
+      trends: trendData,
+      categoryBreakdown
+    });
+  } catch (error) {
+    console.error('Get complaint dashboard for admin error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

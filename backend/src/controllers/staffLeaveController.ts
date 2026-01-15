@@ -11,9 +11,34 @@ export const applyLeave = async (req: AuthRequest, res: Response) => {
   try {
     const { leaveType, startDate, endDate, reason, numberOfDays } = req.body;
 
-    const staffProfile = await StaffProfile.findOne({ user: req.user._id });
+    let staffProfile = await StaffProfile.findOne({ user: req.user._id });
+    
+    // Auto-create profile if it doesn't exist
     if (!staffProfile) {
-      return res.status(404).json({ message: 'Staff profile not found' });
+      const count = await StaffProfile.countDocuments();
+      const staffId = `STAFF${String(count + 1).padStart(4, '0')}`;
+      
+      staffProfile = new StaffProfile({
+        user: req.user._id,
+        staffId,
+        staffType: 'housekeeping',
+        department: 'General',
+        joiningDate: new Date(),
+        isActive: true,
+        performanceMetrics: {
+          tasksCompleted: 0,
+          tasksRejected: 0,
+          averageCompletionTime: 0,
+          rating: 5.0
+        },
+        leaveBalance: {
+          sick: 10,
+          casual: 12,
+          annual: 15
+        }
+      });
+      
+      await staffProfile.save();
     }
 
     // Check leave balance
@@ -59,9 +84,34 @@ export const getMyLeaves = async (req: AuthRequest, res: Response) => {
 
 export const getLeaveBalance = async (req: AuthRequest, res: Response) => {
   try {
-    const staffProfile = await StaffProfile.findOne({ user: req.user._id });
+    let staffProfile = await StaffProfile.findOne({ user: req.user._id });
+    
+    // Auto-create profile if it doesn't exist
     if (!staffProfile) {
-      return res.status(404).json({ message: 'Staff profile not found' });
+      const count = await StaffProfile.countDocuments();
+      const staffId = `STAFF${String(count + 1).padStart(4, '0')}`;
+      
+      staffProfile = new StaffProfile({
+        user: req.user._id,
+        staffId,
+        staffType: 'housekeeping',
+        department: 'General',
+        joiningDate: new Date(),
+        isActive: true,
+        performanceMetrics: {
+          tasksCompleted: 0,
+          tasksRejected: 0,
+          averageCompletionTime: 0,
+          rating: 5.0
+        },
+        leaveBalance: {
+          sick: 10,
+          casual: 12,
+          annual: 15
+        }
+      });
+      
+      await staffProfile.save();
     }
 
     res.json({ leaveBalance: staffProfile.leaveBalance });

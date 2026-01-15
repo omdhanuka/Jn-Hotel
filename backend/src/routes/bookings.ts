@@ -13,7 +13,8 @@ import {
   getBookingsForChart,
   updateBooking,
   updateBookingStatus,
-  getBookingStats
+  getBookingStats,
+  createBookingComplaint
 } from '../controllers/bookingController';
 import { auth } from '../middleware/auth';
 import { adminAuth } from '../middleware/adminAuth';
@@ -78,6 +79,16 @@ router.put('/:id/cancel', [auth, adminAuth], cancelBookingByAdmin);
 router.post('/:id/payment', [auth], [
   body('paymentMethodId').notEmpty().withMessage('Payment method is required')
 ], processPayment);
+
+// @route   POST /api/bookings/:id/complaint
+// @desc    Create complaint for booking (only during check-in to check-out period)
+// @access  Private
+router.post('/:id/complaint', [auth], [
+  body('category').notEmpty().withMessage('Category is required'),
+  body('title').notEmpty().withMessage('Title is required'),
+  body('description').notEmpty().withMessage('Description is required'),
+  body('priority').optional().isIn(['low', 'medium', 'high', 'urgent']).withMessage('Invalid priority')
+], createBookingComplaint);
 
 // @route   GET /api/bookings/:id
 // @desc    Get booking by ID
