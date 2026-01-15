@@ -7,7 +7,7 @@ export interface IAttendance extends Document {
   checkOut?: Date;
   shiftStart: string;
   shiftEnd: string;
-  status: 'present' | 'absent' | 'late' | 'half-day';
+  status: 'present' | 'absent' | 'late' | 'half-day' | 'on-leave';
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -20,7 +20,7 @@ const attendanceSchema = new Schema<IAttendance>({
   checkOut: { type: Date },
   shiftStart: { type: String, required: true },
   shiftEnd: { type: String, required: true },
-  status: { type: String, enum: ['present', 'absent', 'late', 'half-day'], default: 'absent' },
+  status: { type: String, enum: ['present', 'absent', 'late', 'half-day', 'on-leave'], default: 'absent' },
   notes: { type: String }
 }, { timestamps: true });
 

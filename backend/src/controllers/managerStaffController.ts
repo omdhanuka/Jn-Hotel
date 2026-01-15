@@ -279,33 +279,23 @@ export const getTodayAttendance = async (req: AuthRequest, res: Response) => {
       date: { $gte: today, $lt: tomorrow }
     }).populate('staffId', 'firstName lastName department position');
 
-    // Get all staff to show who hasn't marked attendance
-    const allStaff = await User.find({ 
-      role: { $in: ['staff', 'reception'] },
-      isActive: true 
-    }).select('firstName lastName department position');
+    // Return attendance records in the format the frontend expects
+    const formattedAttendance = attendance.map(record => ({
+      _id: record._id,
+      staffId: {
+        _id: (record.staffId as any)._id,
+        firstName: (record.staffId as any).firstName,
+        lastName: (record.staffId as any).lastName,
+        department: (record.staffId as any).department
+      },
+      date: record.date,
+      checkIn: record.checkIn,
+      checkOut: record.checkOut,
+      status: record.status,
+      notes: record.notes
+    }));
 
-    const attendanceMap = new Map(
-      attendance.map(a => [a.staffId._id.toString(), a])
-    );
-
-    const completeAttendance = allStaff.map(staff => {
-      const record = attendanceMap.get(staff._id.toString());
-      return {
-        staffId: staff._id,
-        name: `${staff.firstName} ${staff.lastName}`,
-        department: staff.department,
-        position: staff.position,
-        checkIn: record?.checkIn,
-        checkOut: record?.checkOut,
-        shiftStart: record?.shiftStart || '09:00',
-        shiftEnd: record?.shiftEnd || '17:00',
-        status: record?.status || 'absent',
-        notes: record?.notes
-      };
-    });
-
-    res.json({ attendance: completeAttendance });
+    res.json({ attendance: formattedAttendance });
   } catch (error) {
     console.error('Get attendance error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -319,6 +309,14 @@ export const markAttendance = async (req: AuthRequest, res: Response) => {
     const attendanceDate = new Date(date);
     attendanceDate.setHours(0, 0, 0, 0);
 
+    // Helper function to create DateTime from date and time string
+    const createDateTime = (dateStr: string, timeStr: string) => {
+      const [hours, minutes] = timeStr.split(':');
+      const dt = new Date(dateStr);
+      dt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      return dt;
+    };
+
     // Check if attendance already exists
     let attendance = await Attendance.findOne({
       staffId,
@@ -327,8 +325,8 @@ export const markAttendance = async (req: AuthRequest, res: Response) => {
 
     if (attendance) {
       // Update existing
-      attendance.checkIn = checkIn ? new Date(checkIn) : attendance.checkIn;
-      attendance.checkOut = checkOut ? new Date(checkOut) : attendance.checkOut;
+      attendance.checkIn = checkIn ? createDateTime(date, checkIn) : attendance.checkIn;
+      attendance.checkOut = checkOut ? createDateTime(date, checkOut) : attendance.checkOut;
       attendance.shiftStart = shiftStart || attendance.shiftStart;
       attendance.shiftEnd = shiftEnd || attendance.shiftEnd;
       attendance.status = status || attendance.status;
@@ -339,8 +337,8 @@ export const markAttendance = async (req: AuthRequest, res: Response) => {
       attendance = new Attendance({
         staffId,
         date: attendanceDate,
-        checkIn: checkIn ? new Date(checkIn) : undefined,
-        checkOut: checkOut ? new Date(checkOut) : undefined,
+        checkIn: checkIn ? createDateTime(date, checkIn) : undefined,
+        checkOut: checkOut ? createDateTime(date, checkOut) : undefined,
         shiftStart: shiftStart || '09:00',
         shiftEnd: shiftEnd || '17:00',
         status: status || 'present',
@@ -350,15 +348,31 @@ export const markAttendance = async (req: AuthRequest, res: Response) => {
     }
 
     const populatedAttendance = await Attendance.findById(attendance._id)
-      .populate('staffId', 'firstName lastName');
+      .populate('staffId', 'firstName lastName department');
+
+    // Format the response to match frontend expectations
+    const formattedResponse = {
+      _id: populatedAttendance!._id,
+      staffId: {
+        _id: (populatedAttendance!.staffId as any)._id,
+        firstName: (populatedAttendance!.staffId as any).firstName,
+        lastName: (populatedAttendance!.staffId as any).lastName,
+        department: (populatedAttendance!.staffId as any).department
+      },
+      date: populatedAttendance!.date,
+      checkIn: populatedAttendance!.checkIn,
+      checkOut: populatedAttendance!.checkOut,
+      status: populatedAttendance!.status,
+      notes: populatedAttendance!.notes
+    };
 
     res.json({ 
       message: 'Attendance marked successfully',
-      attendance: populatedAttendance 
+      attendance: formattedResponse
     });
   } catch (error) {
     console.error('Mark attendance error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Failed to mark attendance' });
   }
 };
 

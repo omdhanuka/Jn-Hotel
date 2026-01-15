@@ -26,6 +26,11 @@ import {
   rejectLeave,
   getLeaveStatistics
 } from '../controllers/staffLeaveController';
+import {
+  getTodayAttendance,
+  markAttendance,
+  getAttendanceHistory
+} from '../controllers/managerStaffController';
 
 const router = express.Router();
 
@@ -65,6 +70,11 @@ router.get('/staff/leaves', getAllLeaveApplications);
 router.get('/staff/leaves/statistics', getLeaveStatistics);
 router.put('/staff/leaves/:leaveId/approve', approveLeave);
 router.put('/staff/leaves/:leaveId/reject', rejectLeave);
+
+// Attendance Management
+router.get('/staff/attendance/today', getTodayAttendance);
+router.get('/staff/attendance/history', getAttendanceHistory);
+router.post('/staff/attendance', markAttendance);
 
 // Debug endpoint to check staff in database
 router.get('/debug/staff-count', async (req, res) => {

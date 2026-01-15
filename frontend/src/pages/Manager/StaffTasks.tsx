@@ -20,6 +20,7 @@ import {
 import axios from '../../utils/axios'; // Make sure to use the configured axios instance
 import toast from 'react-hot-toast';
 import StaffLeaveRequests from './StaffLeaveRequests';
+import StaffAttendance from './StaffAttendance';
 
 type TabType = 'tasks' | 'assign' | 'performance' | 'attendance' | 'requests' | 'leaves';
 
@@ -781,47 +782,7 @@ const StaffTasks: React.FC = () => {
 
           {/* Attendance Tab */}
           {activeTab === 'attendance' && (
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-4 bg-gray-50 border-b">
-                <h3 className="text-lg font-semibold">Today's Attendance - {new Date().toLocaleDateString()}</h3>
-              </div>
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Staff Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Shift</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Check-In</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Check-Out</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {attendance.map((att) => (
-                    <tr key={att.staffId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{att.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{att.department}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{att.shiftStart} - {att.shiftEnd}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {att.checkIn ? new Date(att.checkIn).toLocaleTimeString() : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {att.checkOut ? new Date(att.checkOut).toLocaleTimeString() : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          att.status === 'present' ? 'bg-green-100 text-green-800' :
-                          att.status === 'late' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {att.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <StaffAttendance userRole="manager" />
           )}
 
           {/* Requests Tab */}

@@ -145,6 +145,20 @@ router.post('/rooms/manual-booking', createManualBooking); // Manual offline boo
 
 // ===== STAFF & TASK MANAGEMENT =====
 router.get('/staff/stats', getStaffManagementStats);
+router.get('/staff', async (req, res) => {
+  // Get all active staff members
+  try {
+    const staff = await User.find({ 
+      role: { $in: ['staff', 'reception'] },
+      isActive: true 
+    }).select('firstName lastName department position email');
+    
+    res.json({ staff });
+  } catch (error) {
+    console.error('Get staff error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 router.get('/staff/list', async (req, res) => {
   // Get all active staff members for task assignment
   try {
