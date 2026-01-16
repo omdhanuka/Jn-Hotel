@@ -40,6 +40,7 @@ import StaffTaskDetails from './pages/Staff/StaffTaskDetails';
 import StaffLogin from './pages/Staff/StaffLogin';
 import StaffLeaveManagement from './pages/Staff/StaffLeaveManagement';
 import StaffProfile from './pages/Staff/StaffProfile';
+import StaffNotifications from './pages/Staff/StaffNotifications';
 import TaskVerification from './pages/Manager/TaskVerification';
 
 // Configure axios defaults immediately
@@ -91,6 +92,7 @@ function App() {
               <Route path="/staff/tasks/:taskId" element={<StaffTaskDetails />} />
               <Route path="/staff/leaves" element={<StaffLeaveManagement />} />
               <Route path="/staff/profile" element={<StaffProfile />} />
+              <Route path="/staff/notifications" element={<StaffNotifications />} />
               
               {/* Routes WITH Navbar - Public and User Routes */}
               <Route path="*" element={

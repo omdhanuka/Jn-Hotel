@@ -77,7 +77,7 @@ export interface StaffNotification {
   relatedLeave?: { _id: string; leaveType: string };
   isRead: boolean;
   priority: 'low' | 'medium' | 'high';
-  createdAt: Date;
+  createdAt: string;
 }
 
 // Tasks
