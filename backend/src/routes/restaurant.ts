@@ -27,6 +27,7 @@ import { adminAuth } from '../middleware/adminAuth';
 import { verifyToken, checkActiveStatus } from '../middleware/roleAuth';
 import { requirePermission, requireAnyPermission } from '../middleware/permissionAuth';
 import { createBill, getBills, getBillById } from '../controllers/billController';
+import { cacheMiddleware } from '../utils/cache';
 
 const router = express.Router();
 
@@ -34,17 +35,20 @@ const router = express.Router();
 // @route   GET /api/restaurant/menu
 // @desc    Get all menu items
 // @access  Public
-router.get('/menu', getMenuItems);
+// Cache for 5 minutes - menu doesn't change frequently
+router.get('/menu', cacheMiddleware(300), getMenuItems);
 
 // @route   GET /api/restaurant/menu/specials/today
 // @desc    Get today's special menu items
 // @access  Public
-router.get('/menu/specials/today', getTodaySpecials);
+// Cache for 1 hour - daily specials
+router.get('/menu/specials/today', cacheMiddleware(3600), getTodaySpecials);
 
 // @route   GET /api/restaurant/menu/categories
 // @desc    Get all menu categories
 // @access  Public
-router.get('/menu/categories', getMenuCategories);
+// Cache for 10 minutes
+router.get('/menu/categories', cacheMiddleware(600), getMenuCategories);
 
 // @route   GET /api/restaurant/menu/:id
 // @desc    Get menu item by ID
@@ -76,12 +80,14 @@ router.delete('/menu/:id', [auth, adminAuth], deleteMenuItem);
 // @route   GET /api/restaurant/tables
 // @desc    Get all restaurant tables
 // @access  Public
-router.get('/tables', getRestaurantTables);
+// Cache for 5 minutes - table availability
+router.get('/tables', cacheMiddleware(300), getRestaurantTables);
 
 // @route   GET /api/restaurant/tables/:id
-// @desc    Get table by ID
+// @desc    Get restaurant table by ID
 // @access  Public
-router.get('/tables/:id', getRestaurantTableById);
+// Cache for 3 minutes
+router.get('/tables/:id', cacheMiddleware(180), getRestaurantTableById);
 
 // @route   POST /api/restaurant/tables
 // @desc    Create new table

@@ -96,4 +96,15 @@ const menuItemSchema = new Schema<IMenuItem>({
   toObject: { virtuals: true }
 });
 
+// Indexes for high-performance queries (10,000+ users)
+menuItemSchema.index({ itemId: 1 }, { unique: true });
+menuItemSchema.index({ category: 1 });
+menuItemSchema.index({ isAvailable: 1 });
+menuItemSchema.index({ isFeatured: 1 });
+menuItemSchema.index({ isTodaySpecial: 1 });
+menuItemSchema.index({ dishType: 1 });
+menuItemSchema.index({ category: 1, isAvailable: 1 }); // Compound for menu filtering
+menuItemSchema.index({ price: 1 }); // For price range queries
+menuItemSchema.index({ createdAt: -1 }); // For sorting by newest
+
 export default mongoose.model<IMenuItem>('MenuItem', menuItemSchema);

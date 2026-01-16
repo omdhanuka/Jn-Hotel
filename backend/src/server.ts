@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import path from 'path';
+import rateLimit from 'express-rate-limit';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -38,6 +39,33 @@ console.log('EMAIL_USER:', process.env.EMAIL_USER ? 'Set' : 'Not set');
 console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set' : 'Not set');
 
 const app = express();
+
+// Rate Limiting - Prevent abuse and DDoS
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // Stricter limit for auth endpoints
+  message: 'Too many login attempts, please try again later.',
+  skipSuccessfulRequests: true,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 30, // 30 requests per minute for API calls
+  message: 'API rate limit exceeded, please slow down.',
+});
+
+// Apply rate limiting
+app.use('/api/', limiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 // Middleware
 app.use(cors({

@@ -126,4 +126,15 @@ const roomSchema = new Schema<IRoom>({
   updatedBy: { type: String }
 }, { timestamps: true });
 
+// Indexes for performance optimization
+roomSchema.index({ roomNumber: 1 }, { unique: true });
+roomSchema.index({ type: 1 });
+roomSchema.index({ isAvailable: 1 });
+roomSchema.index({ status: 1 });
+roomSchema.index({ isBooked: 1 });
+roomSchema.index({ price: 1 }); // For price range queries
+roomSchema.index({ type: 1, isAvailable: 1, status: 1 }); // Compound for filtering
+roomSchema.index({ floor: 1 });
+roomSchema.index({ viewType: 1 });
+
 export default mongoose.model<IRoom>('Room', roomSchema);

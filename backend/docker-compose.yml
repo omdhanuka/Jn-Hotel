@@ -1,0 +1,153 @@
+# Docker Compose - Multi-Server Setup for 10,000+ Users
+# This configuration deploys multiple backend instances with load balancing
+
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: hotel_mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: your_secure_password_here
+      MONGO_INITDB_DATABASE: hotel_management
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    ports:
+      - "27017:27017"
+    networks:
+      - hotel_network
+    command: mongod --maxConns 1000 --wiredTigerCacheSizeGB 2
+
+  # Redis Cache (for distributed caching across servers)
+  redis:
+    image: redis:7-alpine
+    container_name: hotel_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - hotel_network
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+
+  # Backend Server Instance 1
+  backend1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hotel_backend_1
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://admin:your_secure_password_here@mongodb:27017/hotel_management?authSource=admin
+      REDIS_URL: redis://redis:6379
+      CLIENT_URL: http://localhost:3000
+      JWT_SECRET: your_jwt_secret_here
+      INSTANCE_ID: 1
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - hotel_network
+    volumes:
+      - ./uploads:/app/uploads
+
+  # Backend Server Instance 2
+  backend2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hotel_backend_2
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://admin:your_secure_password_here@mongodb:27017/hotel_management?authSource=admin
+      REDIS_URL: redis://redis:6379
+      CLIENT_URL: http://localhost:3000
+      JWT_SECRET: your_jwt_secret_here
+      INSTANCE_ID: 2
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - hotel_network
+    volumes:
+      - ./uploads:/app/uploads
+
+  # Backend Server Instance 3
+  backend3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hotel_backend_3
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://admin:your_secure_password_here@mongodb:27017/hotel_management?authSource=admin
+      REDIS_URL: redis://redis:6379
+      CLIENT_URL: http://localhost:3000
+      JWT_SECRET: your_jwt_secret_here
+      INSTANCE_ID: 3
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - hotel_network
+    volumes:
+      - ./uploads:/app/uploads
+
+  # Nginx Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: hotel_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx-docker.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./uploads:/var/www/uploads:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      - backend1
+      - backend2
+      - backend3
+    networks:
+      - hotel_network
+
+  # Frontend (React)
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: hotel_frontend
+    restart: always
+    environment:
+      REACT_APP_API_URL: http://localhost/api
+    depends_on:
+      - nginx
+    networks:
+      - hotel_network
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+  redis_data:
+    driver: local
+  nginx_cache:
+    driver: local
+
+networks:
+  hotel_network:
+    driver: bridge

@@ -122,5 +122,9 @@ bookingSchema.index({ type: 1, resourceId: 1 });
 bookingSchema.index({ checkIn: 1, checkOut: 1 });
 bookingSchema.index({ status: 1 });
 bookingSchema.index({ paymentStatus: 1 });
+bookingSchema.index({ user: 1, status: 1 }); // Compound index for user bookings
+bookingSchema.index({ resourceId: 1, checkIn: 1, checkOut: 1 }); // For availability checks
+bookingSchema.index({ createdAt: -1 }); // For recent bookings
+bookingSchema.index({ checkIn: 1, status: 1 }); // For upcoming bookings
 
 export default mongoose.model<IBooking>('Booking', bookingSchema);

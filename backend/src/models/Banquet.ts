@@ -113,4 +113,17 @@ const banquetSchema = new Schema<IBanquet>({
   toObject: { virtuals: true }
 });
 
+// Indexes for high-performance banquet queries (10,000+ users)
+banquetSchema.index({ banquetId: 1 }, { unique: true });
+banquetSchema.index({ type: 1 });
+banquetSchema.index({ isAvailable: 1 });
+banquetSchema.index({ status: 1 });
+banquetSchema.index({ capacity: 1 }); // For capacity range queries
+banquetSchema.index({ pricePerDay: 1 }); // For price sorting
+banquetSchema.index({ pricePerHour: 1 });
+banquetSchema.index({ type: 1, isAvailable: 1, status: 1 }); // Compound for filtering
+banquetSchema.index({ floor: 1 });
+banquetSchema.index({ location: 1 });
+banquetSchema.index({ createdAt: -1 }); // For newest listings
+
 export default mongoose.model<IBanquet>('Banquet', banquetSchema);

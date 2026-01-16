@@ -46,4 +46,13 @@ const restaurantTableSchema = new Schema<IRestaurantTable>({
   toObject: { virtuals: true }
 });
 
+// Indexes for high-performance table availability queries
+restaurantTableSchema.index({ tableId: 1 }, { unique: true });
+restaurantTableSchema.index({ isAvailable: 1 });
+restaurantTableSchema.index({ status: 1 });
+restaurantTableSchema.index({ tableType: 1 });
+restaurantTableSchema.index({ seatingCapacity: 1 });
+restaurantTableSchema.index({ tableType: 1, isAvailable: 1, status: 1 }); // Compound for filtering
+restaurantTableSchema.index({ location: 1 });
+
 export default mongoose.model<IRestaurantTable>('RestaurantTable', restaurantTableSchema);

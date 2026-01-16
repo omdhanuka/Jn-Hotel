@@ -114,4 +114,18 @@ const restaurantBookingSchema = new Schema<IRestaurantBooking>({
   toObject: { virtuals: true }
 });
 
+// Indexes for high-performance restaurant booking queries
+restaurantBookingSchema.index({ bookingId: 1 }, { unique: true });
+restaurantBookingSchema.index({ user: 1 });
+restaurantBookingSchema.index({ bookingType: 1 });
+restaurantBookingSchema.index({ status: 1 });
+restaurantBookingSchema.index({ paymentStatus: 1 });
+restaurantBookingSchema.index({ tableId: 1 });
+restaurantBookingSchema.index({ date: 1 }); // For date-based queries
+restaurantBookingSchema.index({ user: 1, status: 1 }); // User bookings by status
+restaurantBookingSchema.index({ date: 1, status: 1 }); // Bookings by date and status
+restaurantBookingSchema.index({ tableId: 1, date: 1, status: 1 }); // Table availability
+restaurantBookingSchema.index({ createdAt: -1 }); // Recent bookings
+restaurantBookingSchema.index({ deliveryType: 1 }); // For order type filtering
+
 export default mongoose.model<IRestaurantBooking>('RestaurantBooking', restaurantBookingSchema);

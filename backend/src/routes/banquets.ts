@@ -12,18 +12,21 @@ import {
 import { auth } from '../middleware/auth';
 import { adminAuth } from '../middleware/adminAuth';
 import { upload } from '../config/multer';
+import { cacheMiddleware } from '../utils/cache';
 
 const router = express.Router();
 
 // @route   GET /api/banquets
 // @desc    Get all banquets with filters
 // @access  Public
-router.get('/', getBanquets);
+// Cache for 10 minutes - banquets don't change often
+router.get('/', cacheMiddleware(600), getBanquets);
 
 // @route   GET /api/banquets/:id
 // @desc    Get banquet by ID
 // @access  Public
-router.get('/:id', getBanquetById);
+// Cache for 5 minutes
+router.get('/:id', cacheMiddleware(300), getBanquetById);
 
 // @route   POST /api/banquets/upload-images
 // @desc    Upload banquet images

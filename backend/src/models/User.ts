@@ -104,4 +104,12 @@ userSchema.methods.comparePassword = async function(password: string): Promise<b
   return bcrypt.compare(password, this.password);
 };
 
+// Indexes for performance optimization
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ role: 1 });
+userSchema.index({ isActive: 1 });
+userSchema.index({ department: 1 });
+userSchema.index({ role: 1, isActive: 1 }); // Compound index for common queries
+userSchema.index({ createdAt: -1 });
+
 export default mongoose.model<IUser>('User', userSchema);
