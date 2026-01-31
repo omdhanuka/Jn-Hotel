@@ -42,6 +42,7 @@ import StaffLeaveManagement from './pages/Staff/StaffLeaveManagement';
 import StaffProfile from './pages/Staff/StaffProfile';
 import StaffNotifications from './pages/Staff/StaffNotifications';
 import TaskVerification from './pages/Manager/TaskVerification';
+import ReportsAnalytics from './pages/Manager/ReportsAnalytics';
 
 // Configure axios defaults immediately
 const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -73,6 +74,7 @@ function App() {
               {/* Manager Routes */}
               <Route path="/manager/login" element={<ManagerLogin />} />
               <Route path="/manager/dashboard" element={<ManagerDashboard />} />
+              <Route path="/manager/reports" element={<ReportsAnalytics />} />
               <Route path="/manager/manual-booking" element={<ManualBooking />} />
               <Route path="/manager/bookings" element={<AllBookings />} />
               <Route path="/manager/booking-calendar" element={<BookingCalendar />} />
