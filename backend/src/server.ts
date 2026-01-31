@@ -62,16 +62,25 @@ const apiLimiter = rateLimit({
   message: 'API rate limit exceeded, please slow down.',
 });
 
-// Apply rate limiting
-app.use('/api/', limiter);
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
+// Apply rate limiting (conditionally in production)
+if (process.env.NODE_ENV === 'production') {
+  app.use('/api/', limiter);
+  app.use('/api/auth/login', authLimiter);
+  app.use('/api/auth/register', authLimiter);
+}
 
-// Middleware
+// CORS Middleware - MUST be before rate limiting and routes
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400 // 24 hours
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -337,9 +346,22 @@ const initializeDatabase = async () => {
     
   } catch (error) {
     console.error('❌ Database connection failed:', error);
-    process.exit(1);
+    console.error('⚠️  Continuing without sample data...');
+    // Don't exit - allow server to retry connection
   }
 };
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('⚠️  Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit the process - just log the error
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('⚠️  Uncaught Exception:', error);
+  // Don't exit the process - just log the error
+});
 
 // 404 handler - must be after all routes
 app.use((req, res) => {
@@ -354,9 +376,16 @@ app.use((req, res) => {
 // Error handling middleware
 app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('❌ Server error:', error);
-  res.status(500).json({ 
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? error.message : undefined
+  
+  // Handle CORS errors specifically
+  if (error.message && error.message.includes('CORS')) {
+    res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:3000');
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  
+  res.status(error.status || 500).json({ 
+    message: error.message || 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? error.stack : undefined
   });
 });
 
