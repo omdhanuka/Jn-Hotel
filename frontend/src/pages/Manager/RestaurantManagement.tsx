@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Utensils, Users, DollarSign, Clock, Plus, Eye, Edit, Trash2,
   Check, X, ChefHat, Receipt, TrendingUp, Calendar, User, AlertCircle,
-  Printer, Download, Filter, Search, Star
+  Printer, Download, Filter, Search, Star, FileText
 } from 'lucide-react';
 import axios from '../../utils/axios'; // Fixed import path
 import toast from 'react-hot-toast';
@@ -141,6 +141,14 @@ const RestaurantManagement: React.FC = () => {
     spiceLevels: [] as string[],
     addOns: [] as { name: string; price: number }[]
   });
+
+  // Validation state and refs for modal fields
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const nameRef = useRef<HTMLInputElement | null>(null);
+  const categoryRef = useRef<HTMLInputElement | null>(null);
+  const priceRef = useRef<HTMLInputElement | null>(null);
+  const stockRef = useRef<HTMLInputElement | null>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
 
   const categories = ['Appetizers', 'Main Course', 'Desserts', 'Beverages', 'Soups', 'Salads', 'Snacks', 'Specials'];
 
@@ -1150,10 +1158,27 @@ const RestaurantManagement: React.FC = () => {
   };
 
   const handleCreateSpecial = async () => {
-    if (!specialForm.name || !specialForm.category || !specialForm.price) {
-      toast.error('Please fill in all required fields');
+    // Validate required fields before submitting and collect errors
+    const errors: Record<string, string> = {};
+    if (!specialForm.name || specialForm.name.trim() === '') errors.name = 'Name is required';
+    if (!specialForm.category || specialForm.category.trim() === '') errors.category = 'Category is required';
+    if (!specialForm.description || specialForm.description.trim() === '') errors.description = 'Description is required';
+    if (specialForm.price === undefined || specialForm.price === null || Number(specialForm.price) <= 0) errors.price = 'Price must be greater than 0';
+    if (specialForm.stockQuantity === undefined || specialForm.stockQuantity === null || isNaN(Number(specialForm.stockQuantity))) errors.stockQuantity = 'Stock quantity is required';
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      // focus first invalid field
+      if (errors.name && nameRef.current) nameRef.current.focus();
+      else if (errors.description && descriptionRef.current) descriptionRef.current.focus();
+      else if (errors.category && categoryRef.current) categoryRef.current.focus();
+      else if (errors.price && priceRef.current) priceRef.current.focus();
+      else if (errors.stockQuantity && stockRef.current) stockRef.current.focus();
+
+      toast.error('Please fix the highlighted fields');
       return;
     }
+    setValidationErrors({});
 
     try {
       if (editingSpecial) {
@@ -1163,7 +1188,7 @@ const RestaurantManagement: React.FC = () => {
         await axios.post('/manager/restaurant/specials/today', specialForm);
         toast.success('Today\'s special created successfully');
       }
-      
+      setValidationErrors({});
       setShowAddSpecialModal(false);
       resetSpecialForm();
       fetchTodaySpecials();
@@ -1187,6 +1212,7 @@ const RestaurantManagement: React.FC = () => {
       spiceLevels: special.spiceLevels || [],
       addOns: special.addOns || []
     });
+    setValidationErrors({});
     setShowAddSpecialModal(true);
   };
 
@@ -2148,7 +2174,7 @@ const RestaurantManagement: React.FC = () => {
                   Today's Special Items
                 </h2>
                 <button
-                  onClick={() => setShowAddSpecialModal(true)}
+                  onClick={() => { setValidationErrors({}); setShowAddSpecialModal(true); }}
                   className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 flex items-center"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -2166,7 +2192,7 @@ const RestaurantManagement: React.FC = () => {
                     Add new items that are available only for today!
                   </p>
                   <button
-                    onClick={() => setShowAddSpecialModal(true)}
+                    onClick={() => { setValidationErrors({}); setShowAddSpecialModal(true); }}
                     className="px-6 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
                   >
                     Add First Special
@@ -2453,6 +2479,271 @@ const RestaurantManagement: React.FC = () => {
                   </p>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Add / Edit Today's Special Modal - Redesigned */}
+        {showAddSpecialModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+              {/* Header with gradient background */}
+              <div className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 p-6 rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white p-2 rounded-full shadow-lg">
+                      <Star className="h-6 w-6 text-yellow-500" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">
+                        {editingSpecial ? 'Edit Today\'s Special' : 'Create Today\'s Special'}
+                      </h2>
+                      <p className="text-yellow-100 text-sm">Add a delicious dish to today's highlights</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setValidationErrors({});
+                      setShowAddSpecialModal(false);
+                      resetSpecialForm();
+                      setEditingSpecial(null);
+                    }}
+                    className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full p-2 transition-all"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Basic Information Section */}
+                <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-5 rounded-xl border-2 border-yellow-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <Utensils className="h-5 w-5 text-yellow-600" />
+                    Basic Information
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                        <ChefHat className="h-4 w-4 text-yellow-600" />
+                        Dish Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        ref={nameRef}
+                        type="text"
+                        value={specialForm.name}
+                        onChange={(e) => setSpecialForm({ ...specialForm, name: e.target.value })}
+                        className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all ${validationErrors.name ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'}`}
+                        placeholder="e.g., Butter Chicken Masala"
+                      />
+                      {validationErrors.name && (
+                        <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          {validationErrors.name}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                        <Filter className="h-4 w-4 text-yellow-600" />
+                        Category <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        ref={categoryRef}
+                        type="text"
+                        value={specialForm.category}
+                        onChange={(e) => setSpecialForm({ ...specialForm, category: e.target.value })}
+                        className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all ${validationErrors.category ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'}`}
+                        placeholder="e.g., Main Course, Appetizers, Desserts"
+                      />
+                      {validationErrors.category && (
+                        <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          {validationErrors.category}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                        <FileText className="h-4 w-4 text-yellow-600" />
+                        Description <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        ref={descriptionRef}
+                        value={specialForm.description}
+                        onChange={(e) => setSpecialForm({ ...specialForm, description: e.target.value })}
+                        rows={4}
+                        className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all ${validationErrors.description ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'}`}
+                        placeholder="Describe what makes this dish special... ingredients, preparation style, taste profile"
+                      />
+                      {validationErrors.description && (
+                        <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          {validationErrors.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pricing & Details Section */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-5 rounded-xl border-2 border-green-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-green-600" />
+                    Pricing & Details
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                        Dish Type
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={specialForm.dishType}
+                          onChange={(e) => setSpecialForm({ ...specialForm, dishType: e.target.value as any })}
+                          className="w-full border-2 border-gray-200 bg-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 appearance-none cursor-pointer"
+                        >
+                          <option value="veg">🥬 Vegetarian</option>
+                          <option value="non-veg">🍗 Non-Vegetarian</option>
+                          <option value="vegan">🌱 Vegan</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                        Special Price (₹) <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">₹</span>
+                        <input
+                          ref={priceRef}
+                          type="number"
+                          value={specialForm.price}
+                          onChange={(e) => setSpecialForm({ ...specialForm, price: parseFloat(e.target.value) || 0 })}
+                          className={`w-full border-2 rounded-lg pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all ${validationErrors.price ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'}`}
+                          min={0}
+                          step="0.01"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      {validationErrors.price && (
+                        <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          {validationErrors.price}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                        <TrendingUp className="h-4 w-4 text-gray-500" />
+                        Original Price (optional)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">₹</span>
+                        <input
+                          type="number"
+                          value={specialForm.originalPrice}
+                          onChange={(e) => setSpecialForm({ ...specialForm, originalPrice: parseFloat(e.target.value) || 0 })}
+                          className="w-full border-2 border-gray-200 bg-white rounded-lg pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400"
+                          min={0}
+                          step="0.01"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      {specialForm.originalPrice > 0 && specialForm.originalPrice > specialForm.price && (
+                        <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3" />
+                          {Math.round(((specialForm.originalPrice - specialForm.price) / specialForm.originalPrice) * 100)}% discount
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                        <Clock className="h-4 w-4 text-blue-600" />
+                        Stock Available <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        ref={stockRef}
+                        type="number"
+                        value={specialForm.stockQuantity}
+                        onChange={(e) => setSpecialForm({ ...specialForm, stockQuantity: parseInt(e.target.value) || 0 })}
+                        className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all ${validationErrors.stockQuantity ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'}`}
+                        min={0}
+                        placeholder="10"
+                      />
+                      {validationErrors.stockQuantity && (
+                        <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          {validationErrors.stockQuantity}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Images Section */}
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-5 rounded-xl border-2 border-purple-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <Eye className="h-5 w-5 text-purple-600" />
+                    Visual Appeal
+                  </h3>
+                  
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      Images (comma separated URLs)
+                    </label>
+                    <input
+                      type="text"
+                      value={specialForm.images.join(',')}
+                      onChange={(e) => setSpecialForm({ ...specialForm, images: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                      className="w-full border-2 border-gray-200 bg-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400"
+                      placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
+                    />
+                    <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      Separate multiple image URLs with commas
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer with action buttons */}
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-b-2xl border-t-2 border-gray-200">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <Star className="h-4 w-4 text-yellow-500" />
+                    Make your special dish stand out!
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setValidationErrors({});
+                        setShowAddSpecialModal(false);
+                        resetSpecialForm();
+                        setEditingSpecial(null);
+                      }}
+                      className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleCreateSpecial}
+                      className="px-8 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold rounded-lg hover:from-yellow-600 hover:to-orange-600 shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+                    >
+                      <Star className="h-5 w-5" />
+                      {editingSpecial ? 'Update Special' : 'Create Special'}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

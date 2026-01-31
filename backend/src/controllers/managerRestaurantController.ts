@@ -1029,10 +1029,31 @@ export const getTodaySpecials = async (req: AuthRequest, res: Response) => {
 // NEW: Create today's special item
 export const createTodaySpecial = async (req: AuthRequest, res: Response) => {
   try {
-    const { 
-      name, description, category, dishType, price, originalPrice,
-      images, preparationTime, spiceLevels, addOns, stockQuantity 
+    const {
+      name,
+      description,
+      category,
+      dishType = 'veg',
+      price,
+      originalPrice,
+      images,
+      preparationTime,
+      spiceLevels,
+      addOns,
+      stockQuantity
     } = req.body;
+
+    // Defensive: ensure authenticated user is present
+    if (!req.user) {
+      console.warn('Unauthorized createTodaySpecial attempt, missing req.user');
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    // Basic validation - require description as well
+    if (!name || !description || !category || price === undefined || price === null || stockQuantity === undefined || stockQuantity === null) {
+      console.warn('createTodaySpecial validation failed - missing required fields', { body: req.body });
+      return res.status(400).json({ message: 'Missing required fields: name, description, category, price, stockQuantity' });
+    }
 
     // Set valid until end of today
     const validUntil = new Date();
@@ -1040,32 +1061,41 @@ export const createTodaySpecial = async (req: AuthRequest, res: Response) => {
 
     const special = new TodaySpecial({
       name,
-      description,
+      description: description || '',
       category,
       dishType,
       price,
       originalPrice,
-      images: images || [],
+      images: Array.isArray(images) ? images : (images ? String(images).split(',').map((s: string) => s.trim()).filter(Boolean) : []),
       preparationTime,
-      spiceLevels: spiceLevels || [],
-      addOns: addOns || [],
-      stockQuantity,
+      spiceLevels: Array.isArray(spiceLevels) ? spiceLevels : (spiceLevels ? String(spiceLevels).split(',').map((s: string) => s.trim()).filter(Boolean) : []),
+      addOns: Array.isArray(addOns) ? addOns : [],
+      stockQuantity: Number(stockQuantity),
       isAvailable: true,
       validUntil,
-      createdBy: `${req.user!.firstName} ${req.user!.lastName}`
+      createdBy: `${req.user.firstName} ${req.user.lastName}`
     });
 
     await special.save();
 
-    console.log(`🌟 Today's special created: ${name} by ${req.user!.firstName} ${req.user!.lastName}`);
+    console.log(`🌟 Today's special created: ${name} by ${req.user.firstName} ${req.user.lastName}`);
 
-    res.status(201).json({
-      message: 'Today\'s special item created successfully',
-      special
-    });
-  } catch (error) {
+    res.status(201).json({ message: 'Today\'s special item created successfully', special });
+  } catch (error: any) {
+    // Handle mongoose validation errors gracefully
+    if (error && error.name === 'ValidationError') {
+      const details: Record<string, string> = {};
+      for (const key in error.errors) {
+        if (Object.prototype.hasOwnProperty.call(error.errors, key)) {
+          details[key] = error.errors[key].message;
+        }
+      }
+      console.warn('Create today special validation error:', details);
+      return res.status(400).json({ message: 'Validation failed', errors: details });
+    }
+
     console.error('Create today special error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : String(error) });
   }
 };
 
