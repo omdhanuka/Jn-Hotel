@@ -565,6 +565,7 @@ export const getBookingsForChart = async (req: AuthRequest, res: Response) => {
 
     // Build filter query - more inclusive date filtering
     const filter: any = {
+      status: { $ne: 'cancelled' }, // Exclude cancelled bookings
       $or: [
         // Booking starts within the month
         {

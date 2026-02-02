@@ -75,6 +75,7 @@ export const getCalendarBookings = async (req: AuthRequest, res: Response) => {
     if (type === 'all' || type === 'room') {
       const bookings = await Booking.find({
         type: 'room',
+        status: { $ne: 'cancelled' }, // Exclude cancelled bookings
         $or: [
           { checkIn: { $gte: start, $lte: end } },
           { checkOut: { $gte: start, $lte: end } },
@@ -85,12 +86,24 @@ export const getCalendarBookings = async (req: AuthRequest, res: Response) => {
         .sort({ checkIn: 1 })
         .lean();
 
-      console.log(`✓ Found ${bookings.length} room bookings`);
+      console.log(`✓ Found ${bookings.length} room bookings (excluding cancelled)`);
+      
+      // Debug: Log all room bookings with dates
+      bookings.forEach((booking, index) => {
+        console.log(`Room Booking ${index + 1}:`, {
+          id: booking._id,
+          checkIn: booking.checkIn,
+          checkOut: booking.checkOut,
+          resourceId: booking.resourceId,
+          status: booking.status
+        });
+      });
 
       // Manually populate room data
       for (const booking of bookings) {
         const room = await Room.findById(booking.resourceId).select('roomNumber type').lean();
         if (room) {
+          console.log(`Room ${room.roomNumber} - CheckIn: ${booking.checkIn}, CheckOut: ${booking.checkOut}`);
           roomBookings.push({ ...booking, resourceId: room });
         } else {
           console.log(`⚠ Room not found for booking ${booking._id}`);
@@ -107,6 +120,7 @@ export const getCalendarBookings = async (req: AuthRequest, res: Response) => {
 
       const bookings = await Booking.find({
         type: 'banquet',
+        status: { $ne: 'cancelled' }, // Exclude cancelled bookings
         $or: [
           { checkIn: { $gte: start, $lte: end } },
           { checkOut: { $gte: start, $lte: end } },
@@ -117,7 +131,7 @@ export const getCalendarBookings = async (req: AuthRequest, res: Response) => {
         .sort({ checkIn: 1 })
         .lean();
 
-      console.log(`✓ Found ${bookings.length} banquet bookings in date range`);
+      console.log(`✓ Found ${bookings.length} banquet bookings in date range (excluding cancelled)`);
       
       if (bookings.length > 0) {
         console.log('Sample banquet booking:', JSON.stringify(bookings[0], null, 2));

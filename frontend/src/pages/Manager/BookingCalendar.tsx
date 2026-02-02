@@ -64,6 +64,22 @@ const BookingCalendar: React.FC = () => {
       console.log('Total bookings fetched:', response.data.bookings?.length);
       console.log('Room bookings:', response.data.roomBookings?.length);
       console.log('Banquet bookings:', response.data.banquetBookings?.length);
+      
+      // Debug: Log ALL bookings with their dates
+      if (response.data.bookings && response.data.bookings.length > 0) {
+        console.log('=== ALL BOOKINGS ===');
+        response.data.bookings.forEach((booking: any, index: number) => {
+          console.log(`Booking ${index + 1}:`, {
+            title: booking.title,
+            start: booking.start,
+            end: booking.end,
+            startDate: new Date(booking.start).toLocaleDateString(),
+            endDate: new Date(booking.end).toLocaleDateString(),
+            status: booking.status,
+            type: booking.type
+          });
+        });
+      }
 
       setBookings(response.data.bookings || []);
       setStats(response.data.stats || { totalBookings: 0, roomBookings: 0, banquetBookings: 0 });
@@ -93,16 +109,31 @@ const BookingCalendar: React.FC = () => {
     // Add days of current month
     for (let day = 1; day <= daysInMonth; day++) {
       const currentDay = new Date(year, month, day);
-      const currentDayStart = new Date(year, month, day, 0, 0, 0, 0);
-      const currentDayEnd = new Date(year, month, day, 23, 59, 59, 999);
       
       const dayBookings = bookings.filter(booking => {
         const bookingStart = new Date(booking.start);
         const bookingEnd = new Date(booking.end);
         
-        // Check if booking overlaps with this day
-        // Booking overlaps if: booking starts before day ends AND booking ends after day starts
-        return bookingStart <= currentDayEnd && bookingEnd >= currentDayStart;
+        // Normalize dates to compare only year, month, and day (ignore time)
+        const bookingStartDate = new Date(bookingStart.getFullYear(), bookingStart.getMonth(), bookingStart.getDate());
+        const bookingEndDate = new Date(bookingEnd.getFullYear(), bookingEnd.getMonth(), bookingEnd.getDate());
+        const currentDayDate = new Date(year, month, day);
+        
+        // Debug logging for Room 102
+        if (booking.title?.includes('Room 102') && day === 1) {
+          console.log(`Room 102 Debug (Day ${day}):`, {
+            bookingTitle: booking.title,
+            bookingStartDate: bookingStartDate.toLocaleDateString(),
+            bookingEndDate: bookingEndDate.toLocaleDateString(),
+            currentDayDate: currentDayDate.toLocaleDateString(),
+            startCheck: currentDayDate >= bookingStartDate,
+            endCheck: currentDayDate <= bookingEndDate,
+            willShow: currentDayDate >= bookingStartDate && currentDayDate <= bookingEndDate
+          });
+        }
+        
+        // Check if current day falls within the booking date range (inclusive)
+        return currentDayDate >= bookingStartDate && currentDayDate <= bookingEndDate;
       });
       days.push({ date: currentDay, bookings: dayBookings });
     }
