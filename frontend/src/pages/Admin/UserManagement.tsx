@@ -9,10 +9,16 @@ interface UserData {
   lastName: string;
   email: string;
   phone?: string;
-  role: 'user' | 'admin' | 'staff';
+  role: 'user' | 'admin' | 'staff' | 'guest' | 'manager' | 'reception';
   isActive: boolean;
   createdAt: string;
   lastLogin?: string;
+  staffProfile?: {
+    staffId: string;
+    staffType: string;
+    department: string;
+    joiningDate: string;
+  };
 }
 
 const UserManagement: React.FC = () => {
@@ -41,7 +47,11 @@ const UserManagement: React.FC = () => {
       const usersData = Array.isArray(response.data) 
         ? response.data 
         : (response.data.users || response.data.data || []);
-      setUsers(usersData);
+      // Filter to only show guest users, exclude staff/admin/manager/reception
+      const guestUsers = usersData.filter((user: UserData) => 
+        user.role === 'user' || user.role === 'guest'
+      );
+      setUsers(guestUsers);
     } catch (error: any) {
       console.error('Failed to fetch users:', error);
       toast.error('Failed to load users');
@@ -107,7 +117,13 @@ const UserManagement: React.FC = () => {
   };
 
   const handleEditUser = (user: UserData) => {
-    setSelectedUser(user);
+    setSelectedUser({
+      ...user,
+      phone: user.phone || '',
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      email: user.email || ''
+    });
     setShowEditModal(true);
   };
 
@@ -128,8 +144,8 @@ const UserManagement: React.FC = () => {
   const stats = {
     total: Array.isArray(users) ? users.length : 0,
     active: Array.isArray(users) ? users.filter(u => u.isActive).length : 0,
-    admins: Array.isArray(users) ? users.filter(u => u.role === 'admin').length : 0,
-    staff: Array.isArray(users) ? users.filter(u => u.role === 'staff').length : 0,
+    inactive: Array.isArray(users) ? users.filter(u => !u.isActive).length : 0,
+    verified: Array.isArray(users) ? users.filter(u => u.isActive).length : 0,
   };
 
   if (loading) {
@@ -143,8 +159,8 @@ const UserManagement: React.FC = () => {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">User Management</h1>
-        <p className="text-gray-600">Manage all users and their permissions</p>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Guest Management</h1>
+        <p className="text-gray-600">Manage guest users and their accounts</p>
       </div>
 
       {/* Stats Cards */}
@@ -152,7 +168,7 @@ const UserManagement: React.FC = () => {
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-100 text-sm font-medium">Total Users</p>
+              <p className="text-blue-100 text-sm font-medium">Total Guests</p>
               <p className="text-3xl font-bold">{stats.total}</p>
             </div>
             <User className="h-12 w-12 text-blue-200" />
@@ -162,37 +178,37 @@ const UserManagement: React.FC = () => {
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-green-100 text-sm font-medium">Active Users</p>
+              <p className="text-green-100 text-sm font-medium">Active Guests</p>
               <p className="text-3xl font-bold">{stats.active}</p>
             </div>
             <Shield className="h-12 w-12 text-green-200" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-purple-100 text-sm font-medium">Admins</p>
-              <p className="text-3xl font-bold">{stats.admins}</p>
+              <p className="text-red-100 text-sm font-medium">Inactive Guests</p>
+              <p className="text-3xl font-bold">{stats.inactive}</p>
             </div>
-            <Shield className="h-12 w-12 text-purple-200" />
+            <Shield className="h-12 w-12 text-red-200" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-orange-100 text-sm font-medium">Staff</p>
-              <p className="text-3xl font-bold">{stats.staff}</p>
+              <p className="text-purple-100 text-sm font-medium">Verified Guests</p>
+              <p className="text-3xl font-bold">{stats.verified}</p>
             </div>
-            <User className="h-12 w-12 text-orange-200" />
+            <User className="h-12 w-12 text-purple-200" />
           </div>
         </div>
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -208,19 +224,6 @@ const UserManagement: React.FC = () => {
 
           <div>
             <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Roles</option>
-              <option value="user">Users</option>
-              <option value="admin">Admins</option>
-              <option value="staff">Staff</option>
-            </select>
-          </div>
-
-          <div>
-            <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -230,6 +233,7 @@ const UserManagement: React.FC = () => {
               <option value="inactive">Inactive</option>
             </select>
           </div>
+
         </div>
       </div>
 
@@ -239,9 +243,8 @@ const UserManagement: React.FC = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
                 <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -273,15 +276,6 @@ const UserManagement: React.FC = () => {
                         {user.phone}
                       </div>
                     )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                      user.role === 'staff' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {user.role.toUpperCase()}
-                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
@@ -323,7 +317,7 @@ const UserManagement: React.FC = () => {
         {filteredUsers.length === 0 && (
           <div className="text-center py-12">
             <User className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No guests found</h3>
             <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filters.</p>
           </div>
         )}
@@ -348,7 +342,7 @@ const UserManagement: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                   <input
                     type="text"
-                    value={selectedUser.firstName}
+                    value={selectedUser.firstName || ''}
                     onChange={(e) => setSelectedUser({ ...selectedUser, firstName: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
@@ -358,7 +352,7 @@ const UserManagement: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
                   <input
                     type="text"
-                    value={selectedUser.lastName}
+                    value={selectedUser.lastName || ''}
                     onChange={(e) => setSelectedUser({ ...selectedUser, lastName: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
@@ -369,7 +363,7 @@ const UserManagement: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
-                  value={selectedUser.email}
+                  value={selectedUser.email || ''}
                   onChange={(e) => setSelectedUser({ ...selectedUser, email: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
@@ -384,23 +378,12 @@ const UserManagement: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <select
-                  value={selectedUser.role}
-                  onChange={(e) => setSelectedUser({ ...selectedUser, role: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="user">User</option>
-                  <option value="staff">Staff</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
+              <input type="hidden" value="guest" />
               <div className="flex items-center">
                 <input
                   type="checkbox"
                   id="isActive"
-                  checked={selectedUser.isActive}
+                  checked={selectedUser.isActive || false}
                   onChange={(e) => setSelectedUser({ ...selectedUser, isActive: e.target.checked })}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />

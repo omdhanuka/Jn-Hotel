@@ -4,6 +4,9 @@ import {
   getAllBookings, 
   getAllUsers, 
   updateUserRole,
+  updateUser,
+  toggleUserStatus,
+  deleteUser,
   getRevenue,
   getOccupancyRate,
   getAllReviews,
@@ -48,7 +51,10 @@ router.get('/bookings', getAllBookings);
 
 // User Management
 router.get('/users', getAllUsers);
+router.put('/users/:id', updateUser);
 router.put('/users/:id/role', updateUserRole);
+router.patch('/users/:id/status', toggleUserStatus);
+router.delete('/users/:id', deleteUser);
 router.get('/users/:id/permissions', getUserPermissions); // IMPORTANT: This route must be registered
 
 // Reviews Management

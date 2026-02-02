@@ -148,12 +148,29 @@ export const getAllUsers = async (req: Request, res: Response) => {
       .select('-password')
       .limit(parseInt(limit as string))
       .skip((parseInt(page as string) - 1) * parseInt(limit as string))
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // For staff users, fetch their staff profiles
+    const usersWithStaffData = await Promise.all(
+      users.map(async (user: any) => {
+        if (user.role === 'staff') {
+          const staffProfile = await StaffProfile.findOne({ user: user._id })
+            .select('staffId staffType department joiningDate')
+            .lean();
+          return {
+            ...user,
+            staffProfile
+          };
+        }
+        return user;
+      })
+    );
 
     const total = await User.countDocuments(filter);
 
     res.json({
-      users,
+      users: usersWithStaffData,
       pagination: {
         page: parseInt(page as string),
         limit: parseInt(limit as string),
@@ -186,6 +203,70 @@ export const updateUserRole = async (req: Request, res: Response) => {
     }
 
     res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateUser = async (req: Request, res: Response) => {
+  try {
+    const { firstName, lastName, email, phone, isActive } = req.body;
+    
+    const updateData: any = {};
+    if (firstName) updateData.firstName = firstName;
+    if (lastName) updateData.lastName = lastName;
+    if (email) updateData.email = email;
+    if (phone !== undefined) updateData.phone = phone;
+    if (isActive !== undefined) updateData.isActive = isActive;
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const toggleUserStatus = async (req: Request, res: Response) => {
+  try {
+    const { isActive } = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isActive },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

@@ -21,6 +21,14 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction) 
       return res.status(401).json({ message: 'Token is not valid' });
     }
 
+    // Check if user account is active
+    if (!user.isActive) {
+      return res.status(403).json({ 
+        message: 'Your account has been deactivated. Please contact the administrator.',
+        code: 'ACCOUNT_INACTIVE'
+      });
+    }
+
     req.user = user;
     next();
   } catch (error) {

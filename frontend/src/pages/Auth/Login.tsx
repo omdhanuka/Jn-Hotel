@@ -22,7 +22,17 @@ const Login: React.FC = () => {
       toast.success('Welcome back!');
       navigate('/dashboard');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      const errorMessage = error.response?.data?.message || 'Login failed';
+      const errorCode = error.response?.data?.code;
+      
+      if (errorCode === 'ACCOUNT_INACTIVE') {
+        toast.error('Your account has been deactivated. Please contact the administrator.', {
+          duration: 5000,
+          icon: '🔒'
+        });
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
