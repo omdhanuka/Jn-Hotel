@@ -550,6 +550,135 @@ export const getAllBookingsForAdmin = async (req: AuthRequest, res: Response) =>
   }
 };
 
+export const createBookingByAdmin = async (req: AuthRequest, res: Response) => {
+  try {
+    // Only admin can create bookings manually
+    if (req.user!.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
+
+    const { email, type, checkIn, checkOut, guests, roomNumber, specialRequests } = req.body;
+
+    // Validate required fields
+    if (!email || !type || !checkIn || !checkOut) {
+      return res.status(400).json({ message: 'Email, type, check-in, and check-out dates are required' });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found with this email' });
+    }
+
+    let resourceId: any = null;
+    let totalAmount = 0;
+
+    // Handle different booking types
+    if (type === 'room') {
+      // If room number is specified, find that specific room
+      if (roomNumber) {
+        const room = await Room.findOne({ number: roomNumber });
+        if (!room) {
+          return res.status(404).json({ message: `Room ${roomNumber} not found` });
+        }
+        
+        // Check if room is available for the dates
+        const conflictingBooking = await Booking.findOne({
+          resourceId: room._id,
+          type: 'room',
+          status: { $in: ['pending', 'confirmed'] },
+          $or: [
+            {
+              checkIn: { $lte: new Date(checkIn) },
+              checkOut: { $gt: new Date(checkIn) }
+            },
+            {
+              checkIn: { $lt: new Date(checkOut) },
+              checkOut: { $gte: new Date(checkOut) }
+            },
+            {
+              checkIn: { $gte: new Date(checkIn) },
+              checkOut: { $lte: new Date(checkOut) }
+            }
+          ]
+        });
+
+        if (conflictingBooking) {
+          return res.status(400).json({ 
+            message: `Room ${roomNumber} is already booked for the selected dates` 
+          });
+        }
+
+        resourceId = room._id;
+        const checkInDate = new Date(checkIn);
+        const checkOutDate = new Date(checkOut);
+        const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+        totalAmount = room.price * nights;
+      } else {
+        // Find any available room
+        const availableRoom = await Room.findOne({ isAvailable: true });
+        if (!availableRoom) {
+          return res.status(400).json({ message: 'No available rooms found' });
+        }
+        
+        resourceId = availableRoom._id;
+        const checkInDate = new Date(checkIn);
+        const checkOutDate = new Date(checkOut);
+        const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+        totalAmount = availableRoom.price * nights;
+      }
+    } else if (type === 'banquet') {
+      // For banquet, admin must specify which hall (for now, just get the first available)
+      const banquet = await Banquet.findOne({ isAvailable: true });
+      if (!banquet) {
+        return res.status(400).json({ message: 'No available banquet halls found' });
+      }
+      
+      resourceId = banquet._id;
+      const checkInDate = new Date(checkIn);
+      const checkOutDate = new Date(checkOut);
+      const hours = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60));
+      totalAmount = banquet.pricePerHour * hours;
+    } else if (type === 'table') {
+      // For table booking
+      const table = await Table.findOne({ isAvailable: true });
+      if (!table) {
+        return res.status(400).json({ message: 'No available tables found' });
+      }
+      
+      resourceId = table._id;
+      totalAmount = 0; // Table bookings might be free or have different pricing
+    }
+
+    // Create booking
+    const booking = new Booking({
+      user: user._id,
+      type,
+      resourceId,
+      checkIn: new Date(checkIn),
+      checkOut: new Date(checkOut),
+      guests: guests || 1,
+      totalAmount,
+      specialRequests: specialRequests || '',
+      status: 'confirmed', // Admin-created bookings are automatically confirmed
+      paymentStatus: 'pending'
+    });
+
+    await booking.save();
+
+    // Populate user data for response
+    await booking.populate('user', 'firstName lastName email');
+
+    res.status(201).json({
+      message: 'Booking created successfully',
+      booking
+    });
+  } catch (error) {
+    console.error('Error creating booking:', error);
+    res.status(500).json({ message: 'Server error while creating booking' });
+  }
+};
+
 export const getBookingsForChart = async (req: AuthRequest, res: Response) => {
   try {
     // Only admin can view booking chart

@@ -14,7 +14,8 @@ import {
   updateBooking,
   updateBookingStatus,
   getBookingStats,
-  createBookingComplaint
+  createBookingComplaint,
+  createBookingByAdmin
 } from '../controllers/bookingController';
 import { auth } from '../middleware/auth';
 import { adminAuth } from '../middleware/adminAuth';
@@ -37,6 +38,17 @@ router.get('/admin/chart', [auth, adminAuth], getBookingsForChart);
 // @desc    Get all bookings for admin
 // @access  Private (Admin only)
 router.get('/admin', [auth, adminAuth], getAllBookingsForAdmin);
+
+// @route   POST /api/bookings/admin/create
+// @desc    Create a booking manually (Admin only)
+// @access  Private (Admin only)
+router.post('/admin/create', [auth, adminAuth], [
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('type').isIn(['room', 'banquet', 'table']).withMessage('Invalid booking type'),
+  body('checkIn').isISO8601().withMessage('Check-in date is required'),
+  body('checkOut').isISO8601().withMessage('Check-out date is required'),
+  body('guests').optional().isNumeric().withMessage('Number of guests must be numeric')
+], createBookingByAdmin);
 
 // @route   GET /api/bookings
 // @desc    Get user's bookings
