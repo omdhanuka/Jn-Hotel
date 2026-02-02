@@ -638,12 +638,20 @@ const Dashboard: React.FC = () => {
                             View Details
                           </Link>
                           {booking.paymentStatus === 'paid' && (
-                            <Link
-                              to={`/receipt/${booking._id}`}
-                              className="border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm hover:bg-gray-50"
-                            >
-                              Download Receipt
-                            </Link>
+                            <>
+                              <Link
+                                to={
+                                  booking.type === 'room' 
+                                    ? `/invoice/room/${booking._id}` 
+                                    : booking.type === 'banquet'
+                                    ? `/invoice/banquet/${booking._id}`
+                                    : `/receipt/${booking._id}`
+                                }
+                                className="border border-amber-600 text-amber-700 px-4 py-2 rounded-md text-sm hover:bg-amber-50 font-semibold"
+                              >
+                                📄 View Invoice
+                              </Link>
+                            </>
                           )}
                           {/* Complaint button - only show for active bookings (during stay) */}
                           {isBookingActive(booking) && booking.source === 'hotel' && (

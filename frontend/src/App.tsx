@@ -16,6 +16,9 @@ import AdminPanel from './pages/Admin/AdminPanel';
 import BookRoom from './pages/BookRoom';
 import BookingDetails from './pages/BookingDetails';
 import Receipt from './pages/Receipt';
+import RoomBookingInvoice from './pages/RoomBookingInvoice';
+import RestaurantInvoice from './pages/RestaurantInvoice';
+import BanquetBookingInvoice from './pages/BanquetBookingInvoice';
 import AdminLogin from './pages/Auth/AdminLogin';
 import CreateAdmin from './pages/Auth/CreateAdmin';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -113,6 +116,9 @@ function App() {
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/booking/:bookingId" element={<BookingDetails />} />
                       <Route path="/receipt/:bookingId" element={<Receipt />} />
+                      <Route path="/invoice/room/:bookingId" element={<RoomBookingInvoice />} />
+                      <Route path="/invoice/restaurant/:billId" element={<RestaurantInvoice />} />
+                      <Route path="/invoice/banquet/:bookingId" element={<BanquetBookingInvoice />} />
                     </Routes>
                   </main>
                   <Footer />

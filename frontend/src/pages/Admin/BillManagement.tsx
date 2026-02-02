@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Printer, Eye, Calculator, Clock, Check, Filter, Home, ShoppingBag, Utensils, Receipt } from 'lucide-react';
 import axios from '../../utils/axios'; // Updated import
 import toast from 'react-hot-toast';
@@ -54,6 +55,7 @@ interface Bill {
 }
 
 const BillManagement: React.FC = () => {
+  const navigate = useNavigate();
   const [dineInOrders, setDineInOrders] = useState<DineInOrder[]>([]);
   const [takeawayOrders, setTakeawayOrders] = useState<DineInOrder[]>([]);
   const [deliveryOrders, setDeliveryOrders] = useState<DineInOrder[]>([]);
@@ -92,8 +94,14 @@ const BillManagement: React.FC = () => {
       setDineInOrders(allOrders.filter((order: any) => order.deliveryType === 'dine-in'));
       setTakeawayOrders(allOrders.filter((order: any) => order.deliveryType === 'takeaway'));
       setDeliveryOrders(allOrders.filter((order: any) => order.deliveryType === 'delivery'));
-    } catch (error) {
-      toast.error('Failed to fetch orders');
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        toast.error('Access denied. Please login as admin.');
+        navigate('/admin/login');
+      } else {
+        toast.error('Failed to fetch orders');
+      }
+      console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
     }
@@ -103,8 +111,13 @@ const BillManagement: React.FC = () => {
     try {
       const response = await axios.get('/bills?billType=restaurant');
       setBills(response.data.bills || []);
-    } catch (error) {
-      console.error('Failed to fetch bills');
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        toast.error('Access denied. Please login as admin.');
+        navigate('/admin/login');
+      } else {
+        console.error('Failed to fetch bills:', error);
+      }
     }
   };
 
@@ -1003,11 +1016,12 @@ const BillManagement: React.FC = () => {
                             Print
                           </button>
                           <button
-                            onClick={() => {/* Navigate to bill details */}}
+                            onClick={() => navigate(`/invoice/restaurant/${bill._id}`)}
                             className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 flex items-center"
-                            title="View Details"
+                            title="View Invoice"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-4 w-4 mr-1" />
+                            Invoice
                           </button>
                         </div>
                       </td>
