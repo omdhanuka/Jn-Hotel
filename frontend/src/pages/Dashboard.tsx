@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Calendar, Clock, Users, MapPin, Star, CreditCard, Utensils, Filter, BedDouble, Building, Search, MessageSquare, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, Users, MapPin, Star, CreditCard, Utensils, Filter, BedDouble, Building, Search, MessageSquare, AlertCircle, Crown, User, Phone, Mail, CheckCircle, ArrowRight, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import FeedbackModal from '../components/FeedbackModal';
@@ -38,6 +38,7 @@ type ExtendedBooking = Omit<Booking, 'type'> & {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('bookings');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [restaurantBookings, setRestaurantBookings] = useState<Booking[]>([]);
@@ -47,6 +48,7 @@ const Dashboard: React.FC = () => {
   const [selectedBookingForFeedback, setSelectedBookingForFeedback] = useState<ExtendedBooking | null>(null);
   const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [selectedBookingForComplaint, setSelectedBookingForComplaint] = useState<ExtendedBooking | null>(null);
+  const [loyaltyPoints] = useState(2500);
   
   // Filter states
   const [filters, setFilters] = useState({
@@ -296,81 +298,308 @@ const Dashboard: React.FC = () => {
     return now >= checkInDate && now <= checkOutDate && booking.status === 'confirmed';
   };
 
+  const upcomingBookings = filteredBookings.filter(b => 
+    b.status === 'confirmed' || b.status === 'pending'
+  ).slice(0, 3);
+
+  const pastBookings = filteredBookings.filter(b => 
+    b.status === 'completed'
+  ).slice(0, 3);
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Welcome Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {user?.firstName}!
+    <div className="min-h-screen bg-gradient-to-b from-amber-50/30 to-white">
+      {/* Hero Section */}
+      <div 
+        className="relative h-[500px] bg-cover bg-center flex items-center justify-center"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1600&q=80')`,
+        }}
+      >
+        <div className="text-center text-white z-10 px-4">
+          <h1 className="text-5xl md:text-7xl font-serif font-bold mb-4 tracking-wide">
+            BOOK YOUR STAY
           </h1>
-          <p className="text-gray-600">Manage your bookings and account settings</p>
-          
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <Calendar className="h-8 w-8 text-blue-600 mr-3" />
-                <div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {bookings.filter(b => b.status === 'confirmed' || b.status === 'pending').length}
+          <p className="text-2xl md:text-3xl font-serif italic text-amber-200 mb-8">
+            Experience Royal Luxury
+          </p>
+          <button
+            onClick={() => navigate('/rooms')}
+            className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white px-10 py-4 rounded-lg hover:from-amber-600 hover:to-yellow-700 transition-all shadow-xl hover:shadow-2xl text-lg font-semibold uppercase tracking-wider"
+          >
+            CHECK AVAILABILITY <ArrowRight className="inline h-5 w-5 ml-2" />
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10">
+        {/* Welcome Card with Profile */}
+        <div className="bg-white rounded-2xl shadow-2xl border-2 border-amber-200 overflow-hidden mb-8">
+          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 px-8 py-6 border-b-2 border-amber-200">
+            <div className="flex items-center space-x-6">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center shadow-lg">
+                <User className="h-12 w-12 text-white" />
+              </div>
+              <div>
+                <h2 className="text-4xl font-serif font-bold text-gray-900 mb-2">
+                  Welcome, {user?.firstName} {user?.lastName}!
+                </h2>
+                <p className="text-lg text-gray-700">Welcome to your account dashboard.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Loyalty Points Card */}
+              <div className="bg-gradient-to-br from-amber-100 via-yellow-50 to-amber-100 rounded-xl p-6 border-2 border-amber-300 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/30 rounded-full -mr-16 -mt-16"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-yellow-200/30 rounded-full -ml-12 -mb-12"></div>
+                
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-2xl font-serif font-bold text-gray-900 uppercase tracking-wide">
+                      WELCOME BACK, {user?.firstName?.toUpperCase()}!
+                    </h3>
+                    <Crown className="h-10 w-10 text-amber-600" />
                   </div>
-                  <div className="text-sm text-gray-600">Active Hotel Bookings</div>
+                  
+                  <div className="text-center my-6">
+                    <div className="text-6xl font-bold text-amber-600 mb-2">
+                      {loyaltyPoints.toLocaleString()}
+                    </div>
+                    <div className="text-lg font-semibold text-gray-700 uppercase tracking-wider">
+                      POINTS
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-gray-700 text-center mb-4">
+                    Reach 5,000 points to unlock a free night stay.
+                  </p>
+                  
+                  <button className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-white py-3 rounded-lg hover:from-amber-600 hover:to-yellow-700 transition-all shadow-md font-semibold uppercase tracking-wide">
+                    VIEW OFFERS <ArrowRight className="inline h-4 w-4 ml-1" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Upcoming Booking Preview */}
+              <div className="bg-gradient-to-br from-white to-amber-50/30 rounded-xl p-6 border-2 border-amber-200">
+                <h3 className="text-xl font-serif font-bold text-gray-900 mb-4 uppercase tracking-wide">
+                  Upcoming Booking
+                </h3>
+                
+                {upcomingBookings.length > 0 ? (
+                  <div className="space-y-3">
+                    {upcomingBookings.slice(0, 1).map((booking) => (
+                      <div key={booking._id} className="flex space-x-4">
+                        <img
+                          src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&q=80"
+                          alt="Room"
+                          className="w-32 h-24 object-cover rounded-lg"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <Calendar className="h-4 w-4 text-amber-600" />
+                            <span className="text-sm font-medium text-gray-700">
+                              {new Date(booking.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2 mb-1">
+                            <Calendar className="h-4 w-4 text-amber-600" />
+                            <span className="text-sm font-medium text-gray-700">
+                              {new Date(booking.checkOut).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </span>
+                          </div>
+                          <h4 className="font-semibold text-gray-900">
+                            {booking.type === 'room' ? 'Premier Room' : getResourceTitle(booking)}
+                          </h4>
+                          <p className="text-xs text-gray-600 uppercase tracking-wide">
+                            UPC# {booking._id.substring(0, 6)} • APP BOOKING
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => setActiveTab('bookings')}
+                      className="w-full bg-amber-500 text-white py-2 rounded-lg hover:bg-amber-600 transition-colors font-semibold uppercase tracking-wide text-sm"
+                    >
+                      VIEW DETAILS
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-600 mb-4">No upcoming bookings</p>
+                    <button
+                      onClick={() => navigate('/rooms')}
+                      className="bg-amber-500 text-white px-6 py-2 rounded-lg hover:bg-amber-600 transition-colors font-semibold uppercase tracking-wide text-sm"
+                    >
+                      BOOK NOW
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Upcoming Bookings Card */}
+          <div className="bg-white rounded-xl shadow-lg border-2 border-amber-100 p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <Calendar className="h-8 w-8 text-amber-600 mb-2" />
+                <h3 className="text-lg font-serif font-bold text-gray-900 uppercase tracking-wide">
+                  Upcoming Bookings
+                </h3>
+              </div>
+            </div>
+            <div className="mb-4">
+              <div className="text-5xl font-bold text-amber-600 mb-1">
+                {upcomingBookings.length}
+              </div>
+              <p className="text-sm text-gray-600">
+                View or modify your upcoming bookings
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTab('bookings')}
+              className="w-full bg-amber-500 text-white py-2 rounded-lg hover:bg-amber-600 transition-colors font-semibold uppercase tracking-wide text-sm"
+            >
+              VIEW ALL <ArrowRight className="inline h-4 w-4 ml-1" />
+            </button>
+          </div>
+
+          {/* Past Bookings Card */}
+          <div className="bg-white rounded-xl shadow-lg border-2 border-amber-100 p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <CheckCircle className="h-8 w-8 text-green-600 mb-2" />
+                <h3 className="text-lg font-serif font-bold text-gray-900 uppercase tracking-wide">
+                  Past Bookings
+                </h3>
+              </div>
+            </div>
+            <div className="mb-4">
+              <div className="text-5xl font-bold text-green-600 mb-1">
+                {pastBookings.length}
+              </div>
+              <p className="text-sm text-gray-600">
+                Review your past stays and invoices
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setActiveTab('bookings');
+                setFilters(prev => ({ ...prev, status: 'completed' }));
+              }}
+              className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition-colors font-semibold uppercase tracking-wide text-sm"
+            >
+              VIEW HISTORY <ArrowRight className="inline h-4 w-4 ml-1" />
+            </button>
+          </div>
+
+          {/* Account Settings Card */}
+          <div className="bg-white rounded-xl shadow-lg border-2 border-amber-100 p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <User className="h-8 w-8 text-blue-600 mb-2" />
+                <h3 className="text-lg font-serif font-bold text-gray-900 uppercase tracking-wide">
+                  Account Settings
+                </h3>
+              </div>
+            </div>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Update your profile and preferences
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center text-sm text-gray-700">
+                  <Mail className="h-4 w-4 mr-2 text-amber-600" />
+                  {user?.email}
                 </div>
               </div>
             </div>
-            
-            <div className="bg-green-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <Utensils className="h-8 w-8 text-green-600 mr-3" />
-                <div>
-                  <div className="text-2xl font-bold text-green-600">
-                    {restaurantBookings.filter(b => b.status === 'confirmed' || b.status === 'pending').length}
-                  </div>
-                  <div className="text-sm text-gray-600">Active Restaurant Orders</div>
+            <button
+              onClick={() => setActiveTab('profile')}
+              className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors font-semibold uppercase tracking-wide text-sm"
+            >
+              MANAGE ACCOUNT <ArrowRight className="inline h-4 w-4 ml-1" />
+            </button>
+          </div>
+        </div>
+
+        {/* Exclusive Offers Section */}
+        <div className="mb-8">
+          <h2 className="text-4xl font-serif font-bold text-center text-gray-900 mb-8 uppercase tracking-wide">
+            Exclusive Offers for You
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Romantic Getaway */}
+            <div className="bg-white rounded-xl shadow-lg border-2 border-amber-100 overflow-hidden hover:shadow-2xl transition-shadow">
+              <div className="relative">
+                <img
+                  src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80"
+                  alt="Romantic Getaway"
+                  className="w-full h-64 object-cover"
+                />
+                <div className="absolute top-4 left-4 bg-amber-500 text-white px-4 py-2 rounded-full font-bold text-lg">
+                  15% OFF
                 </div>
               </div>
-            </div>
-            
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <CreditCard className="h-8 w-8 text-purple-600 mr-3" />
-                <div>
-                  <div className="text-2xl font-bold text-purple-600">
-                    ₹{[...bookings, ...restaurantBookings]
-                      .filter(b => b.paymentStatus === 'paid')
-                      .reduce((sum, b) => sum + (b.totalAmount || 0), 0)}
-                  </div>
-                  <div className="text-sm text-gray-600">Total Spent</div>
-                </div>
+              <div className="p-6">
+                <h3 className="text-2xl font-serif font-bold text-gray-900 mb-3">
+                  Romantic Getaway
+                </h3>
+                <p className="text-gray-700 mb-4">
+                  Enjoy a memorable stay with romantic perks.
+                </p>
+                <button className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-white py-3 rounded-lg hover:from-amber-600 hover:to-yellow-700 transition-all shadow-md font-semibold uppercase tracking-wide">
+                  VIEW OFFER <ArrowRight className="inline h-4 w-4 ml-1" />
+                </button>
               </div>
             </div>
 
-            <div className="bg-orange-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <Star className="h-8 w-8 text-orange-600 mr-3" />
-                <div>
-                  <div className="text-2xl font-bold text-orange-600">
-                    {[...bookings, ...restaurantBookings].filter(b => b.status === 'completed').length}
-                  </div>
-                  <div className="text-sm text-gray-600">Completed Bookings</div>
+            {/* Spa & Wellness */}
+            <div className="bg-white rounded-xl shadow-lg border-2 border-amber-100 overflow-hidden hover:shadow-2xl transition-shadow">
+              <div className="relative">
+                <img
+                  src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=80"
+                  alt="Spa & Wellness"
+                  className="w-full h-64 object-cover"
+                />
+                <div className="absolute top-4 left-4 bg-amber-500 text-white px-4 py-2 rounded-full font-bold text-lg">
+                  15% OFF
                 </div>
+              </div>
+              <div className="p-6">
+                <h3 className="text-2xl font-serif font-bold text-gray-900 mb-3">
+                  Spa & Wellness Package
+                </h3>
+                <p className="text-gray-700 mb-4">
+                  Relax with a special spa and wellness package.
+                </p>
+                <button className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-white py-3 rounded-lg hover:from-amber-600 hover:to-yellow-700 transition-all shadow-md font-semibold uppercase tracking-wide">
+                  VIEW OFFER <ArrowRight className="inline h-4 w-4 ml-1" />
+                </button>
               </div>
             </div>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-white rounded-lg shadow-md">
-          <div className="border-b border-gray-200">
+        <div className="bg-white rounded-2xl shadow-lg border-2 border-amber-100">
+          <div className="border-b-2 border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50">
             <nav className="-mb-px flex">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`py-4 px-6 border-b-2 font-medium text-sm ${
+                  className={`py-5 px-8 border-b-4 font-semibold text-sm uppercase tracking-wider transition-all ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-amber-500 text-amber-600 bg-white'
+                      : 'border-transparent text-gray-600 hover:text-amber-600 hover:border-amber-300'
                   }`}
                 >
                   {tab.label}
@@ -384,15 +613,15 @@ const Dashboard: React.FC = () => {
             {activeTab === 'bookings' && (
               <div>
                 {/* Filters Section */}
-                <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                <div className="bg-gradient-to-br from-amber-50 to-yellow-50 p-6 rounded-xl mb-6 border-2 border-amber-200">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                      <Filter className="h-5 w-5 mr-2" />
+                    <h3 className="text-xl font-serif font-bold text-gray-900 flex items-center uppercase tracking-wide">
+                      <Filter className="h-6 w-6 mr-2 text-amber-600" />
                       Filter Bookings
                     </h3>
                     <button
                       onClick={resetFilters}
-                      className="text-sm text-blue-600 hover:text-blue-800"
+                      className="text-sm font-semibold text-amber-600 hover:text-amber-800 uppercase tracking-wide"
                     >
                       Reset Filters
                     </button>
@@ -534,11 +763,11 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Results Summary */}
-                <div className="mb-4 flex justify-between items-center">
-                  <h2 className="text-xl font-semibold">
+                <div className="mb-6 flex justify-between items-center bg-gradient-to-r from-amber-100 to-yellow-100 p-4 rounded-xl border-2 border-amber-200">
+                  <h2 className="text-2xl font-serif font-bold text-gray-900 uppercase tracking-wide">
                     My Bookings ({filteredBookings.length})
                   </h2>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm font-medium text-gray-700">
                     Showing {filteredBookings.length} of {[...bookings, ...restaurantBookings].length} total bookings
                   </div>
                 </div>
@@ -584,11 +813,11 @@ const Dashboard: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {filteredBookings.map((booking: ExtendedBooking) => (
-                      <div key={`${booking.source}-${booking._id}`} className="border border-gray-200 rounded-lg p-4">
+                      <div key={`${booking.source}-${booking._id}`} className="bg-white border-2 border-amber-100 rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow">
                         <div className="flex justify-between items-start">
-                          <div className="flex items-start space-x-3">
+                          <div className="flex items-start space-x-4">
                             <div className="p-2 bg-gray-100 rounded-lg">
                               {getBookingTypeIcon(booking.type, booking.source)}
                             </div>
@@ -684,10 +913,12 @@ const Dashboard: React.FC = () => {
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div>
-                <h2 className="text-xl font-semibold mb-4">Profile Information</h2>
+                <h2 className="text-3xl font-serif font-bold text-gray-900 mb-6 uppercase tracking-wide">
+                  Profile Information
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
                       First Name
                     </label>
                     <input
@@ -695,11 +926,11 @@ const Dashboard: React.FC = () => {
                       title="First Name"
                       placeholder="First name"
                       defaultValue={user?.firstName}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
                       Last Name
                     </label>
                     <input
@@ -707,11 +938,11 @@ const Dashboard: React.FC = () => {
                       title="Last Name"
                       placeholder="Last name"
                       defaultValue={user?.lastName}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
                       Email
                     </label>
                     <input
@@ -719,11 +950,11 @@ const Dashboard: React.FC = () => {
                       title="Email"
                       placeholder="Email address"
                       defaultValue={user?.email}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
                       Phone
                     </label>
                     <input
@@ -731,17 +962,69 @@ const Dashboard: React.FC = () => {
                       title="Phone"
                       placeholder="Phone number"
                       defaultValue={(user as any)?.phone || ''}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors"
                     />
                   </div>
                 </div>
-                <div className="mt-6">
-                  <button className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
+                <div className="mt-8">
+                  <button className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white px-8 py-3 rounded-lg hover:from-amber-600 hover:to-yellow-700 transition-all shadow-md font-semibold uppercase tracking-wide">
                     Update Profile
                   </button>
                 </div>
               </div>
             )}
+
+        {/* Testimonial Section */}
+        <div className="my-12 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-12 border-2 border-amber-200 text-center">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-6xl text-amber-600 mb-4">"</div>
+            <p className="text-xl font-serif italic text-gray-800 mb-4">
+              An unforgettable experience! The service and ambiance were exceptional.
+            </p>
+            <p className="text-lg font-semibold text-gray-900">— Anjali S.</p>
+            
+            <div className="flex justify-center space-x-4 mt-8">
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors"
+              >
+                <Facebook className="h-6 w-6" />
+              </a>
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white hover:from-purple-600 hover:to-pink-600 transition-colors"
+              >
+                <Instagram className="h-6 w-6" />
+              </a>
+              <a
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center text-white hover:bg-blue-500 transition-colors"
+              >
+                <Twitter className="h-6 w-6" />
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Links */}
+        <div className="bg-gray-900 text-white rounded-2xl p-8 text-center">
+          <div className="flex flex-wrap justify-center space-x-6 text-sm">
+            <a href="#" className="hover:text-amber-400 transition-colors">Contact Us</a>
+            <span>|</span>
+            <a href="#" className="hover:text-amber-400 transition-colors">Location</a>
+            <span>|</span>
+            <a href="#" className="hover:text-amber-400 transition-colors">Privacy Policy</a>
+          </div>
+          <p className="mt-4 text-sm text-gray-400">
+            © 2024 Hotel JN Palace. All Rights Reserved.
+          </p>
+        </div>
           </div>
         </div>
       </div>
