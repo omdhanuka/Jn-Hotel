@@ -52,6 +52,9 @@ const BookingManagement: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
     email: '',
+    firstName: '',
+    lastName: '',
+    phone: '',
     type: 'room',
     checkIn: '',
     checkOut: '',
@@ -59,6 +62,11 @@ const BookingManagement: React.FC = () => {
     roomNumber: '',
     specialRequests: ''
   });
+  const [availableRooms, setAvailableRooms] = useState<any[]>([]);
+  const [loadingRooms, setLoadingRooms] = useState(false);
+  const [existingUser, setExistingUser] = useState<any>(null);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -195,6 +203,24 @@ const BookingManagement: React.FC = () => {
   const closeDetailsModal = () => {
     setViewingDetails(null);
     setSelectedBooking(null);
+  };
+
+  const fetchAvailableRooms = async (checkIn: string, checkOut: string) => {
+    if (!checkIn || !checkOut) {
+      setAvailableRooms([]);
+      return;
+    }
+
+    try {
+      setLoadingRooms(true);
+      const response = await axios.get(`/rooms/available-for-booking?checkIn=${checkIn}&checkOut=${checkOut}`);
+      setAvailableRooms(response.data.rooms || []);
+    } catch (error) {
+      console.error('Failed to fetch available rooms:', error);
+      setAvailableRooms([]);
+    } finally {
+      setLoadingRooms(false);
+    }
   };
 
   const createNewBooking = async () => {
@@ -1177,7 +1203,12 @@ const BookingManagement: React.FC = () => {
                   <input
                     type="datetime-local"
                     value={createForm.checkIn}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, checkIn: e.target.value }))}
+                    onChange={(e) => {
+                      setCreateForm(prev => ({ ...prev, checkIn: e.target.value }));
+                      if (e.target.value && createForm.checkOut) {
+                        fetchAvailableRooms(e.target.value, createForm.checkOut);
+                      }
+                    }}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all"
                     required
                   />
@@ -1187,7 +1218,12 @@ const BookingManagement: React.FC = () => {
                   <input
                     type="datetime-local"
                     value={createForm.checkOut}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, checkOut: e.target.value }))}
+                    onChange={(e) => {
+                      setCreateForm(prev => ({ ...prev, checkOut: e.target.value }));
+                      if (createForm.checkIn && e.target.value) {
+                        fetchAvailableRooms(createForm.checkIn, e.target.value);
+                      }
+                    }}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all"
                     required
                   />
@@ -1212,14 +1248,35 @@ const BookingManagement: React.FC = () => {
               {createForm.type === 'room' && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Room Number</label>
-                  <input
-                    type="text"
-                    value={createForm.roomNumber}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, roomNumber: e.target.value }))}
-                    placeholder="e.g., 101, 205, etc."
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Optional - Leave blank for auto-assignment</p>
+                  {loadingRooms ? (
+                    <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-500 flex items-center gap-2">
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      Loading available rooms...
+                    </div>
+                  ) : availableRooms.length > 0 ? (
+                    <select
+                      value={createForm.roomNumber}
+                      onChange={(e) => setCreateForm(prev => ({ ...prev, roomNumber: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all"
+                    >
+                      <option value="">Select a room (optional - auto-assign if blank)</option>
+                      {availableRooms.map((room) => (
+                        <option key={room._id} value={room.roomNumber}>
+                          Room {room.roomNumber} - {room.type.charAt(0).toUpperCase() + room.type.slice(1)} (₹{room.price}/night, Max {room.maxGuests} guests)
+                        </option>
+                      ))}
+                    </select>
+                  ) : createForm.checkIn && createForm.checkOut ? (
+                    <div className="w-full px-4 py-3 border-2 border-red-300 rounded-xl bg-red-50 text-red-600 flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      No rooms available for selected dates
+                    </div>
+                  ) : (
+                    <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-500">
+                      Select check-in and check-out dates to see available rooms
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">Leave blank for auto-assignment to any available room</p>
                 </div>
               )}
 

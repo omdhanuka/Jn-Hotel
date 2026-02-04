@@ -577,7 +577,7 @@ export const createBookingByAdmin = async (req: AuthRequest, res: Response) => {
     if (type === 'room') {
       // If room number is specified, find that specific room
       if (roomNumber) {
-        const room = await Room.findOne({ number: roomNumber });
+        const room = await Room.findOne({ roomNumber: roomNumber });
         if (!room) {
           return res.status(404).json({ message: `Room ${roomNumber} not found` });
         }

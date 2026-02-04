@@ -267,3 +267,51 @@ export const seedRooms = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error while seeding rooms' });
   }
 };
+
+// Get available rooms for booking dropdown
+export const getAvailableRoomsForBooking = async (req: Request, res: Response) => {
+  try {
+    const { checkIn, checkOut } = req.query;
+    
+    if (!checkIn || !checkOut) {
+      return res.status(400).json({ message: 'Check-in and check-out dates are required' });
+    }
+
+    // Find rooms that are booked during the requested period
+    const bookedRoomIds = await Booking.find({
+      type: 'room',
+      status: { $in: ['confirmed', 'pending'] },
+      $or: [
+        {
+          checkIn: { $lte: new Date(checkIn as string) },
+          checkOut: { $gt: new Date(checkIn as string) }
+        },
+        {
+          checkIn: { $lt: new Date(checkOut as string) },
+          checkOut: { $gte: new Date(checkOut as string) }
+        },
+        {
+          checkIn: { $gte: new Date(checkIn as string) },
+          checkOut: { $lte: new Date(checkOut as string) }
+        }
+      ]
+    }).distinct('resourceId');
+
+    // Find all available rooms that are not booked
+    const availableRooms = await Room.find({
+      _id: { $nin: bookedRoomIds },
+      isAvailable: true,
+      status: 'active'
+    })
+    .select('roomNumber type price maxGuests')
+    .sort({ roomNumber: 1 });
+
+    res.json({ 
+      rooms: availableRooms,
+      count: availableRooms.length 
+    });
+  } catch (error) {
+    console.error('Get available rooms for booking error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

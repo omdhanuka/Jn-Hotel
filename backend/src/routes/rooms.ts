@@ -7,7 +7,8 @@ import {
   updateRoom, 
   deleteRoom,
   checkAvailability,
-  uploadRoomImages
+  uploadRoomImages,
+  getAvailableRoomsForBooking
 } from '../controllers/roomController';
 import { auth } from '../middleware/auth';
 import { adminAuth } from '../middleware/adminAuth';
@@ -19,6 +20,11 @@ const router = express.Router();
 // @desc    Get all rooms with filters
 // @access  Public
 router.get('/', getRooms);
+
+// @route   GET /api/rooms/available-for-booking
+// @desc    Get available rooms for booking dropdown
+// @access  Public
+router.get('/available-for-booking', getAvailableRoomsForBooking);
 
 // @route   GET /api/rooms/:id
 // @desc    Get room by ID
