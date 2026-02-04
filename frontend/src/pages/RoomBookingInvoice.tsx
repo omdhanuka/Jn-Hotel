@@ -17,7 +17,7 @@ interface Booking {
   status: string;
   paymentStatus: string;
   specialRequests?: string;
-  services: string[];
+  services?: string[];
   createdAt: string;
   paymentId?: string;
 }
@@ -115,6 +115,7 @@ const RoomBookingInvoice: React.FC = () => {
     // Calculate additional services
     let additionalServices = 0;
     const serviceItems: Array<{ description: string; qty: number | string; rate: number | string; amount: number }> = [];
+    const services = Array.isArray(booking.services) ? booking.services : [];
     
     // Add room charges
     serviceItems.push({
@@ -125,8 +126,8 @@ const RoomBookingInvoice: React.FC = () => {
     });
 
     // Add services if any
-    if (booking.services.length > 0) {
-      booking.services.forEach((service) => {
+    if (services.length > 0) {
+      services.forEach((service) => {
         let serviceAmount = 0;
         switch(service.toLowerCase()) {
           case 'breakfast':
