@@ -947,11 +947,11 @@ const BookingManagement: React.FC = () => {
                       )}
                       {booking.bill && (
                         <Link
-                          to={`/admin/bills/${booking.bill._id}`}
+                          to={`/invoice/${booking.type === 'room' ? 'room' : booking.type === 'banquet' ? 'banquet' : 'restaurant'}/${booking._id}`}
                           className="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all duration-300 flex items-center gap-2 font-semibold"
                         >
                           <Receipt className="h-4 w-4" />
-                          View Bill
+                          View Invoice
                         </Link>
                       )}
                       {booking.status !== 'cancelled' && booking.status !== 'completed' && (

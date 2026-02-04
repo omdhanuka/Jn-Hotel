@@ -41,7 +41,9 @@ const RoomBookingInvoice: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
+    // Allow admins to view invoices without regular auth check
+    const token = localStorage.getItem('token');
+    if (!user && !token) {
       toast.error('Please login to view invoice');
       navigate('/login');
       return;
