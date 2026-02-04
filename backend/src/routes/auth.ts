@@ -85,6 +85,38 @@ router.get('/verify', auth, (req, res) => {
   res.json({ valid: true });
 });
 
+// @route   GET /api/auth/check-email
+// @desc    Check if email exists in database
+// @access  Public (for admin booking creation)
+router.get('/check-email', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email }).select('firstName lastName email phone role');
+    
+    if (user) {
+      res.json({ 
+        exists: true, 
+        user: {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          phone: user.phone
+        }
+      });
+    } else {
+      res.json({ exists: false });
+    }
+  } catch (error) {
+    console.error('Check email error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   PUT /api/auth/profile
 // @desc    Update user profile
 // @access  Private

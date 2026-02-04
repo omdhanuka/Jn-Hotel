@@ -223,10 +223,60 @@ const BookingManagement: React.FC = () => {
     }
   };
 
+  const checkUserEmail = async (email: string) => {
+    if (!email || !email.includes('@')) {
+      setExistingUser(null);
+      setIsNewUser(false);
+      return;
+    }
+
+    try {
+      setCheckingEmail(true);
+      const response = await axios.get(`/auth/check-email?email=${email}`);
+      
+      if (response.data.exists) {
+        setExistingUser(response.data.user);
+        setIsNewUser(false);
+        setCreateForm(prev => ({
+          ...prev,
+          firstName: response.data.user.firstName,
+          lastName: response.data.user.lastName,
+          phone: response.data.user.phone || ''
+        }));
+        toast.success(`User found: ${response.data.user.firstName} ${response.data.user.lastName}`);
+      } else {
+        setExistingUser(null);
+        setIsNewUser(true);
+        setCreateForm(prev => ({
+          ...prev,
+          firstName: '',
+          lastName: '',
+          phone: ''
+        }));
+        toast('Email not registered. Please enter user details.', {
+          icon: 'ℹ️',
+          duration: 3000
+        });
+      }
+    } catch (error) {
+      console.error('Error checking email:', error);
+      setExistingUser(null);
+      setIsNewUser(true);
+    } finally {
+      setCheckingEmail(false);
+    }
+  };
+
   const createNewBooking = async () => {
     try {
       if (!createForm.email || !createForm.checkIn || !createForm.checkOut) {
         toast.error('Please fill in all required fields');
+        return;
+      }
+
+      // If new user, validate name fields
+      if (isNewUser && (!createForm.firstName || !createForm.lastName)) {
+        toast.error('Please enter user first name and last name');
         return;
       }
 
@@ -236,6 +286,9 @@ const BookingManagement: React.FC = () => {
       setShowCreateModal(false);
       setCreateForm({
         email: '',
+        firstName: '',
+        lastName: '',
+        phone: '',
         type: 'room',
         checkIn: '',
         checkOut: '',
@@ -243,6 +296,8 @@ const BookingManagement: React.FC = () => {
         roomNumber: '',
         specialRequests: ''
       });
+      setExistingUser(null);
+      setIsNewUser(false);
       fetchBookings();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to create booking');
@@ -1171,16 +1226,91 @@ const BookingManagement: React.FC = () => {
               {/* Guest Email */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Guest Email *</label>
-                <input
-                  type="email"
-                  value={createForm.email}
-                  onChange={(e) => setCreateForm(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="guest@example.com"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">Enter the email of an existing user</p>
+                <div className="relative">
+                  <input
+                    type="email"
+                    value={createForm.email}
+                    onChange={(e) => {
+                      setCreateForm(prev => ({ ...prev, email: e.target.value }));
+                    }}
+                    onBlur={(e) => checkUserEmail(e.target.value)}
+                    placeholder="guest@example.com"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all"
+                    required
+                  />
+                  {checkingEmail && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <RefreshCw className="h-5 w-5 text-indigo-600 animate-spin" />
+                    </div>
+                  )}
+                </div>
+                {existingUser && (
+                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-green-800">
+                        User Found: {existingUser.firstName} {existingUser.lastName}
+                      </p>
+                      <p className="text-xs text-green-600">{existingUser.email}</p>
+                    </div>
+                  </div>
+                )}
+                {isNewUser && (
+                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+                    <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-blue-800">
+                      New user - Please enter their details below
+                    </p>
+                  </div>
+                )}
+                {!existingUser && !isNewUser && !checkingEmail && (
+                  <p className="text-xs text-gray-500 mt-1">Enter email to check if user exists or to create new user</p>
+                )}
               </div>
+
+              {/* User Details (only for new users) */}
+              {isNewUser && (
+                <div className="space-y-4 p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
+                  <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    New User Details
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">First Name *</label>
+                      <input
+                        type="text"
+                        value={createForm.firstName}
+                        onChange={(e) => setCreateForm(prev => ({ ...prev, firstName: e.target.value }))}
+                        placeholder="John"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Last Name *</label>
+                      <input
+                        type="text"
+                        value={createForm.lastName}
+                        onChange={(e) => setCreateForm(prev => ({ ...prev, lastName: e.target.value }))}
+                        placeholder="Doe"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={createForm.phone}
+                      onChange={(e) => setCreateForm(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="+1 (555) 000-0000"
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Booking Type */}
               <div>

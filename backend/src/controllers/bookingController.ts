@@ -557,17 +557,41 @@ export const createBookingByAdmin = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
 
-    const { email, type, checkIn, checkOut, guests, roomNumber, specialRequests } = req.body;
+    const { email, firstName, lastName, phone, type, checkIn, checkOut, guests, roomNumber, specialRequests } = req.body;
 
     // Validate required fields
     if (!email || !type || !checkIn || !checkOut) {
       return res.status(400).json({ message: 'Email, type, check-in, and check-out dates are required' });
     }
 
-    // Find user by email
-    const user = await User.findOne({ email });
+    // Find user by email or create new user
+    let user = await User.findOne({ email });
+    
     if (!user) {
-      return res.status(404).json({ message: 'User not found with this email' });
+      // Validate required fields for new user
+      if (!firstName || !lastName) {
+        return res.status(400).json({ message: 'First name and last name are required for new users' });
+      }
+
+      // Create new user with a temporary password
+      const bcrypt = require('bcryptjs');
+      const tempPassword = Math.random().toString(36).slice(-8) + 'A1!'; // Generate random password
+      const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+      user = new User({
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        phone: phone || '',
+        role: 'guest',
+        isActive: true
+      });
+
+      await user.save();
+      
+      // TODO: Send email with temporary password (optional)
+      console.log(`New user created: ${email} with temporary password: ${tempPassword}`);
     }
 
     let resourceId: any = null;
