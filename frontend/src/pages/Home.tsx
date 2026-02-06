@@ -522,93 +522,130 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Room Types Section - Updated */}
-      <div className="py-20 bg-white">
+      {/* Room Types Section - Luxury Redesign */}
+      <div className="py-20 bg-gradient-to-b from-white to-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Accommodations</h2>
-            <p className="text-xl text-gray-600">Choose from our range of luxury rooms</p>
+            <div className="inline-block bg-amber-500/10 px-4 py-2 rounded-full mb-4">
+              <span className="text-amber-600 font-semibold uppercase tracking-wide text-sm">Accommodations</span>
+            </div>
+            <h2 className="text-5xl font-bold text-gray-900 mb-4 uppercase tracking-tight">Our Accommodations</h2>
+            <p className="text-xl text-gray-600 italic">"Choose from our range of luxury rooms"</p>
           </div>
 
           {loadingRooms ? (
             <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
             </div>
           ) : featuredRooms.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {featuredRooms.map((room) => (
-                <div key={room._id} className="bg-white rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
-                  <div className="h-64 bg-gray-300 overflow-hidden relative">
+                <div key={room._id} className="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
+                  {/* Image Container */}
+                  <div className="h-[480px] overflow-hidden relative">
                     <img 
                       src={getImageSrc(room)} 
                       alt={room.title}
-                      className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       onError={() => handleImageError(room._id)}
                     />
-                    {room.discount && room.discount > 0 && (
-                      <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                        {room.discount}% OFF
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/60 to-transparent"></div>
+                    
+                    {/* Top Badges */}
+                    <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
+                      <div className="bg-amber-500 text-white px-4 py-2 rounded-full text-xs font-bold uppercase shadow-lg">
+                        {room.type}
                       </div>
-                    )}
-                    <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold uppercase">
-                      {room.type}
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                      {room.roomName || room.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                      {room.description}
-                    </p>
-                    <div className="mb-4">
-                      {room.discount && room.discount > 0 ? (
-                        <div className="flex items-baseline gap-2">
-                          <div className="text-3xl font-bold text-blue-600">
-                            ₹{getFinalPrice(room).toLocaleString()}
-                          </div>
-                          <div className="text-lg text-gray-400 line-through">
-                            ₹{room.price.toLocaleString()}
-                          </div>
-                          <span className="text-sm text-gray-500 font-normal">/night</span>
-                        </div>
-                      ) : (
-                        <div className="text-3xl font-bold text-blue-600">
-                          ₹{room.price.toLocaleString()}
-                          <span className="text-sm text-gray-500 font-normal">/night</span>
+                      {room.discount && room.discount > 0 && (
+                        <div className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg flex items-center gap-1">
+                          <Gift className="h-4 w-4" />
+                          {room.discount}% OFF
                         </div>
                       )}
                     </div>
-                    <div className="mb-4 flex items-center text-sm text-gray-600">
-                      <Users className="h-4 w-4 mr-1" />
-                      <span>Up to {room.maxGuests} guests</span>
+                  </div>
+
+                  {/* Content Overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                    {/* Room Title */}
+                    <h3 className="text-3xl font-bold mb-3 uppercase tracking-wide">
+                      {room.roomName || room.title}
+                    </h3>
+                    
+                    {/* Price Section */}
+                    <div className="mb-4 flex items-baseline gap-3">
+                      {room.discount && room.discount > 0 ? (
+                        <>
+                          <div className="text-4xl font-bold text-amber-400">
+                            ₹{getFinalPrice(room).toLocaleString()}
+                          </div>
+                          <div className="text-lg text-gray-300 line-through">
+                            ₹{room.price.toLocaleString()}
+                          </div>
+                          <span className="text-sm text-gray-300">/night</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-4xl font-bold text-amber-400">
+                            ₹{room.price.toLocaleString()}
+                          </div>
+                          <span className="text-sm text-gray-300">/night</span>
+                        </>
+                      )}
                     </div>
-                    <ul className="space-y-2 mb-6">
+
+                    {/* Description */}
+                    <p className="text-gray-200 mb-4 line-clamp-2 leading-relaxed">
+                      {room.description}
+                    </p>
+
+                    {/* Room Details */}
+                    <div className="flex items-center gap-4 mb-4 text-sm text-gray-300">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4 text-amber-400" />
+                        <span>Up to {room.maxGuests} guests</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                        <span>Premium</span>
+                      </div>
+                    </div>
+
+                    {/* Amenities */}
+                    <div className="mb-6 flex flex-wrap gap-2">
                       {getTopAmenities(room).map((amenity, idx) => (
-                        <li key={idx} className="flex items-center text-gray-600 text-sm">
-                          <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        <span 
+                          key={idx} 
+                          className="px-3 py-1 bg-white/20 backdrop-blur-sm text-white rounded-full text-xs font-medium border border-white/30"
+                        >
                           {amenity}
-                        </li>
+                        </span>
                       ))}
-                    </ul>
+                    </div>
+
+                    {/* CTA Button */}
                     <Link
                       to={`/rooms`}
-                      className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-3 rounded-lg font-semibold transition"
+                      className="inline-flex items-center bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-8 py-3 rounded-lg font-bold uppercase tracking-wide transition-all transform hover:scale-105 shadow-lg"
                     >
                       View Details & Book
+                      <ArrowRight className="ml-2 h-5 w-5" />
                     </Link>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-600 mb-4">No rooms available at the moment</p>
+            <div className="text-center py-12 bg-white rounded-2xl shadow-lg">
+              <Award className="h-16 w-16 text-amber-500 mx-auto mb-4" />
+              <p className="text-gray-600 mb-4 text-lg">No rooms available at the moment</p>
               <Link
                 to="/rooms"
-                className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition"
+                className="inline-flex items-center bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-8 py-3 rounded-lg font-bold uppercase tracking-wide transition-all transform hover:scale-105"
               >
                 Browse All Rooms
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </div>
           )}
@@ -617,7 +654,7 @@ const Home: React.FC = () => {
             <div className="text-center mt-12">
               <Link
                 to="/rooms"
-                className="inline-flex items-center bg-white hover:bg-gray-50 text-blue-600 border-2 border-blue-600 px-8 py-4 rounded-lg text-lg font-semibold transition transform hover:scale-105"
+                className="inline-flex items-center bg-white hover:bg-gray-50 text-amber-600 border-2 border-amber-600 px-8 py-4 rounded-lg text-lg font-bold uppercase tracking-wide transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
               >
                 View All Rooms
                 <ArrowRight className="ml-2 h-5 w-5" />
