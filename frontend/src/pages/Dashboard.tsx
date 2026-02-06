@@ -376,7 +376,10 @@ const Dashboard: React.FC = () => {
                     Reach 5,000 points to unlock a free night stay.
                   </p>
                   
-                  <button className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-white py-3 rounded-lg hover:from-amber-600 hover:to-yellow-700 transition-all shadow-md font-semibold uppercase tracking-wide">
+                  <button 
+                    onClick={() => navigate('/special-offers')}
+                    className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-white py-3 rounded-lg hover:from-amber-600 hover:to-yellow-700 transition-all shadow-md font-semibold uppercase tracking-wide"
+                  >
                     VIEW OFFERS <ArrowRight className="inline h-4 w-4 ml-1" />
                   </button>
                 </div>
@@ -420,7 +423,7 @@ const Dashboard: React.FC = () => {
                       </div>
                     ))}
                     <button
-                      onClick={() => setActiveTab('bookings')}
+                      onClick={() => navigate('/upcoming-bookings')}
                       className="w-full bg-amber-500 text-white py-2 rounded-lg hover:bg-amber-600 transition-colors font-semibold uppercase tracking-wide text-sm"
                     >
                       VIEW DETAILS
@@ -464,7 +467,7 @@ const Dashboard: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={() => setActiveTab('bookings')}
+              onClick={() => navigate('/upcoming-bookings')}
               className="w-full bg-amber-500 text-white py-2 rounded-lg hover:bg-amber-600 transition-colors font-semibold uppercase tracking-wide text-sm"
             >
               VIEW ALL <ArrowRight className="inline h-4 w-4 ml-1" />
@@ -490,10 +493,7 @@ const Dashboard: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={() => {
-                setActiveTab('bookings');
-                setFilters(prev => ({ ...prev, status: 'completed' }));
-              }}
+              onClick={() => navigate('/booking-history')}
               className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition-colors font-semibold uppercase tracking-wide text-sm"
             >
               VIEW HISTORY <ArrowRight className="inline h-4 w-4 ml-1" />
@@ -522,7 +522,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
             <button
-              onClick={() => setActiveTab('profile')}
+              onClick={() => navigate('/account-settings')}
               className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors font-semibold uppercase tracking-wide text-sm"
             >
               MANAGE ACCOUNT <ArrowRight className="inline h-4 w-4 ml-1" />

@@ -46,6 +46,10 @@ import StaffProfile from './pages/Staff/StaffProfile';
 import StaffNotifications from './pages/Staff/StaffNotifications';
 import TaskVerification from './pages/Manager/TaskVerification';
 import ReportsAnalytics from './pages/Manager/ReportsAnalytics';
+import SpecialOffers from './pages/SpecialOffers';
+import UpcomingBookings from './pages/UpcomingBookings';
+import BookingHistory from './pages/BookingHistory';
+import AccountSettings from './pages/AccountSettings';
 
 // Configure axios defaults immediately
 const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -114,6 +118,10 @@ function App() {
                       <Route path="/login" element={<Login />} />
                       <Route path="/register" element={<Register />} />
                       <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/special-offers" element={<SpecialOffers />} />
+                      <Route path="/upcoming-bookings" element={<UpcomingBookings />} />
+                      <Route path="/booking-history" element={<BookingHistory />} />
+                      <Route path="/account-settings" element={<AccountSettings />} />
                       <Route path="/booking/:bookingId" element={<BookingDetails />} />
                       <Route path="/receipt/:bookingId" element={<Receipt />} />
                       <Route path="/invoice/room/:bookingId" element={<RoomBookingInvoice />} />
