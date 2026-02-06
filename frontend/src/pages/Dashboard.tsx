@@ -28,6 +28,14 @@ interface Booking {
   items?: any[];
   // Additional properties for combined bookings
   source?: string;
+  resource?: {
+    _id: string;
+    roomNumber?: string;
+    roomName?: string;
+    name?: string;
+    type?: string;
+    images?: string[];
+  };
 }
 
 // Extended booking type for filtered results
@@ -82,7 +90,34 @@ const Dashboard: React.FC = () => {
       const restaurantResponse = await axios.get('/restaurant/bookings');
       const restBookings = restaurantResponse.data.bookings || [];
       
-      setBookings(roomBanquetBookings);
+      // Fetch resource details for each booking
+      const token = localStorage.getItem('token');
+      const bookingsWithResources = await Promise.all(
+        roomBanquetBookings.map(async (booking: Booking) => {
+          try {
+            let resourceEndpoint = '';
+            if (booking.type === 'room') {
+              resourceEndpoint = `http://localhost:5000/api/rooms/${booking.resourceId}`;
+            } else if (booking.type === 'banquet') {
+              resourceEndpoint = `http://localhost:5000/api/banquets/${booking.resourceId}`;
+            } else if (booking.type === 'table') {
+              resourceEndpoint = `http://localhost:5000/api/restaurant/tables/${booking.resourceId}`;
+            }
+            
+            if (resourceEndpoint) {
+              const resourceResponse = await axios.get(resourceEndpoint, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              return { ...booking, resource: resourceResponse.data };
+            }
+          } catch (error) {
+            console.error('Error fetching resource:', error);
+          }
+          return booking;
+        })
+      );
+      
+      setBookings(bookingsWithResources);
       setRestaurantBookings(restBookings);
     } catch (error) {
       console.error('Error fetching bookings:', error);
@@ -393,35 +428,46 @@ const Dashboard: React.FC = () => {
                 
                 {upcomingBookings.length > 0 ? (
                   <div className="space-y-3">
-                    {upcomingBookings.slice(0, 1).map((booking) => (
-                      <div key={booking._id} className="flex space-x-4">
-                        <img
-                          src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&q=80"
-                          alt="Room"
-                          className="w-32 h-24 object-cover rounded-lg"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <Calendar className="h-4 w-4 text-amber-600" />
-                            <span className="text-sm font-medium text-gray-700">
-                              {new Date(booking.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </span>
+                    {upcomingBookings.slice(0, 1).map((booking) => {
+                      const roomBooking = bookings.find(b => b._id === booking._id);
+                      return (
+                        <div key={booking._id} className="flex space-x-4">
+                          <img
+                            src={
+                              roomBooking?.resource?.images?.[0]
+                                ? (roomBooking.resource.images[0].startsWith('http') 
+                                    ? roomBooking.resource.images[0] 
+                                    : `http://localhost:5000${roomBooking.resource.images[0]}`)
+                                : 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&q=80'
+                            }
+                            alt="Room"
+                            className="w-32 h-24 object-cover rounded-lg"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <Calendar className="h-4 w-4 text-amber-600" />
+                              <span className="text-sm font-medium text-gray-700">
+                                {new Date(booking.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2 mb-1">
+                              <Calendar className="h-4 w-4 text-amber-600" />
+                              <span className="text-sm font-medium text-gray-700">
+                                {new Date(booking.checkOut).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </span>
+                            </div>
+                            <h4 className="font-semibold text-gray-900">
+                              {booking.type === 'room' 
+                                ? (roomBooking?.resource?.roomName || `Room ${roomBooking?.resource?.roomNumber}` || 'Premier Room')
+                                : getResourceTitle(booking)}
+                            </h4>
+                            <p className="text-xs text-gray-600 uppercase tracking-wide">
+                              UPC# {booking._id.substring(0, 6)} • APP BOOKING
+                            </p>
                           </div>
-                          <div className="flex items-center space-x-2 mb-1">
-                            <Calendar className="h-4 w-4 text-amber-600" />
-                            <span className="text-sm font-medium text-gray-700">
-                              {new Date(booking.checkOut).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </span>
-                          </div>
-                          <h4 className="font-semibold text-gray-900">
-                            {booking.type === 'room' ? 'Premier Room' : getResourceTitle(booking)}
-                          </h4>
-                          <p className="text-xs text-gray-600 uppercase tracking-wide">
-                            UPC# {booking._id.substring(0, 6)} • APP BOOKING
-                          </p>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     <button
                       onClick={() => navigate('/upcoming-bookings')}
                       className="w-full bg-amber-500 text-white py-2 rounded-lg hover:bg-amber-600 transition-colors font-semibold uppercase tracking-wide text-sm"

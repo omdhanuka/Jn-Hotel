@@ -22,6 +22,14 @@ interface Booking {
   createdAt: string;
   source?: string;
   hasReview?: boolean;
+  resource?: {
+    _id: string;
+    roomNumber?: string;
+    roomName?: string;
+    name?: string;
+    type?: string;
+    images?: string[];
+  };
 }
 
 const BookingHistory: React.FC = () => {
@@ -47,7 +55,33 @@ const BookingHistory: React.FC = () => {
         b.status === 'completed' || b.status === 'cancelled'
       );
       
-      setBookings(past);
+      // Fetch resource details for each booking
+      const bookingsWithResources = await Promise.all(
+        past.map(async (booking: Booking) => {
+          try {
+            let resourceEndpoint = '';
+            if (booking.type === 'room') {
+              resourceEndpoint = `http://localhost:5000/api/rooms/${booking.resourceId}`;
+            } else if (booking.type === 'banquet') {
+              resourceEndpoint = `http://localhost:5000/api/banquets/${booking.resourceId}`;
+            } else if (booking.type === 'table') {
+              resourceEndpoint = `http://localhost:5000/api/restaurant/tables/${booking.resourceId}`;
+            }
+            
+            if (resourceEndpoint) {
+              const resourceResponse = await axios.get(resourceEndpoint, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              return { ...booking, resource: resourceResponse.data };
+            }
+          } catch (error) {
+            console.error('Error fetching resource:', error);
+          }
+          return booking;
+        })
+      );
+      
+      setBookings(bookingsWithResources);
     } catch (error) {
       console.error('Error fetching bookings:', error);
       toast.error('Failed to fetch booking history');
@@ -239,13 +273,18 @@ const BookingHistory: React.FC = () => {
                   {/* Left: Image */}
                   <div className="lg:col-span-1">
                     <img
-                      src={booking.type === 'room' 
-                        ? 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=80'
-                        : booking.type === 'banquet'
-                        ? 'https://images.unsplash.com/photo-1519167758481-83f29da8c2b6?w=600&q=80'
-                        : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80'
+                      src={
+                        booking.resource?.images?.[0]
+                          ? (booking.resource.images[0].startsWith('http') 
+                              ? booking.resource.images[0] 
+                              : `http://localhost:5000${booking.resource.images[0]}`)
+                          : booking.type === 'room' 
+                          ? 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=80'
+                          : booking.type === 'banquet'
+                          ? 'https://images.unsplash.com/photo-1519167758481-83f29da8c2b6?w=600&q=80'
+                          : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80'
                       }
-                      alt={booking.type}
+                      alt={booking.resource?.roomNumber || booking.resource?.name || booking.type}
                       className="w-full h-64 lg:h-full object-cover rounded-xl"
                     />
                   </div>
@@ -254,7 +293,11 @@ const BookingHistory: React.FC = () => {
                   <div className="lg:col-span-1">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-2xl font-bold text-gray-900 uppercase tracking-wide">
-                        {booking.type === 'room' ? 'Hotel Room' : booking.type === 'banquet' ? 'Banquet Hall' : 'Restaurant Table'}
+                        {booking.type === 'room' 
+                          ? (booking.resource?.roomName || `Room ${booking.resource?.roomNumber}` || 'Hotel Room')
+                          : booking.type === 'banquet' 
+                          ? (booking.resource?.name || 'Banquet Hall')
+                          : (booking.resource?.name || 'Restaurant Table')}
                       </h3>
                       {getStatusBadge(booking.status)}
                     </div>
