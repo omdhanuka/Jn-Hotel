@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Crown, Heart, Gift, Calendar, Users, Star, ArrowRight, Sparkles, Award, Percent } from 'lucide-react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
 
 interface Offer {
-  id: string;
+  _id: string;
   title: string;
   description: string;
   discount: number;
@@ -14,93 +16,33 @@ interface Offer {
   price: number;
   originalPrice: number;
   code: string;
+  isActive: boolean;
 }
 
 const SpecialOffers: React.FC = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const offers: Offer[] = [
-    {
-      id: '1',
-      title: 'Romantic Getaway Package',
-      description: 'Enjoy a memorable stay with special perks. Includes champagne, spa access, and candlelit dinner for two.',
-      discount: 15,
-      image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80',
-      features: [
-        'Complimentary champagne on arrival',
-        '2-hour couple spa session',
-        'Candlelit dinner at our rooftop restaurant',
-        'Rose petal decoration',
-        'Late checkout (2 PM)'
-      ],
-      validUntil: '2026-03-31',
-      category: 'romantic',
-      price: 8499,
-      originalPrice: 9999,
-      code: 'ROMANCE15'
-    },
-    {
-      id: '2',
-      title: 'Royal Retreat Package',
-      description: 'Luxury stay with spa and dining included. Experience royal treatment with our finest amenities.',
-      discount: 20,
-      image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&q=80',
-      features: [
-        'Presidential Suite accommodation',
-        'Full-day spa access for 2',
-        'Breakfast, lunch & dinner included',
-        'Personal butler service',
-        'Airport pickup & drop',
-        'Complimentary wine tasting'
-      ],
-      validUntil: '2026-04-30',
-      category: 'luxury',
-      price: 15999,
-      originalPrice: 19999,
-      code: 'ROYAL20'
-    },
-    {
-      id: '3',
-      title: 'Family Fun Package',
-      description: 'Perfect for families! Enjoy spacious rooms, kids activities, and family-friendly amenities.',
-      discount: 25,
-      image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80',
-      features: [
-        'Interconnecting family rooms',
-        'Free meals for kids under 12',
-        'Access to kids club & activities',
-        'Welcome gifts for children',
-        'Family pool access',
-        'Board games & entertainment'
-      ],
-      validUntil: '2026-05-15',
-      category: 'family',
-      price: 7499,
-      originalPrice: 9999,
-      code: 'FAMILY25'
-    },
-    {
-      id: '4',
-      title: 'Business Excellence Package',
-      description: 'Designed for business travelers. Meeting facilities, high-speed internet, and executive lounge access.',
-      discount: 10,
-      image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&q=80',
-      features: [
-        'Executive room with workspace',
-        'High-speed WiFi (100 Mbps)',
-        'Meeting room access (4 hours)',
-        'Business center facilities',
-        'Express laundry service',
-        'Continental breakfast'
-      ],
-      validUntil: '2026-06-30',
-      category: 'business',
-      price: 5399,
-      originalPrice: 5999,
-      code: 'BIZEXCEL10'
+  useEffect(() => {
+    fetchOffers();
+  }, []);
+
+  const fetchOffers = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('/offers');
+      // Filter only active offers for customers
+      const activeOffers = response.data.offers.filter((offer: Offer) => offer.isActive);
+      setOffers(activeOffers);
+    } catch (error) {
+      console.error('Error fetching offers:', error);
+      toast.error('Failed to load special offers');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const filteredOffers = selectedCategory === 'all' 
     ? offers 
@@ -171,12 +113,23 @@ const SpecialOffers: React.FC = () => {
         </div>
 
         {/* Offers Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {filteredOffers.map((offer) => (
-            <div 
-              key={offer.id} 
-              className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 border-2 border-amber-100"
-            >
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-amber-500"></div>
+          </div>
+        ) : filteredOffers.length === 0 ? (
+          <div className="text-center py-20">
+            <Gift className="h-24 w-24 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">No Offers Available</h3>
+            <p className="text-gray-600">Check back soon for exciting deals!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {filteredOffers.map((offer) => (
+              <div 
+                key={offer._id} 
+                className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 border-2 border-amber-100"
+              >
               {/* Image */}
               <div className="relative h-80 overflow-hidden">
                 <img
@@ -263,19 +216,6 @@ const SpecialOffers: React.FC = () => {
               </div>
             </div>
           ))}
-        </div>
-
-        {filteredOffers.length === 0 && (
-          <div className="text-center py-20">
-            <Gift className="h-24 w-24 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">No Offers Available</h3>
-            <p className="text-gray-600 mb-6">Check back soon for new exciting offers!</p>
-            <button
-              onClick={() => setSelectedCategory('all')}
-              className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white px-8 py-3 rounded-lg font-semibold uppercase tracking-wide hover:shadow-lg transition-all"
-            >
-              View All Offers
-            </button>
           </div>
         )}
 

@@ -17,6 +17,7 @@ import adminRoutes from './routes/admin';
 import receptionRoutes from './routes/reception';
 import managerRoutes from './routes/manager';
 import staffRoutes from './routes/staffRoutes';
+import offerRoutes from './routes/offerRoutes';
 
 // Import models for sample data
 import Banquet from './models/Banquet';
@@ -99,6 +100,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/reception', receptionRoutes);
 app.use('/api/manager', managerRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/offers', offerRoutes);
 
 // Admin review listing (alternate endpoint)
 app.get('/api/admin/reviews', auth, adminAuth, getAllReviews);

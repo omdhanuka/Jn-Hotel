@@ -16,7 +16,8 @@ import {
   TrendingUp,
   DollarSign,
   UserCheck,
-  Star
+  Star,
+  Gift
 } from 'lucide-react';
 import BookingManagement from './BookingManagement';
 import RoomManagement from './RoomManagement';
@@ -29,6 +30,7 @@ import ReviewManagement from './ReviewManagement';
 import StaffManagement from './StaffManagement';
 import UserManagement from './UserManagement';
 import SettingsPanel from './SettingsPanel';
+import OffersManagement from './OffersManagement';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -131,6 +133,7 @@ const AdminPanel: React.FC = () => {
     { id: 'bookings', label: 'Bookings', icon: Calendar, path: '/admin/bookings' },
     { id: 'reviews', label: 'Reviews', icon: MessageSquare, path: '/admin/reviews' },
     { id: 'chart', label: 'Booking Chart', icon: Calendar, path: '/admin/booking-chart' },
+    { id: 'offers', label: 'Special Offers', icon: Gift, path: '/admin/offers' },
     { id: 'staff', label: 'Staff Management', icon: Users, path: '/admin/staff' },
     { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' }
@@ -517,6 +520,8 @@ const AdminPanel: React.FC = () => {
               <Route path="/reviews" element={<ReviewManagement />} />
               
               <Route path="/booking-chart" element={<BookingChart />} />
+              
+              <Route path="/offers" element={<OffersManagement />} />
               
               <Route path="/staff" element={<StaffManagement />} />
               

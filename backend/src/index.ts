@@ -13,6 +13,7 @@ import restaurantRoutes from './routes/restaurant';
 import billRoutes from './routes/bills';
 import adminRoutes from './routes/admin';
 import reviewRoutes from './routes/reviews';
+import offerRoutes from './routes/offerRoutes';
 
 dotenv.config();
 
@@ -44,8 +45,9 @@ app.use('/api/banquets', banquetRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/restaurant', restaurantRoutes);
 app.use('/api/bills', billRoutes);
-app.use('/api/admin', adminRoutes); // Make sure this is registered
+app.use('/api/admin', adminRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/offers', offerRoutes);
 
 // Log all registered routes for debugging
 console.log('✅ Registered routes:');
@@ -57,6 +59,7 @@ console.log('  - /api/restaurant');
 console.log('  - /api/bills');
 console.log('  - /api/admin');
 console.log('  - /api/reviews');
+console.log('  - /api/offers');
 
 // Test route to verify server is working
 app.get('/api/test', (req, res) => {
