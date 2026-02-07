@@ -17,23 +17,28 @@ interface Banquet {
 
 interface BanquetBooking {
   _id: string;
-  banquetId: string | Banquet;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  eventType: string;
-  eventDate: string;
-  startTime: string;
-  endTime: string;
-  numberOfGuests: number;
-  specialRequests?: string;
-  services: string[];
+  type: string;
+  resourceId: string | Banquet;
+  userId: any;
+  checkIn: string;
+  checkOut: string;
+  guests: number;
   totalAmount: number;
   status: string;
   paymentStatus: string;
   paymentMethod?: string;
   paymentId?: string;
+  eventDetails?: {
+    eventType?: string;
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    additionalRequirements?: string;
+    specialPackage?: boolean;
+  };
+  specialRequests?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 const BanquetBookingInvoice: React.FC = () => {
@@ -53,19 +58,26 @@ const BanquetBookingInvoice: React.FC = () => {
   const fetchBookingData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/banquets/bookings/${bookingId}`);
+      const response = await axios.get(`/bookings/${bookingId}`);
       const bookingData = response.data;
+      
+      // Check if it's a banquet booking
+      if (bookingData.type !== 'banquet') {
+        toast.error('This is not a banquet booking');
+        navigate('/dashboard');
+        return;
+      }
+      
       setBooking(bookingData);
       
-      // Fetch banquet details if not populated
-      if (typeof bookingData.banquetId === 'string') {
-        await fetchBanquetDetails(bookingData.banquetId);
-      } else {
-        setBanquet(bookingData.banquetId);
+      // Fetch banquet details
+      const banquetId = typeof bookingData.resourceId === 'string' ? bookingData.resourceId : bookingData.resourceId._id;
+      if (banquetId) {
+        await fetchBanquetDetails(banquetId);
       }
     } catch (error) {
       toast.error('Failed to fetch booking details');
-      navigate(user?.role === 'admin' ? '/admin/banquets' : '/dashboard');
+      navigate('/dashboard');
     } finally {
       setLoading(false);
     }
@@ -82,8 +94,8 @@ const BanquetBookingInvoice: React.FC = () => {
 
   const calculateHours = () => {
     if (!booking) return 0;
-    const start = new Date(`2000-01-01T${booking.startTime}`);
-    const end = new Date(`2000-01-01T${booking.endTime}`);
+    const start = new Date(booking.checkIn);
+    const end = new Date(booking.checkOut);
     const diff = end.getTime() - start.getTime();
     return Math.ceil(diff / (1000 * 3600));
   };
@@ -96,8 +108,8 @@ const BanquetBookingInvoice: React.FC = () => {
     });
   };
 
-  const formatTime = (time: string) => {
-    return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-IN', {
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('en-IN', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true
@@ -107,58 +119,40 @@ const BanquetBookingInvoice: React.FC = () => {
   const calculateInvoiceData = () => {
     if (!booking || !banquet) return null;
 
-    const hours = calculateHours();
-    const banquetCharges = banquet.pricePerHour * hours;
+    // booking.totalAmount is the subtotal (before GST)
+    const subtotal = booking.totalAmount;
+    const cgst = Math.round(subtotal * 0.09); // 9% CGST
+    const sgst = Math.round(subtotal * 0.09); // 9% SGST
+    const grandTotal = subtotal + cgst + sgst;
     
     const serviceItems: Array<{ description: string; qty: number | string; rate: number | string; amount: number }> = [];
+    
+    const hours = calculateHours();
+    
+    // Calculate per-hour rate based on actual subtotal
+    const banquetCharges = booking.eventDetails?.specialPackage 
+      ? subtotal - (booking.guests * 800) 
+      : subtotal;
+    const actualRatePerHour = hours > 0 ? Math.round(banquetCharges / hours) : 0;
     
     // Add banquet hall charges
     serviceItems.push({
       description: `${banquet.name} - Banquet Hall`,
       qty: `${hours} Hours`,
-      rate: `₹ ${banquet.pricePerHour}`,
+      rate: `₹ ${actualRatePerHour}`,
       amount: banquetCharges
     });
 
-    // Add services
-    let additionalServices = 0;
-    if (booking.services && booking.services.length > 0) {
-      booking.services.forEach((service) => {
-        let serviceAmount = 0;
-        switch(service.toLowerCase()) {
-          case 'catering':
-            serviceAmount = booking.numberOfGuests * 500; // ₹500 per guest
-            break;
-          case 'decoration':
-            serviceAmount = 15000;
-            break;
-          case 'audio/visual':
-          case 'audio-visual':
-            serviceAmount = 10000;
-            break;
-          case 'photography':
-            serviceAmount = 20000;
-            break;
-          case 'valet parking':
-            serviceAmount = 5000;
-            break;
-          default:
-            serviceAmount = 5000;
-        }
-        additionalServices += serviceAmount;
-        serviceItems.push({
-          description: service,
-          qty: service.toLowerCase() === 'catering' ? `${booking.numberOfGuests} Guests` : '—',
-          rate: service.toLowerCase() === 'catering' ? '₹ 500' : '—',
-          amount: serviceAmount
-        });
+    // Add special package if selected
+    if (booking.eventDetails?.specialPackage) {
+      const packageAmount = booking.guests * 800;
+      serviceItems.push({
+        description: 'Premium Event Package',
+        qty: `${booking.guests} Guests`,
+        rate: '₹ 800',
+        amount: packageAmount
       });
     }
-
-    const subtotal = banquetCharges + additionalServices;
-    const cgst = Math.round(subtotal * 0.09); // 9% CGST
-    const sgst = Math.round(subtotal * 0.09); // 9% SGST
-    const grandTotal = subtotal + cgst + sgst;
 
     return {
       items: serviceItems,
@@ -261,14 +255,14 @@ const BanquetBookingInvoice: React.FC = () => {
             invoiceNumber={booking._id.slice(-8).toUpperCase()}
             invoiceDate={formatDate(booking.createdAt)}
             gstNumber="27ABCDE1234F1Z6"
-            customerName={booking.customerName}
-            customerPhone={booking.customerPhone}
-            customerEmail={booking.customerEmail}
+            customerName={booking.eventDetails?.fullName || 'N/A'}
+            customerPhone={booking.eventDetails?.phone || 'N/A'}
+            customerEmail={booking.eventDetails?.email || 'N/A'}
             bookingDetails={{
               banquetHall: banquet.name,
-              eventDate: `${formatDate(booking.eventDate)} (${formatTime(booking.startTime)} - ${formatTime(booking.endTime)})`,
-              eventType: booking.eventType,
-              guests: booking.numberOfGuests
+              eventDate: `${formatDate(booking.checkIn)} (${formatTime(booking.checkIn)} - ${formatTime(booking.checkOut)})`,
+              eventType: booking.eventDetails?.eventType || 'Event',
+              guests: booking.guests
             }}
             items={invoiceData.items}
             subtotal={invoiceData.subtotal}
@@ -281,10 +275,10 @@ const BanquetBookingInvoice: React.FC = () => {
             qrCodeData={booking.paymentId || `BNQ-${booking._id}`}
           />
 
-          {booking.specialRequests && (
+          {booking.eventDetails?.additionalRequirements && (
             <div className="mt-6 border-t-2 border-gray-200 pt-6">
               <h3 className="font-semibold text-gray-800 mb-2">Special Requests:</h3>
-              <p className="text-gray-600 text-sm">{booking.specialRequests}</p>
+              <p className="text-gray-600 text-sm">{booking.eventDetails.additionalRequirements}</p>
             </div>
           )}
 
