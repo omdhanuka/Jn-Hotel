@@ -110,8 +110,14 @@ const Dashboard: React.FC = () => {
               });
               return { ...booking, resource: resourceResponse.data };
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error('Error fetching resource:', error);
+            console.log('Resource fetch error details:', {
+              bookingId: booking._id,
+              resourceId: booking.resourceId,
+              type: booking.type,
+              status: error.response?.status
+            });
           }
           return booking;
         })
@@ -119,9 +125,21 @@ const Dashboard: React.FC = () => {
       
       setBookings(bookingsWithResources);
       setRestaurantBookings(restBookings);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching bookings:', error);
-      toast.error('Failed to fetch bookings');
+      console.log('Bookings fetch error details:', {
+        status: error.response?.status,
+        message: error.response?.data?.message,
+        endpoint: error.config?.url
+      });
+      
+      if (error.response?.status === 400) {
+        toast.error(`Bad request: ${error.response?.data?.message || 'Invalid parameters'}`);
+      } else if (error.response?.status === 403) {
+        toast.error('You do not have permission to view bookings');
+      } else {
+        toast.error('Failed to fetch bookings');
+      }
       setBookings([]);
       setRestaurantBookings([]);
     } finally {

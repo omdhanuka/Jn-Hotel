@@ -179,12 +179,32 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
 
 export const getBookings = async (req: AuthRequest, res: Response) => {
   try {
-    const { status, type, page = 1, limit = 10 } = req.query;
+    const { status, type, page = '1', limit = '10' } = req.query;
+    
+    // Validate query parameters
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    
+    if (isNaN(pageNum) || pageNum < 1) {
+      return res.status(400).json({ message: 'Invalid page number' });
+    }
+    
+    if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+      return res.status(400).json({ message: 'Invalid limit. Must be between 1 and 100' });
+    }
     
     const filter: any = { user: req.user!._id };
     
     if (status) filter.status = status;
     if (type) filter.type = type;
+
+    console.log('📋 Fetching bookings for user:', {
+      userId: req.user!._id.toString(),
+      userRole: req.user!.role,
+      filter,
+      page: pageNum,
+      limit: limitNum
+    });
 
     // Auto-update confirmed bookings to completed if checkout date has passed
     const now = new Date();
@@ -200,23 +220,25 @@ export const getBookings = async (req: AuthRequest, res: Response) => {
     );
 
     const bookings = await Booking.find(filter)
-      .limit(parseInt(limit as string))
-      .skip((parseInt(page as string) - 1) * parseInt(limit as string))
+      .limit(limitNum)
+      .skip((pageNum - 1) * limitNum)
       .sort({ createdAt: -1 });
 
     const total = await Booking.countDocuments(filter);
 
+    console.log(`✅ Found ${bookings.length} bookings out of ${total} total`);
+
     res.json({
       bookings,
       pagination: {
-        page: parseInt(page as string),
-        limit: parseInt(limit as string),
+        page: pageNum,
+        limit: limitNum,
         total,
-        pages: Math.ceil(total / parseInt(limit as string))
+        pages: Math.ceil(total / limitNum)
       }
     });
   } catch (error) {
-    console.error(error);
+    console.error('Get bookings error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -236,14 +258,37 @@ export const getBookingById = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
+    // Get the booking user ID (handle both populated and unpopulated)
+    let bookingUserId: string;
+    if (booking.user && typeof booking.user === 'object' && '_id' in booking.user) {
+      bookingUserId = (booking.user as any)._id.toString();
+    } else {
+      bookingUserId = (booking.user as any).toString();
+    }
+
     // Check access permissions
-    const isOwner = booking.user && (booking.user as any)._id.toString() === req.user!._id.toString();
+    const currentUserId = req.user!._id.toString();
+    const isOwner = bookingUserId === currentUserId;
     const isAdmin = req.user!.role === 'admin';
+    const isManager = req.user!.role === 'manager';
     const isStaffWithPermission = (req.user!.role === 'staff' || req.user!.role === 'reception') && 
       (req.user!.permissions?.viewBookings || req.user!.permissions?.manageBanquets || req.user!.permissions?.viewBanquets);
     
-    // Allow access if user is owner, admin, or staff with booking view permissions
-    if (!isOwner && !isAdmin && !isStaffWithPermission) {
+    // Log permission check for debugging
+    console.log('🔐 Booking access check:', {
+      bookingId: id,
+      bookingUserId,
+      currentUserId,
+      userRole: req.user!.role,
+      isOwner,
+      isAdmin,
+      isManager,
+      isStaffWithPermission
+    });
+    
+    // Allow access if user is owner, admin, manager, or staff with booking view permissions
+    if (!isOwner && !isAdmin && !isManager && !isStaffWithPermission) {
+      console.log('❌ Access denied for user:', currentUserId);
       return res.status(403).json({ 
         message: 'Access denied. You do not have permission to view this booking.',
         code: 'INSUFFICIENT_PERMISSIONS'

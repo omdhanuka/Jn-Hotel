@@ -96,7 +96,19 @@ const BookingDetails: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error fetching booking details:', error);
-      toast.error('Failed to load booking details');
+      console.log('Error details:', {
+        status: error.response?.status,
+        message: error.response?.data?.message,
+        code: error.response?.data?.code
+      });
+      
+      if (error.response?.status === 403) {
+        toast.error('You do not have permission to view this booking');
+      } else if (error.response?.status === 404) {
+        toast.error('Booking not found');
+      } else {
+        toast.error('Failed to load booking details');
+      }
       navigate('/dashboard');
     } finally {
       setLoading(false);
