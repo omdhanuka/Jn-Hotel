@@ -1,26 +1,25 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Hotel, 
-  Utensils, 
-  Calendar, 
-  Star, 
-  Users, 
+import {
+  Hotel,
+  Utensils,
+  Calendar,
+  Star,
+  Users,
   MapPin,
   Phone,
   Mail,
   Award,
   Shield,
-  CheckCircle,
   ArrowRight,
-  Wine,
-  Dumbbell,
   Wifi,
   Coffee,
   Car,
-  Heart,
+  Crown,
+  ChevronDown,
   Gift,
-  Crown
+  Dumbbell,
+  Sparkles,
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -199,102 +198,97 @@ const Home: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section with Booking Widget */}
-      <div 
-        className="relative min-h-screen bg-cover bg-center bg-no-repeat flex items-center"
+
+      {/* â”€â”€â”€ HERO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <div
+        className="relative min-h-screen flex items-center bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.3)), url(https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1920)',
-          backgroundAttachment: 'fixed'
+          backgroundImage:
+            'linear-gradient(rgba(0,0,0,0.52), rgba(0,0,0,0.38)), url(https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1920)',
+          backgroundAttachment: 'fixed',
         }}
       >
-        {/* Decorative overlay pattern */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
         
-        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          {/* Logo/Crown Icon */}
-          <div className="flex justify-center mb-6">
-            <div className="bg-amber-500/20 backdrop-blur-sm p-4 rounded-full border-2 border-amber-400/50">
-              <Crown className="h-16 w-16 text-amber-400" />
+        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+          {/* Crown badge */}
+          <div className="flex justify-center mb-8">
+            <div className="bg-amber-500/20 backdrop-blur-sm p-4 rounded-full border-2 border-amber-400/50 shadow-xl">
+              <Crown className="h-14 w-14 text-amber-400" />
             </div>
           </div>
 
-          {/* Main Heading */}
-          <div className="text-center text-white mb-12">
-            <h2 className="text-2xl md:text-3xl font-light text-amber-400 mb-3 tracking-wider uppercase">
+          {/* Headline */}
+          <div className="text-center text-white mb-14">
+            <p className="text-xl md:text-2xl font-light text-amber-400 mb-3 tracking-[0.25em] uppercase">
               Welcome To
-            </h2>
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-4 tracking-tight">
+            </p>
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold mb-4 tracking-tight leading-none">
               HOTEL <span className="text-amber-400">JN PALACE</span>
             </h1>
-            <p className="text-2xl md:text-3xl font-light italic text-gray-200 tracking-wide">
+            <p className="text-xl md:text-2xl font-light italic text-gray-200 tracking-widest">
               Experience Royal Luxury
             </p>
           </div>
 
-          {/* Booking Widget */}
-          <div className="max-w-4xl mx-auto bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-6 md:p-8">
+          {/* Booking widget */}
+          <div className="max-w-4xl mx-auto bg-white/96 backdrop-blur-md rounded-2xl shadow-2xl p-6 md:p-8">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Check-In */}
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-widest">
                   Check-In
                 </label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={checkIn}
-                    onChange={(e) => setCheckIn(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
-                  />
-                  <Calendar className="absolute right-3 top-3 h-5 w-5 text-gray-400 pointer-events-none" />
-                </div>
+                <input
+                  type="date"
+                  value={checkIn}
+                  onChange={(e) => setCheckIn(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition text-gray-800"
+                />
               </div>
 
               {/* Check-Out */}
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-widest">
                   Check-Out
                 </label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={checkOut}
-                    onChange={(e) => setCheckOut(e.target.value)}
-                    min={checkIn || new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
-                  />
-                  <Calendar className="absolute right-3 top-3 h-5 w-5 text-gray-400 pointer-events-none" />
-                </div>
+                <input
+                  type="date"
+                  value={checkOut}
+                  onChange={(e) => setCheckOut(e.target.value)}
+                  min={checkIn || new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition text-gray-800"
+                />
               </div>
 
               {/* Guests */}
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-widest">
                   Guests
                 </label>
                 <div className="relative">
                   <select
                     value={guests}
                     onChange={(e) => setGuests(Number(e.target.value))}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition appearance-none"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition appearance-none text-gray-800"
                   >
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
-                      <option key={num} value={num}>{num}</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                      <option key={n} value={n}>
+                        {n} {n === 1 ? 'Guest' : 'Guests'}
+                      </option>
                     ))}
                   </select>
-                  <Users className="absolute right-3 top-3 h-5 w-5 text-gray-400 pointer-events-none" />
+                  <Users className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 pointer-events-none" />
                 </div>
               </div>
 
-              {/* Check Availability Button */}
+              {/* CTA */}
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-transparent uppercase">
-                  Action
-                </label>
+                <label className="block text-xs font-bold text-transparent uppercase">Action</label>
                 <button
                   onClick={handleCheckAvailability}
-                  className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white py-3 px-6 rounded-lg font-bold uppercase tracking-wide shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+                  className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white py-3 px-4 rounded-xl font-bold uppercase tracking-wide shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
                 >
                   Check Availability
                 </button>
@@ -302,219 +296,147 @@ const Home: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div className="mt-12 flex flex-wrap justify-center gap-4">
-            <Link
-              to="/rooms"
-              className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-2 border-white/30 px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 flex items-center"
-            >
-              <Hotel className="mr-2 h-5 w-5" />
-              View Rooms
-            </Link>
-            <Link
-              to="/restaurant"
-              className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-2 border-white/30 px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 flex items-center"
-            >
-              <Utensils className="mr-2 h-5 w-5" />
-              Dining
-            </Link>
-            <Link
-              to="/banquets"
-              className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-2 border-white/30 px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 flex items-center"
-            >
-              <Calendar className="mr-2 h-5 w-5" />
-              Events
-            </Link>
+          {/* Quick nav links */}
+          <div className="mt-10 flex flex-wrap justify-center gap-3">
+            {[
+              { to: '/rooms', icon: Hotel, label: 'Rooms' },
+              { to: '/restaurant', icon: Utensils, label: 'Dining' },
+              { to: '/banquets', icon: Calendar, label: 'Events' },
+            ].map(({ to, icon: Icon, label }) => (
+              <Link
+                key={to}
+                to={to}
+                className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border border-white/30 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-105 flex items-center gap-2 text-sm uppercase tracking-wide"
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </Link>
+            ))}
           </div>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 animate-bounce">
+          <ChevronDown className="h-8 w-8" />
         </div>
       </div>
 
-      {/* Featured Services Section */}
+      {/* â”€â”€â”€ SERVICES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Luxurious Rooms */}
-            <div className="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
-              <div className="h-80 overflow-hidden">
-                <img 
-                  src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600" 
-                  alt="Luxurious Rooms"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                <h3 className="text-3xl font-bold mb-3 uppercase tracking-wide">Luxurious Rooms</h3>
-                <p className="text-gray-200 mb-4">Elegantly designed accommodations for your comfort.</p>
-                <Link
-                  to="/rooms"
-                  className="inline-flex items-center bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-lg font-semibold uppercase text-sm tracking-wide transition"
-                >
-                  View Rooms
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Restaurant & Bar */}
-            <div className="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
-              <div className="h-80 overflow-hidden">
-                <img 
-                  src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600" 
-                  alt="Restaurant & Bar"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                <h3 className="text-3xl font-bold mb-3 uppercase tracking-wide">Restaurant & Bar</h3>
-                <p className="text-gray-200 mb-4">Exquisite dining with a royal touch.</p>
-                <Link
-                  to="/restaurant"
-                  className="inline-flex items-center bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-lg font-semibold uppercase text-sm tracking-wide transition"
-                >
-                  Explore Dining
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Spa & Wellness */}
-            <div className="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
-              <div className="h-80 overflow-hidden">
-                <img 
-                  src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=600" 
-                  alt="Spa & Wellness"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                <h3 className="text-3xl font-bold mb-3 uppercase tracking-wide">Spa & Wellness</h3>
-                <p className="text-gray-200 mb-4">Relax and rejuvenate in our serene spa.</p>
-                <Link
-                  to="/banquets"
-                  className="inline-flex items-center bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-lg font-semibold uppercase text-sm tracking-wide transition"
-                >
-                  Discover Spa
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </div>
-            </div>
+          <div className="text-center mb-14">
+            <span className="inline-block bg-amber-500/10 text-amber-600 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4">
+              Our Services
+            </span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 uppercase tracking-tight">
+              Everything You Need
+            </h2>
           </div>
-        </div>
-      </div>
 
-      {/* Stats Section */}
-      <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center transform hover:scale-105 transition-transform">
-                <stat.icon className="h-12 w-12 mx-auto mb-4 text-amber-400" />
-                <div className="text-4xl font-bold mb-2 text-amber-400">{stat.value}</div>
-                <div className="text-gray-300 font-medium">{stat.label}</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                to: '/rooms',
+                img: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=700',
+                title: 'Luxurious Rooms',
+                subtitle: 'Elegantly designed accommodations tailored to perfection.',
+                cta: 'View Rooms',
+              },
+              {
+                to: '/restaurant',
+                img: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=700',
+                title: 'Fine Dining',
+                subtitle: 'Exquisite cuisine crafted by world-class chefs.',
+                cta: 'Explore Dining',
+              },
+              {
+                to: '/banquets',
+                img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=700',
+                title: 'Grand Banquets',
+                subtitle: 'Unforgettable venues for weddings & corporate events.',
+                cta: 'Book an Event',
+              },
+            ].map((svc) => (
+              <div
+                key={svc.to}
+                className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 h-80"
+              >
+                <img
+                  src={svc.img}
+                  alt={svc.title}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-7 text-white">
+                  <h3 className="text-2xl font-bold mb-1 uppercase tracking-wide">{svc.title}</h3>
+                  <p className="text-gray-300 text-sm mb-4">{svc.subtitle}</p>
+                  <Link
+                    to={svc.to}
+                    className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-5 py-2 rounded-lg text-sm font-bold uppercase tracking-wide transition"
+                  >
+                    {svc.cta}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Special Offers Section */}
-      <div className="py-20 bg-white">
+      {/* â”€â”€â”€ STATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-block bg-amber-500/10 px-4 py-2 rounded-full mb-4">
-              <span className="text-amber-600 font-semibold uppercase tracking-wide text-sm">Special Offers</span>
-            </div>
-            <h2 className="text-5xl font-bold text-gray-900 mb-4 uppercase tracking-tight">Exclusive Deals & Packages</h2>
-            <p className="text-xl text-gray-600">Make your stay unforgettable with our curated packages</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Romantic Getaway */}
-            <div className="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
-              <div className="h-96 overflow-hidden">
-                <img 
-                  src="https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=800" 
-                  alt="Romantic Getaway"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-rose-900/90 via-rose-900/50 to-transparent"></div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                <div className="flex items-center mb-3">
-                  <Heart className="h-6 w-6 text-rose-400 mr-2" />
-                  <span className="bg-rose-500 px-3 py-1 rounded-full text-sm font-bold uppercase">Limited Offer</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat, i) => (
+              <div key={i} className="text-center group">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-500/10 rounded-full mb-4 group-hover:bg-amber-500/20 transition">
+                  <stat.icon className="h-8 w-8 text-amber-400" />
                 </div>
-                <h3 className="text-4xl font-bold mb-3 uppercase tracking-wide">Romantic Getaway</h3>
-                <p className="text-rose-100 mb-4 text-lg">Enjoy a memorable stay with special perks. Includes champagne, spa access, and candlelit dinner.</p>
-                <Link
-                  to="/rooms"
-                  className="inline-flex items-center bg-rose-500 hover:bg-rose-600 text-white px-8 py-3 rounded-lg font-bold uppercase tracking-wide transition"
-                >
-                  Learn More
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Royal Retreat Package */}
-            <div className="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
-              <div className="h-96 overflow-hidden">
-                <img 
-                  src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800" 
-                  alt="Royal Retreat"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-purple-900/90 via-purple-900/50 to-transparent"></div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                <div className="flex items-center mb-3">
-                  <Crown className="h-6 w-6 text-amber-400 mr-2" />
-                  <span className="bg-amber-500 px-3 py-1 rounded-full text-sm font-bold uppercase">Premium</span>
+                <div className="text-3xl md:text-4xl font-extrabold text-amber-400 mb-1">
+                  {stat.value}
                 </div>
-                <h3 className="text-4xl font-bold mb-3 uppercase tracking-wide">Royal Retreat Package</h3>
-                <p className="text-purple-100 mb-4 text-lg">Luxury stay with spa and dining included. Experience royal treatment with our finest amenities.</p>
-                <Link
-                  to="/rooms"
-                  className="inline-flex items-center bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 rounded-lg font-bold uppercase tracking-wide transition"
-                >
-                  Learn More
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
+                <div className="text-gray-400 text-sm font-medium uppercase tracking-wide">
+                  {stat.label}
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Amenities Section */}
+
+      {/* â”€â”€â”€ AMENITIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4 uppercase tracking-tight">World-Class Amenities</h2>
-            <p className="text-xl text-gray-600">Everything you need for a perfect stay</p>
+          <div className="text-center mb-14">
+            <span className="inline-block bg-amber-500/10 text-amber-600 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4">
+              Amenities
+            </span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 uppercase tracking-tight">
+              World-Class Facilities
+            </h2>
+            <p className="text-gray-500 mt-3 text-lg">Everything you need for a perfect stay</p>
           </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
             {[
-              { icon: Wifi, label: 'Free WiFi' },
+              { icon: Wifi, label: 'Free Wi-Fi' },
               { icon: Coffee, label: 'Breakfast' },
               { icon: Car, label: 'Valet Parking' },
-              { icon: Dumbbell, label: 'Fitness Center' },
-              { icon: Wine, label: 'Mini Bar' },
-              { icon: Shield, label: '24/7 Security' }
-            ].map((amenity, index) => (
-              <div 
-                key={index} 
-                className="text-center p-6 rounded-xl bg-white hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+              { icon: Shield, label: '24/7 Security' },
+              { icon: Dumbbell, label: 'Fitness Centre' },
+              { icon: Gift, label: 'Concierge' },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="text-center p-6 rounded-2xl bg-white shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group"
               >
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-500/10 text-amber-600 rounded-full mb-4">
-                  <amenity.icon className="h-8 w-8" />
+                <div className="inline-flex items-center justify-center w-14 h-14 bg-amber-500/10 text-amber-600 rounded-full mb-4 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
+                  <item.icon className="h-7 w-7" />
                 </div>
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">
-                  {amenity.label}
+                <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wide">
+                  {item.label}
                 </h3>
               </div>
             ))}
@@ -522,277 +444,285 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Room Types Section - Luxury Redesign */}
-      <div className="py-20 bg-gradient-to-b from-white to-gray-50">
+     
+      <div className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-block bg-amber-500/10 px-4 py-2 rounded-full mb-4">
-              <span className="text-amber-600 font-semibold uppercase tracking-wide text-sm">Accommodations</span>
-            </div>
-            <h2 className="text-5xl font-bold text-gray-900 mb-4 uppercase tracking-tight">Our Accommodations</h2>
-            <p className="text-xl text-gray-600 italic">"Choose from our range of luxury rooms"</p>
+          <div className="text-center mb-14">
+            <span className="inline-block bg-amber-500/10 text-amber-600 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4">
+              Accommodations
+            </span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 uppercase tracking-tight">
+              Our Rooms & Suites
+            </h2>
+            <p className="text-gray-500 mt-3 text-lg italic">"Choose from our range of luxury rooms"</p>
           </div>
 
           {loadingRooms ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
+            <div className="flex justify-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500" />
             </div>
           ) : featuredRooms.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {featuredRooms.map((room) => (
-                <div key={room._id} className="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
-                  {/* Image Container */}
-                  <div className="h-[480px] overflow-hidden relative">
-                    <img 
-                      src={getImageSrc(room)} 
-                      alt={room.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      onError={() => handleImageError(room._id)}
-                    />
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/60 to-transparent"></div>
-                    
-                    {/* Top Badges */}
-                    <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-                      <div className="bg-amber-500 text-white px-4 py-2 rounded-full text-xs font-bold uppercase shadow-lg">
-                        {room.type}
-                      </div>
-                      {room.discount && room.discount > 0 && (
-                        <div className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg flex items-center gap-1">
-                          <Gift className="h-4 w-4" />
-                          {room.discount}% OFF
-                        </div>
-                      )}
-                    </div>
-                  </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {featuredRooms.map((room) => (
+                  <div
+                    key={room._id}
+                    className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300"
+                  >
+                    <div className="h-[440px] overflow-hidden relative">
+                      <img
+                        src={getImageSrc(room)}
+                        alt={room.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        onError={() => handleImageError(room._id)}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/50 to-transparent" />
 
-                  {/* Content Overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                    {/* Room Title */}
-                    <h3 className="text-3xl font-bold mb-3 uppercase tracking-wide">
-                      {room.roomName || room.title}
-                    </h3>
-                    
-                    {/* Price Section */}
-                    <div className="mb-4 flex items-baseline gap-3">
-                      {room.discount && room.discount > 0 ? (
-                        <>
-                          <div className="text-4xl font-bold text-amber-400">
-                            ₹{getFinalPrice(room).toLocaleString()}
-                          </div>
-                          <div className="text-lg text-gray-300 line-through">
-                            ₹{room.price.toLocaleString()}
-                          </div>
-                          <span className="text-sm text-gray-300">/night</span>
-                        </>
-                      ) : (
-                        <>
-                          <div className="text-4xl font-bold text-amber-400">
-                            ₹{room.price.toLocaleString()}
-                          </div>
-                          <span className="text-sm text-gray-300">/night</span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-gray-200 mb-4 line-clamp-2 leading-relaxed">
-                      {room.description}
-                    </p>
-
-                    {/* Room Details */}
-                    <div className="flex items-center gap-4 mb-4 text-sm text-gray-300">
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4 text-amber-400" />
-                        <span>Up to {room.maxGuests} guests</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-                        <span>Premium</span>
-                      </div>
-                    </div>
-
-                    {/* Amenities */}
-                    <div className="mb-6 flex flex-wrap gap-2">
-                      {getTopAmenities(room).map((amenity, idx) => (
-                        <span 
-                          key={idx} 
-                          className="px-3 py-1 bg-white/20 backdrop-blur-sm text-white rounded-full text-xs font-medium border border-white/30"
-                        >
-                          {amenity}
+                      {/* Badges */}
+                      <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
+                        <span className="bg-amber-500 text-white px-3 py-1.5 rounded-full text-xs font-bold uppercase shadow">
+                          {room.type}
                         </span>
-                      ))}
+                        {Number(room.discount) > 0 && (
+                          <span className="bg-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow">
+                            {room.discount}% OFF
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    {/* CTA Button */}
-                    <Link
-                      to={`/rooms`}
-                      className="inline-flex items-center bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-8 py-3 rounded-lg font-bold uppercase tracking-wide transition-all transform hover:scale-105 shadow-lg"
-                    >
-                      View Details & Book
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </Link>
+                    {/* Content */}
+                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                      <h3 className="text-2xl font-bold mb-2 uppercase tracking-wide">
+                        {room.roomName || room.title}
+                      </h3>
+
+                      {/* Price */}
+                      <div className="flex items-baseline gap-2 mb-3">
+                        <span className="text-3xl font-extrabold text-amber-400">
+                          {`\u20B9${getFinalPrice(room).toLocaleString()}`}
+                        </span>
+                        {Number(room.discount) > 0 && (
+                          <span className="text-sm text-gray-300 line-through">
+                            {`\u20B9${room.price.toLocaleString()}`}
+                          </span>
+                        )}
+                        <span className="text-xs text-gray-300">/night</span>
+                      </div>
+
+                      <p className="text-gray-300 text-sm mb-3 line-clamp-2 leading-relaxed">
+                        {room.description && room.description.trim().length > 15
+                          ? room.description
+                          : 'Experience ultimate luxury and comfort in this beautifully designed room.'}
+                      </p>
+
+                      <div className="flex items-center gap-3 mb-4 text-xs text-gray-300">
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3.5 w-3.5 text-amber-400" />
+                          Up to {room.maxGuests} guests
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                          Premium
+                        </span>
+                      </div>
+
+                      {/* Amenity pills */}
+                      <div className="flex flex-wrap gap-1.5 mb-5">
+                        {getTopAmenities(room).map((a, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2.5 py-1 bg-white/15 backdrop-blur-sm text-white rounded-full text-xs border border-white/25"
+                          >
+                            {a}
+                          </span>
+                        ))}
+                      </div>
+
+                      <Link
+                        to="/rooms"
+                        className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wide transition-all hover:scale-105 shadow-lg"
+                      >
+                        View & Book
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+
+              <div className="text-center mt-12">
+                <Link
+                  to="/rooms"
+                  className="inline-flex items-center gap-2 border-2 border-amber-500 text-amber-600 hover:bg-amber-500 hover:text-white px-8 py-4 rounded-xl text-base font-bold uppercase tracking-wide transition-all hover:scale-105 shadow-sm hover:shadow-lg"
+                >
+                  View All Rooms
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+              </div>
+            </>
           ) : (
-            <div className="text-center py-12 bg-white rounded-2xl shadow-lg">
-              <Award className="h-16 w-16 text-amber-500 mx-auto mb-4" />
-              <p className="text-gray-600 mb-4 text-lg">No rooms available at the moment</p>
+            <div className="text-center py-16 bg-gray-50 rounded-2xl">
+              <Award className="h-14 w-14 text-amber-500 mx-auto mb-4" />
+              <p className="text-gray-500 mb-6 text-lg">No rooms available at the moment</p>
               <Link
                 to="/rooms"
-                className="inline-flex items-center bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-8 py-3 rounded-lg font-bold uppercase tracking-wide transition-all transform hover:scale-105"
+                className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 rounded-xl font-bold uppercase tracking-wide transition hover:scale-105"
               >
                 Browse All Rooms
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </div>
-          )}
-
-          {featuredRooms.length > 0 && (
-            <div className="text-center mt-12">
-              <Link
-                to="/rooms"
-                className="inline-flex items-center bg-white hover:bg-gray-50 text-amber-600 border-2 border-amber-600 px-8 py-4 rounded-lg text-lg font-bold uppercase tracking-wide transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
-              >
-                View All Rooms
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="h-5 w-5" />
               </Link>
             </div>
           )}
         </div>
       </div>
 
-      {/* Testimonials Section - Updated */}
-      <div className="py-20 bg-gradient-to-b from-white to-gray-50">
+      {/* â”€â”€â”€ TESTIMONIALS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <div className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-block bg-amber-500/10 px-4 py-2 rounded-full mb-4">
-              <span className="text-amber-600 font-semibold uppercase tracking-wide text-sm">Testimonials</span>
-            </div>
-            <h2 className="text-5xl font-bold text-gray-900 mb-4 uppercase tracking-tight">Guest Reviews</h2>
-            <p className="text-xl text-gray-600 italic">"Hear from our delighted guests"</p>
+          <div className="text-center mb-14">
+            <span className="inline-block bg-amber-500/10 text-amber-600 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4">
+              Testimonials
+            </span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 uppercase tracking-tight">
+              Guest Reviews
+            </h2>
+            <p className="text-gray-500 mt-3 text-lg italic">"Hear from our delighted guests"</p>
           </div>
 
           {loadingReviews ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="flex justify-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500" />
             </div>
           ) : testimonials.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {testimonials.map((testimonial, index) => (
-                <div key={index} className="bg-white rounded-xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border-t-4 border-amber-500">
-                  <div className="flex items-center mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {testimonials.map((t, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border-t-4 border-amber-500 flex flex-col"
+                >
+                  <div className="flex items-center gap-3 mb-4">
                     <img
-                      src={testimonial.image}
-                      alt={testimonial.name}
-                      className="w-16 h-16 rounded-full object-cover mr-4 border-2 border-amber-500"
+                      src={t.image}
+                      alt={t.name}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-amber-400"
                     />
                     <div>
-                      <h4 className="font-bold text-gray-900 text-lg">{testimonial.name}</h4>
-                      <p className="text-sm text-amber-600 font-medium">{testimonial.role}</p>
+                      <div className="font-bold text-gray-900 text-sm">{t.name}</div>
+                      <div className="text-amber-600 text-xs font-semibold">{t.role}</div>
                     </div>
                   </div>
                   <div className="flex mb-3">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 text-amber-400 fill-current" />
+                    {[...Array(Math.min(Math.max(Math.round(t.rating || 0), 1), 5))].map((_, j) => (
+                      <Star key={j} className="h-4 w-4 text-amber-400 fill-current" />
                     ))}
                   </div>
-                  <p className="text-gray-700 text-sm leading-relaxed italic">
-                    "{testimonial.comment}"
+                  <p className="text-gray-600 text-sm leading-relaxed italic flex-1">
+                    {t.comment && t.comment.trim().length > 10
+                      ? `"${t.comment}"`
+                      : '"A truly wonderful stay — exceptional service and beautiful surroundings."'}
                   </p>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-600">No reviews available yet. Be the first to share your experience!</p>
+            <div className="text-center py-12 text-gray-500">
+              No reviews yet. Be the first to share your experience!
             </div>
           )}
         </div>
       </div>
 
-      {/* Call to Action Section */}
-      <div className="relative py-24 overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-fixed"
-          style={{
-            backgroundImage: 'linear-gradient(rgba(139, 92, 246, 0.9), rgba(59, 130, 246, 0.9)), url(https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1920)'
-          }}
-        ></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-          <Gift className="h-16 w-16 mx-auto mb-6 text-amber-400" />
-          <h2 className="text-5xl font-bold mb-6 uppercase tracking-tight">Ready to Experience Royal Luxury?</h2>
-          <p className="text-2xl mb-10 text-white/90 max-w-3xl mx-auto">
-            Book your stay today and create unforgettable memories in our palace of hospitality
+      {/* â”€â”€â”€ CTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <div
+        className="relative py-24 bg-cover bg-center bg-fixed overflow-hidden"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(0,0,0,0.72), rgba(0,0,0,0.72)), url(https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1920)',
+        }}
+      >
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+          <Crown className="h-14 w-14 mx-auto mb-6 text-amber-400" />
+          <h2 className="text-4xl md:text-5xl font-extrabold mb-4 uppercase tracking-tight">
+            Ready to Experience Royal Luxury?
+          </h2>
+          <p className="text-xl mb-10 text-gray-300 max-w-2xl mx-auto leading-relaxed">
+            Book your stay today and create unforgettable memories in our palace of hospitality.
           </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/rooms"
-              className="bg-amber-500 hover:bg-amber-600 text-white px-10 py-5 rounded-xl text-lg font-bold uppercase tracking-wide shadow-2xl transition-all transform hover:scale-105 inline-flex items-center justify-center"
+              className="bg-amber-500 hover:bg-amber-600 text-white px-10 py-4 rounded-xl text-base font-bold uppercase tracking-wide shadow-lg transition-all hover:scale-105 inline-flex items-center justify-center gap-3"
             >
-              <Hotel className="mr-3 h-6 w-6" />
+              <Hotel className="h-5 w-5" />
               Book Your Stay
             </Link>
             <Link
               to="/banquets"
-              className="bg-white/10 backdrop-blur-md border-2 border-white text-white hover:bg-white hover:text-blue-600 px-10 py-5 rounded-xl text-lg font-bold uppercase tracking-wide transition-all transform hover:scale-105 inline-flex items-center justify-center"
+              className="border-2 border-white text-white hover:bg-white hover:text-gray-900 px-10 py-4 rounded-xl text-base font-bold uppercase tracking-wide transition-all hover:scale-105 inline-flex items-center justify-center gap-3"
             >
-              <Calendar className="mr-3 h-6 w-6" />
+              <Calendar className="h-5 w-5" />
               Plan Your Event
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Contact Section */}
+      {/* â”€â”€â”€ CONTACT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="py-20 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4 uppercase tracking-tight">Get In Touch</h2>
-            <p className="text-xl text-gray-400">We're here to make your experience exceptional</p>
+            <h2 className="text-4xl font-extrabold mb-3 uppercase tracking-tight">Get In Touch</h2>
+            <p className="text-gray-400 text-lg">We're here to make your experience exceptional</p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div 
-              onClick={handleCallClick}
-              className="group text-center cursor-pointer transform transition-all hover:scale-105 bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-amber-500/50"
-            >
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-500 to-amber-600 rounded-full mb-6 group-hover:shadow-lg group-hover:shadow-amber-500/50 transition">
-                <Phone className="h-10 w-10" />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: Phone,
+                title: 'Call Us',
+                line1: '+91 123 456 7890',
+                line2: '24/7 Support Available',
+                cta: 'Click to call â†’',
+                onClick: () => { window.location.href = 'tel:+911234567890'; },
+              },
+              {
+                icon: Mail,
+                title: 'Email Us',
+                line1: 'info@jnpalace.com',
+                line2: 'reservations@jnpalace.com',
+                cta: 'Send an email â†’',
+                onClick: () => { window.location.href = 'mailto:info@jnpalace.com'; },
+              },
+              {
+                icon: MapPin,
+                title: 'Visit Us',
+                line1: '123 Royal Street',
+                line2: 'New Delhi, India',
+                cta: 'View on Google Maps â†’',
+                onClick: () => {
+                  window.open(
+                    'https://www.google.com/maps/place/The+Taj+Mahal+Palace,+Mumbai/@18.9217,72.8330,17z',
+                    '_blank',
+                    'noopener,noreferrer'
+                  );
+                },
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                onClick={item.onClick}
+                className="group text-center cursor-pointer bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-500/40 p-8 rounded-2xl transition-all duration-300 hover:scale-105"
+              >
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-500/20 group-hover:bg-amber-500 rounded-full mb-5 transition-colors duration-300">
+                  <item.icon className="h-8 w-8 text-amber-400 group-hover:text-white transition-colors duration-300" />
+                </div>
+                <h3 className="text-lg font-bold mb-2 uppercase tracking-wide">{item.title}</h3>
+                <p className="text-amber-400 font-semibold">{item.line1}</p>
+                <p className="text-gray-400 text-sm mt-1">{item.line2}</p>
+                <p className="text-amber-500 mt-4 text-xs font-bold uppercase tracking-wide">{item.cta}</p>
               </div>
-              <h3 className="text-2xl font-bold mb-3 uppercase">Call Us</h3>
-              <p className="text-amber-400 text-lg font-semibold">+91 123 456 7890</p>
-              <p className="text-gray-400 mt-2">24/7 Support Available</p>
-              <p className="text-amber-500 mt-4 text-sm font-semibold uppercase tracking-wide">Click to call →</p>
-            </div>
-            
-            <div 
-              onClick={handleEmailClick}
-              className="group text-center cursor-pointer transform transition-all hover:scale-105 bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-amber-500/50"
-            >
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-500 to-amber-600 rounded-full mb-6 group-hover:shadow-lg group-hover:shadow-amber-500/50 transition">
-                <Mail className="h-10 w-10" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3 uppercase">Email Us</h3>
-              <p className="text-amber-400 text-lg font-semibold">info@jnpalace.com</p>
-              <p className="text-gray-400">reservations@jnpalace.com</p>
-              <p className="text-amber-500 mt-4 text-sm font-semibold uppercase tracking-wide">Click to send email →</p>
-            </div>
-            
-            <div 
-              onClick={handleVisitUsClick}
-              className="group text-center cursor-pointer transform transition-all hover:scale-105 bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-amber-500/50"
-            >
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-500 to-amber-600 rounded-full mb-6 group-hover:shadow-lg group-hover:shadow-amber-500/50 transition">
-                <MapPin className="h-10 w-10" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3 uppercase">Visit Us</h3>
-              <p className="text-amber-400 text-lg font-semibold">123 Royal Street</p>
-              <p className="text-gray-400">New Delhi, India</p>
-              <p className="text-amber-500 mt-4 text-sm font-semibold uppercase tracking-wide">View on Google Maps →</p>
-            </div>
+            ))}
           </div>
         </div>
       </div>

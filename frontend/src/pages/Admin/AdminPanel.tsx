@@ -54,6 +54,21 @@ interface StatsState {
   totalReviews?: number;
 }
 
+interface RecentBooking {
+  _id: string;
+  type: string;
+  status: string;
+  checkIn: string;
+  createdAt: string;
+  user?: {
+    firstName?: string;
+    lastName?: string;
+  };
+  eventDetails?: {
+    fullName?: string;
+  };
+}
+
 interface BillItem {
   description: string;
   quantity: number;
@@ -112,6 +127,8 @@ const AdminPanel: React.FC = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [bookingChartData, setBookingChartData] = useState<ChartPoint[]>([]);
+  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
+  const [loadingRecent, setLoadingRecent] = useState(true);
   const [stats, setStats] = useState<StatsState>({
     totalBookings: 0,
     roomBookings: 0,
@@ -156,7 +173,7 @@ const AdminPanel: React.FC = () => {
         todayBookings: todayBookings || 0
       }));
 
-      // Fetch dashboard stats for rating
+      // Fetch dashboard stats for rating and recent bookings
       const dashboardResponse = await axios.get('/admin/dashboard');
       if (dashboardResponse.data.stats) {
         setStats(prev => ({
@@ -165,6 +182,10 @@ const AdminPanel: React.FC = () => {
           totalReviews: dashboardResponse.data.stats.totalReviews || 0
         }));
       }
+      if (dashboardResponse.data.recentBookings) {
+        setRecentBookings(dashboardResponse.data.recentBookings);
+      }
+      setLoadingRecent(false);
     } catch (error) {
       console.error('Failed to fetch booking stats:', error);
       setStats({
@@ -223,11 +244,7 @@ const AdminPanel: React.FC = () => {
     }
   ];
 
-  const recentBookings = [
-    { id: 1, guest: 'John Doe', type: 'Room', date: '2024-03-15', status: 'confirmed' },
-    { id: 2, guest: 'Jane Smith', type: 'Banquet', date: '2024-03-16', status: 'pending' },
-    { id: 3, guest: 'Mike Johnson', type: 'Restaurant', date: '2024-03-17', status: 'confirmed' }
-  ];
+  // recentBookings is now populated from the API
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -437,29 +454,52 @@ const AdminPanel: React.FC = () => {
                         </Link>
                       </div>
                       <div className="space-y-3">
-                        {recentBookings.map((booking) => (
-                          <div 
-                            key={booking.id} 
-                            className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border border-gray-100 hover:border-blue-200 transition-colors duration-200"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <div className="bg-blue-100 p-2 rounded-lg">
-                                <UserCheck className="h-5 w-5 text-blue-600" />
-                              </div>
-                              <div>
-                                <p className="font-semibold text-gray-900">{booking.guest}</p>
-                                <p className="text-sm text-gray-600">{booking.type} - {booking.date}</p>
-                              </div>
-                            </div>
-                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                              booking.status === 'confirmed' 
-                                ? 'bg-green-100 text-green-700' 
-                                : 'bg-yellow-100 text-yellow-700'
-                            }`}>
-                              {booking.status}
-                            </span>
+                        {loadingRecent ? (
+                          <div className="flex justify-center py-6">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                           </div>
-                        ))}
+                        ) : recentBookings.length === 0 ? (
+                          <p className="text-center text-gray-500 py-6 text-sm">No bookings yet.</p>
+                        ) : (
+                          recentBookings.map((booking) => {
+                            const guestName =
+                              (booking.user?.firstName && booking.user?.lastName)
+                                ? `${booking.user.firstName} ${booking.user.lastName}`
+                                : booking.eventDetails?.fullName || 'Guest';
+                            const bookingType = booking.type
+                              ? booking.type.charAt(0).toUpperCase() + booking.type.slice(1)
+                              : 'Booking';
+                            const bookingDate = new Date(booking.createdAt).toLocaleDateString('en-IN', {
+                              day: '2-digit', month: 'short', year: 'numeric'
+                            });
+                            const statusColors: Record<string, string> = {
+                              confirmed: 'bg-green-100 text-green-700',
+                              pending: 'bg-yellow-100 text-yellow-700',
+                              cancelled: 'bg-red-100 text-red-700',
+                              completed: 'bg-blue-100 text-blue-700',
+                            };
+                            const statusClass = statusColors[booking.status] || 'bg-gray-100 text-gray-700';
+                            return (
+                              <div
+                                key={booking._id}
+                                className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border border-gray-100 hover:border-blue-200 transition-colors duration-200"
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <div className="bg-blue-100 p-2 rounded-lg">
+                                    <UserCheck className="h-5 w-5 text-blue-600" />
+                                  </div>
+                                  <div>
+                                    <p className="font-semibold text-gray-900">{guestName}</p>
+                                    <p className="text-sm text-gray-500">{bookingType} &middot; {bookingDate}</p>
+                                  </div>
+                                </div>
+                                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${statusClass}`}>
+                                  {booking.status}
+                                </span>
+                              </div>
+                            );
+                          })
+                        )}
                       </div>
                     </div>
 

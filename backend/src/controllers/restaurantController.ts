@@ -3,6 +3,7 @@ import { validationResult } from 'express-validator';
 import MenuItem from '../models/MenuItem';
 import RestaurantTable from '../models/RestaurantTable';
 import { IUser } from '../models/User';
+import { cache } from '../utils/cache';
 
 interface AuthRequest extends Request {
   user?: IUser;
@@ -75,6 +76,10 @@ export const createMenuItem = async (req: AuthRequest, res: Response) => {
     const menuItem = new MenuItem(menuItemData);
     await menuItem.save();
 
+    // Invalidate menu cache
+    cache.deletePattern('/api/restaurant/menu');
+    console.log('🔄 Cache invalidated: /api/restaurant/menu (item created)');
+
     res.status(201).json(menuItem);
   } catch (error: any) {
     console.error(error);
@@ -108,6 +113,10 @@ export const updateMenuItem = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Menu item not found' });
     }
 
+    // Invalidate menu cache
+    cache.deletePattern('/api/restaurant/menu');
+    console.log('🔄 Cache invalidated: /api/restaurant/menu (item updated)');
+
     res.json(menuItem);
   } catch (error) {
     console.error(error);
@@ -122,6 +131,10 @@ export const deleteMenuItem = async (req: Request, res: Response) => {
     if (!menuItem) {
       return res.status(404).json({ message: 'Menu item not found' });
     }
+
+    // Invalidate menu cache
+    cache.deletePattern('/api/restaurant/menu');
+    console.log('🔄 Cache invalidated: /api/restaurant/menu (item deleted)');
 
     res.json({ message: 'Menu item deleted successfully' });
   } catch (error) {
@@ -185,6 +198,10 @@ export const createRestaurantTable = async (req: AuthRequest, res: Response) => 
     const table = new RestaurantTable(tableData);
     await table.save();
 
+    // Invalidate table cache
+    cache.deletePattern('/api/restaurant/table');
+    console.log('🔄 Cache invalidated: /api/restaurant/table (table created)');
+
     res.status(201).json(table);
   } catch (error: any) {
     console.error(error);
@@ -213,6 +230,10 @@ export const updateRestaurantTable = async (req: AuthRequest, res: Response) => 
       return res.status(404).json({ message: 'Table not found' });
     }
 
+    // Invalidate table cache
+    cache.deletePattern('/api/restaurant/table');
+    console.log('🔄 Cache invalidated: /api/restaurant/table (table updated)');
+
     res.json(table);
   } catch (error) {
     console.error(error);
@@ -227,6 +248,10 @@ export const deleteRestaurantTable = async (req: Request, res: Response) => {
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
+
+    // Invalidate table cache
+    cache.deletePattern('/api/restaurant/table');
+    console.log('🔄 Cache invalidated: /api/restaurant/table (table deleted)');
 
     res.json({ message: 'Table deleted successfully' });
   } catch (error) {

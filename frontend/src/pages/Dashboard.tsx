@@ -594,64 +594,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Exclusive Offers Section */}
-        <div className="mb-8">
-          <h2 className="text-4xl font-serif font-bold text-center text-gray-900 mb-8 uppercase tracking-wide">
-            Exclusive Offers for You
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Romantic Getaway */}
-            <div className="bg-white rounded-xl shadow-lg border-2 border-amber-100 overflow-hidden hover:shadow-2xl transition-shadow">
-              <div className="relative">
-                <img
-                  src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80"
-                  alt="Romantic Getaway"
-                  className="w-full h-64 object-cover"
-                />
-                <div className="absolute top-4 left-4 bg-amber-500 text-white px-4 py-2 rounded-full font-bold text-lg">
-                  15% OFF
-                </div>
-              </div>
-              <div className="p-6">
-                <h3 className="text-2xl font-serif font-bold text-gray-900 mb-3">
-                  Romantic Getaway
-                </h3>
-                <p className="text-gray-700 mb-4">
-                  Enjoy a memorable stay with romantic perks.
-                </p>
-                <button className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-white py-3 rounded-lg hover:from-amber-600 hover:to-yellow-700 transition-all shadow-md font-semibold uppercase tracking-wide">
-                  VIEW OFFER <ArrowRight className="inline h-4 w-4 ml-1" />
-                </button>
-              </div>
-            </div>
-
-            {/* Spa & Wellness */}
-            <div className="bg-white rounded-xl shadow-lg border-2 border-amber-100 overflow-hidden hover:shadow-2xl transition-shadow">
-              <div className="relative">
-                <img
-                  src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=80"
-                  alt="Spa & Wellness"
-                  className="w-full h-64 object-cover"
-                />
-                <div className="absolute top-4 left-4 bg-amber-500 text-white px-4 py-2 rounded-full font-bold text-lg">
-                  15% OFF
-                </div>
-              </div>
-              <div className="p-6">
-                <h3 className="text-2xl font-serif font-bold text-gray-900 mb-3">
-                  Spa & Wellness Package
-                </h3>
-                <p className="text-gray-700 mb-4">
-                  Relax with a special spa and wellness package.
-                </p>
-                <button className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-white py-3 rounded-lg hover:from-amber-600 hover:to-yellow-700 transition-all shadow-md font-semibold uppercase tracking-wide">
-                  VIEW OFFER <ArrowRight className="inline h-4 w-4 ml-1" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
+        
         {/* Tab Navigation */}
         <div className="bg-white rounded-2xl shadow-lg border-2 border-amber-100">
           <div className="border-b-2 border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50">

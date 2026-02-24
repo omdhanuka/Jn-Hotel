@@ -3,6 +3,7 @@ import { validationResult } from 'express-validator';
 import Banquet from '../models/Banquet';
 import { IUser } from '../models/User';
 import { compressMultipleImages } from '../utils/imageCompressor';
+import { cache } from '../utils/cache';
 import path from 'path';
 import fs from 'fs';
 
@@ -79,6 +80,10 @@ export const createBanquet = async (req: AuthRequest, res: Response) => {
     const banquet = new Banquet(banquetData);
     await banquet.save();
 
+    // Invalidate banquet cache
+    cache.deletePattern('/api/banquets');
+    console.log('🔄 Cache invalidated: /api/banquets (banquet created)');
+
     res.status(201).json(banquet);
   } catch (error: any) {
     console.error(error);
@@ -107,6 +112,10 @@ export const updateBanquet = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Banquet not found' });
     }
 
+    // Invalidate banquet cache
+    cache.deletePattern('/api/banquets');
+    console.log('🔄 Cache invalidated: /api/banquets (banquet updated)');
+
     res.json(banquet);
   } catch (error) {
     console.error(error);
@@ -121,6 +130,10 @@ export const deleteBanquet = async (req: Request, res: Response) => {
     if (!banquet) {
       return res.status(404).json({ message: 'Banquet not found' });
     }
+
+    // Invalidate banquet cache
+    cache.deletePattern('/api/banquets');
+    console.log('🔄 Cache invalidated: /api/banquets (banquet deleted)');
 
     res.json({ message: 'Banquet deleted successfully' });
   } catch (error) {
@@ -161,6 +174,10 @@ export const uploadBanquetImages = async (req: AuthRequest, res: Response) => {
       };
     });
 
+    // Invalidate banquet cache (images affect banquet display)
+    cache.deletePattern('/api/banquets');
+    console.log('🔄 Cache invalidated: /api/banquets (images uploaded)');
+
     res.json({
       message: 'Images uploaded successfully',
       images: imageData
@@ -178,6 +195,11 @@ export const deleteBanquetImage = async (req: AuthRequest, res: Response) => {
 
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
+      
+      // Invalidate banquet cache (images affect banquet display)
+      cache.deletePattern('/api/banquets');
+      console.log('🔄 Cache invalidated: /api/banquets (image deleted)');
+      
       res.json({ message: 'Image deleted successfully' });
     } else {
       res.status(404).json({ message: 'Image not found' });
