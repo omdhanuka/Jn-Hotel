@@ -88,22 +88,22 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({
                 </svg>
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-amber-700" style={{ letterSpacing: '0.05em' }}>ROYAL PALACE HOTEL</h1>
+                <h1 className="text-3xl font-bold text-amber-700" style={{ letterSpacing: '0.05em' }}>J.N Palace</h1>
                 <p className="text-amber-600 italic text-sm">Luxury Redefined</p>
               </div>
             </div>
             <div className="text-gray-600 text-xs mt-3 space-y-1">
               <p className="flex items-center">
                 <span className="mr-2">📍</span>
-                <span>123 Royal Street, New Delhi, India</span>
+                <span>123 J.N Palace, Ghatsila, India</span>
               </p>
               <p className="flex items-center">
                 <span className="mr-2">📞</span>
-                <span>Phone: +91 9876543210</span>
+                <span>Phone: +91 123456789</span>
               </p>
               <p className="flex items-center">
                 <span className="mr-2">✉️</span>
-                <span>Email: info@royalpalacehotel.com</span>
+                <span>Email: info@jnpalace.com</span>
               </p>
             </div>
           </div>

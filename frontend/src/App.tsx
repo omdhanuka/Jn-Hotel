@@ -50,6 +50,8 @@ import SpecialOffers from './pages/SpecialOffers';
 import UpcomingBookings from './pages/UpcomingBookings';
 import BookingHistory from './pages/BookingHistory';
 import AccountSettings from './pages/AccountSettings';
+import QRMenu from './pages/QRMenu';
+import QRTableDashboard from './pages/Admin/QRTableDashboard';
 
 // Configure axios defaults immediately
 const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -65,11 +67,19 @@ function App() {
         <Router>
           <div className="min-h-screen bg-gray-50">
             <Routes>
+              {/* QR Menu - Public (no Navbar) */}
+              <Route path="/menu" element={<QRMenu />} />
+
               {/* Routes WITHOUT Navbar - Admin Portal */}
               <Route path="/admin/*" element={
                 <Routes>
                   <Route path="login" element={<AdminLogin />} />
                   <Route path="create" element={<CreateAdmin />} />
+                  <Route path="qr-tables" element={
+                    <ProtectedRoute adminOnly={true}>
+                      <QRTableDashboard />
+                    </ProtectedRoute>
+                  } />
                   <Route path="*" element={
                     <ProtectedRoute adminOnly={true}>
                       <AdminPanel />

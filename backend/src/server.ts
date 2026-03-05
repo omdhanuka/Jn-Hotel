@@ -18,6 +18,8 @@ import receptionRoutes from './routes/reception';
 import managerRoutes from './routes/manager';
 import staffRoutes from './routes/staffRoutes';
 import offerRoutes from './routes/offerRoutes';
+import qrMenuRoutes from './routes/qrMenu';
+import qrAdminRoutes from './routes/qrAdmin';
 
 // Import models for sample data
 import Banquet from './models/Banquet';
@@ -101,6 +103,8 @@ app.use('/api/reception', receptionRoutes);
 app.use('/api/manager', managerRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/offers', offerRoutes);
+app.use('/api/qr/admin', qrAdminRoutes); // admin POS – protected
+app.use('/api/qr', qrMenuRoutes);       // public – no auth required
 
 // Admin review listing (alternate endpoint)
 app.get('/api/admin/reviews', auth, adminAuth, getAllReviews);

@@ -14,6 +14,8 @@ import billRoutes from './routes/bills';
 import adminRoutes from './routes/admin';
 import reviewRoutes from './routes/reviews';
 import offerRoutes from './routes/offerRoutes';
+import qrMenuRoutes from './routes/qrMenu';
+import qrAdminRoutes from './routes/qrAdmin';
 
 dotenv.config();
 
@@ -48,6 +50,8 @@ app.use('/api/bills', billRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/offers', offerRoutes);
+app.use('/api/qr', qrMenuRoutes);       // public QR menu & order routes
+app.use('/api/qr/admin', qrAdminRoutes); // admin POS routes
 
 // Log all registered routes for debugging
 console.log('✅ Registered routes:');
@@ -60,6 +64,8 @@ console.log('  - /api/bills');
 console.log('  - /api/admin');
 console.log('  - /api/reviews');
 console.log('  - /api/offers');
+console.log('  - /api/qr        (public QR menu)');
+console.log('  - /api/qr/admin  (admin POS)');
 
 // Test route to verify server is working
 app.get('/api/test', (req, res) => {
