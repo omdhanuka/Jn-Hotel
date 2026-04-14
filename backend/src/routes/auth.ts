@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
-import { register, login, getProfile, updateProfile, getUserOwnPermissions } from '../controllers/authController';
+import { register, login, getProfile, updateProfile, getUserOwnPermissions, createAdmin } from '../controllers/authController';
 import { auth } from '../middleware/auth';
 import { validateLoginRole } from '../middleware/roleAuth';
 import User from '../models/User';
@@ -264,5 +264,16 @@ router.post('/staff/login', [
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// @route   POST /api/auth/create-admin
+// @desc    Create admin user with admin key
+// @access  Public (requires valid admin creation key)
+router.post('/create-admin', [
+  body('firstName').notEmpty().withMessage('First name is required'),
+  body('lastName').notEmpty().withMessage('Last name is required'),
+  body('email').isEmail().withMessage('Please include a valid email'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('adminKey').notEmpty().withMessage('Admin creation key is required')
+], createAdmin);
 
 export default router;
